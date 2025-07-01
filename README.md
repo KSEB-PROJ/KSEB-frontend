@@ -1,70 +1,28 @@
-<<<<<<< HEAD
-# React + TypeScript + Vite
+# ??? Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> 대학생 팀플을 위한 올인원 협업툴  
+> (React + Vite + TypeScript 기반 프론트엔드)
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🟢 프로젝트 소개
 
-## Expanding the ESLint configuration
+**???**은 대학생 팀플, 스터디, 프로젝트 협업에 꼭 필요한  
+일정 관리, 발표 피드백, 팀 채팅 등  
+모든 기능을 한 번에 지원하는 올인원 웹 협업툴입니다.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🗂️ 폴더 구조
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+src/
+├── assets/ # 이미지, 폰트 등 정적 파일
+├── pages/ # 주요 화면(페이지) 컴포넌트
+├── components/ # 재사용 UI 컴포넌트
+├── stores/ # 상태관리(zustand 등, 옵션)
+├── hooks/ # 커스텀 훅(옵션)
+├── types/ # 타입 정의(옵션)
+├── apis/ # API 함수(옵션)
+├── index.css # 전역 스타일
+├── App.tsx # 전체 라우팅/레이아웃ㅡ
+└── main.tsx # 엔트리포인트
