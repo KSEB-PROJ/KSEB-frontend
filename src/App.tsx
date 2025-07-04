@@ -1,36 +1,41 @@
 import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Lenis from '@studio-freight/lenis';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import MainPage from './pages/MainPage';
+import LoginPage from './pages/LoginForm'; // 경로는 프로젝트에 맞게 조정!
 
 const App: React.FC = () => {
   useEffect(() => {
-    // 1. Lenis 인스턴스 생성 및 설정
     const lenis = new Lenis();
 
-    // 2. GSAP ScrollTrigger가 Lenis를 사용하도록 설정 (매우 중요!)
     lenis.on('scroll', ScrollTrigger.update);
     gsap.ticker.add((time) => {
       lenis.raf(time * 1000);
     });
     gsap.ticker.lagSmoothing(0);
 
-
-    // 3. 애니메이션 프레임마다 Lenis 업데이트
     function raf(time: number) {
       lenis.raf(time);
       requestAnimationFrame(raf);
     }
     requestAnimationFrame(raf);
 
-    // 4. 컴포넌트 언마운트 시 Lenis 인스턴스 정리
     return () => {
       lenis.destroy();
     };
   }, []);
 
-  return <MainPage />;
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<MainPage />} />
+        <Route path="/login" element={<LoginPage />} />
+      </Routes>
+    </BrowserRouter>
+  );
+
 };
 
 export default App;

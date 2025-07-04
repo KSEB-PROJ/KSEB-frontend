@@ -7,10 +7,11 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 // 아이콘: 기능별 직관적 구분
 import { FiArrowRight, FiZap, FiBox, FiRepeat, FiAward, FiMessageCircle } from 'react-icons/fi';
+import { Link } from 'react-router-dom'; // ← 추가
 import styles from './MainPage.module.css';
 
 gsap.registerPlugin(ScrollTrigger);
-
+const MotionLink = motion(Link);
 // MainPage 전체 컴포넌트
 const MainPage: React.FC = () => {
   // 전체 페이지 DOM 참조 (GSAP 애니메이션 타겟팅용)
@@ -62,23 +63,23 @@ const MainPage: React.FC = () => {
        * - 스크롤 구간별 강조 효과로 메시지 집중
        */
       const solutionSection = mainRef.current?.querySelector(`.${styles.solutionSection}`);
-      if(solutionSection) {
-          const highlights = gsap.utils.toArray<HTMLElement>(`.${styles.highlight}`);
-          highlights.forEach(highlight => {
-              gsap.fromTo(highlight, 
-                  { '--highlight-width': '0%' }, // 커스텀 CSS 변수 애니메이션
-                  { 
-                      '--highlight-width': '100%',
-                      ease: 'none',
-                      scrollTrigger: {
-                          trigger: highlight,
-                          start: 'center 80%',
-                          end: 'center 50%',
-                          scrub: true
-                      }
-                  }
-              );
-          });
+      if (solutionSection) {
+        const highlights = gsap.utils.toArray<HTMLElement>(`.${styles.highlight}`);
+        highlights.forEach(highlight => {
+          gsap.fromTo(highlight,
+            { '--highlight-width': '0%' }, // 커스텀 CSS 변수 애니메이션
+            {
+              '--highlight-width': '100%',
+              ease: 'none',
+              scrollTrigger: {
+                trigger: highlight,
+                start: 'center 80%',
+                end: 'center 50%',
+                scrub: true
+              }
+            }
+          );
+        });
       }
 
       /** 3. How-To(사용법/프로세스) 섹션: 스텝별 등장
@@ -103,17 +104,17 @@ const MainPage: React.FC = () => {
        */
       const horizontalSection = horizontalSectionRef.current;
       if (horizontalSection) {
-          const cards = gsap.utils.toArray<HTMLElement>(`.${styles.featureCard}`);
-          gsap.to(cards, {
-              xPercent: -100 * (cards.length - 1),
-              ease: 'none',
-              scrollTrigger: {
-                  trigger: horizontalSection,
-                  pin: true, // 섹션 고정 (가로 스크롤 효과)
-                  scrub: 1,
-                  end: () => `+=${horizontalSection.offsetWidth * (cards.length - 1)}`,
-              }
-          });
+        const cards = gsap.utils.toArray<HTMLElement>(`.${styles.featureCard}`);
+        gsap.to(cards, {
+          xPercent: -100 * (cards.length - 1),
+          ease: 'none',
+          scrollTrigger: {
+            trigger: horizontalSection,
+            pin: true, // 섹션 고정 (가로 스크롤 효과)
+            scrub: 1,
+            end: () => `+=${horizontalSection.offsetWidth * (cards.length - 1)}`,
+          }
+        });
       }
 
       /** 5. Testimonial(사용자 피드백) 섹션
@@ -150,99 +151,104 @@ const MainPage: React.FC = () => {
             <p>흩어진 아이디어의 파편을 모아, 하나의 걸작으로</p>
           </div>
         </section>
-        
+
         {/* 2. 솔루션(핵심 가치/컨셉 소개) */}
         <section className={styles.solutionSection}>
-            <div className={styles.solutionContent}>
-                <h2>
-                    <span className={styles.highlight}>복잡함</span>이라는 어둠을 걷어내고,<br/>
-                    <span className={styles.highlight}>아이디어의 본질</span>이라는<br/>
-                    순수한 빛에 집중합니다.
-                </h2>
-            </div>
+          <div className={styles.solutionContent}>
+            <h2>
+              <span className={styles.highlight}>복잡함</span>이라는 어둠을 걷어내고,<br />
+              <span className={styles.highlight}>아이디어의 본질</span>이라는<br />
+              순수한 빛에 집중합니다.
+            </h2>
+          </div>
         </section>
 
         {/* 3. How-To: 팀플메이트 협업 과정 (3단계: 아이디어 -> 작품) */}
         <section className={styles.howToSection}>
-            <div className={styles.sectionHeader}>
-                <h2>하나의 걸작이 완성되는 과정</h2>
-                <p>팀플메이트는 3단계의 체계적인 워크플로우를 통해 당신의 아이디어를 조각합니다.</p>
+          <div className={styles.sectionHeader}>
+            <h2>하나의 걸작이 완성되는 과정</h2>
+            <p>팀플메이트는 3단계의 체계적인 워크플로우를 통해 당신의 아이디어를 조각합니다.</p>
+          </div>
+          <div className={styles.howToGrid}>
+            {/* 01. 영감의 수집 (AI 브레인스토밍, 자료 모으기) */}
+            <div className={styles.howToStep}>
+              <div className={styles.stepNumber}>01</div>
+              <h3>영감의 수집 (Gather)</h3>
+              <p>AI와 함께 브레인스토밍하고, 흩어진 자료와 생각을 한 곳으로 모아 영감의 원석을 마련합니다.</p>
             </div>
-            <div className={styles.howToGrid}>
-                {/* 01. 영감의 수집 (AI 브레인스토밍, 자료 모으기) */}
-                <div className={styles.howToStep}>
-                    <div className={styles.stepNumber}>01</div>
-                    <h3>영감의 수집 (Gather)</h3>
-                    <p>AI와 함께 브레인스토밍하고, 흩어진 자료와 생각을 한 곳으로 모아 영감의 원석을 마련합니다.</p>
-                </div>
-                {/* 02. 아이디어의 조각 (공동 편집, 피드백, 구조화) */}
-                <div className={styles.howToStep}>
-                    <div className={styles.stepNumber}>02</div>
-                    <h3>아이디어의 조각 (Shape)</h3>
-                    <p>실시간 공동 편집과 유기적인 피드백을 통해 아이디어의 불필요한 부분을 깎아내고, 핵심을 다듬습니다.</p>
-                </div>
-                {/* 03. 결과물의 완성 (AI 코치, 마무리, 발표 준비) */}
-                <div className={styles.howToStep}>
-                    <div className={styles.stepNumber}>03</div>
-                    <h3>결과물의 완성 (Polish)</h3>
-                    <p>AI 코치의 도움으로 최종 결과물을 완벽하게 연마하고, 세상에 내놓을 준비를 마칩니다.</p>
-                </div>
+            {/* 02. 아이디어의 조각 (공동 편집, 피드백, 구조화) */}
+            <div className={styles.howToStep}>
+              <div className={styles.stepNumber}>02</div>
+              <h3>아이디어의 조각 (Shape)</h3>
+              <p>실시간 공동 편집과 유기적인 피드백을 통해 아이디어의 불필요한 부분을 깎아내고, 핵심을 다듬습니다.</p>
             </div>
+            {/* 03. 결과물의 완성 (AI 코치, 마무리, 발표 준비) */}
+            <div className={styles.howToStep}>
+              <div className={styles.stepNumber}>03</div>
+              <h3>결과물의 완성 (Polish)</h3>
+              <p>AI 코치의 도움으로 최종 결과물을 완벽하게 연마하고, 세상에 내놓을 준비를 마칩니다.</p>
+            </div>
+          </div>
         </section>
 
         {/* 4. Gallery(가로 스크롤, 주요 기능/장점 설명) */}
         <section ref={horizontalSectionRef} className={styles.horizontalSection}>
-            <div className={styles.featureCard}>
-                <div className={styles.cardContent}>
-                  <FiZap size={40}/>
-                  <h3>AI 기반 자동화</h3>
-                  <p>단순 반복 작업을 AI에게 맡기고 창의적인 에너지에 집중하세요. 회의록 요약, 일정 조율은 이제 AI의 몫입니다.</p>
-                </div>
+          <div className={styles.featureCard}>
+            <div className={styles.cardContent}>
+              <FiZap size={40} />
+              <h3>AI 기반 자동화</h3>
+              <p>단순 반복 작업을 AI에게 맡기고 창의적인 에너지에 집중하세요. 회의록 요약, 일정 조율은 이제 AI의 몫입니다.</p>
             </div>
-            <div className={styles.featureCard}>
-                <div className={styles.cardContent}>
-                  <FiBox size={40}/>
-                  <h3>중앙화된 워크스페이스</h3>
-                  <p>모든 대화, 파일, 일정을 하나의 캔버스에 담아 정보의 파편화를 막습니다. 모두가 같은 그림을 보며 협업하세요.</p>
-                </div>
+          </div>
+          <div className={styles.featureCard}>
+            <div className={styles.cardContent}>
+              <FiBox size={40} />
+              <h3>중앙화된 워크스페이스</h3>
+              <p>모든 대화, 파일, 일정을 하나의 캔버스에 담아 정보의 파편화를 막습니다. 모두가 같은 그림을 보며 협업하세요.</p>
             </div>
-            <div className={styles.featureCard}>
-                <div className={styles.cardContent}>
-                  <FiRepeat size={40}/>
-                  <h3>몰입형 발표 및 피드백</h3>
-                  <p>AI 코치와 함께 발표를 연습하고, 팀원들과 입체적인 피드백을 주고받으세요. 최고의 결과는 정교한 다듬기에서 나옵니다.</p>
-                </div>
+          </div>
+          <div className={styles.featureCard}>
+            <div className={styles.cardContent}>
+              <FiRepeat size={40} />
+              <h3>몰입형 발표 및 피드백</h3>
+              <p>AI 코치와 함께 발표를 연습하고, 팀원들과 입체적인 피드백을 주고받으세요. 최고의 결과는 정교한 다듬기에서 나옵니다.</p>
             </div>
+          </div>
         </section>
-        
+
         {/* 5. Testimonials: 실제 사용자 평가/피드백, 서비스 신뢰도 상승 */}
         <section className={styles.testimonialSection}>
-            <div className={styles.sectionHeader}>
-                <h2>이미 증명된 가치</h2>
-                <p>최고의 팀들은 팀플메이트와 함께 최고의 결과물을 만들어가고 있습니다.</p>
+          <div className={styles.sectionHeader}>
+            <h2>이미 증명된 가치</h2>
+            <p>최고의 팀들은 팀플메이트와 함께 최고의 결과물을 만들어가고 있습니다.</p>
+          </div>
+          <div className={styles.testimonialGrid}>
+            <div className={styles.testimonialCard}>
+              <FiAward className={styles.testimonialIcon} />
+              <p>"팀플 한 학기 내내 썼는데, 이것 없이 옛날로 돌아가라고 하면 못 할 것 같아요. 삶의 질이 달라집니다."</p>
+              <span>- 김OO (연세대학교)</span>
             </div>
-            <div className={styles.testimonialGrid}>
-              <div className={styles.testimonialCard}>
-                <FiAward className={styles.testimonialIcon}/>
-                <p>"팀플 한 학기 내내 썼는데, 이것 없이 옛날로 돌아가라고 하면 못 할 것 같아요. 삶의 질이 달라집니다."</p>
-                <span>- 김OO (연세대학교)</span>
-              </div>
-              <div className={styles.testimonialCard}>
-                <FiMessageCircle className={styles.testimonialIcon}/>
-                <p>"자료 찾고, 정리하고, 회의록 쓰는 시간이 절반으로 줄었어요. 남는 시간에 아이디어 회의를 더 할 수 있었죠."</p>
-                <span>- 이XX (고려대학교)</span>
-              </div>
+            <div className={styles.testimonialCard}>
+              <FiMessageCircle className={styles.testimonialIcon} />
+              <p>"자료 찾고, 정리하고, 회의록 쓰는 시간이 절반으로 줄었어요. 남는 시간에 아이디어 회의를 더 할 수 있었죠."</p>
+              <span>- 이XX (고려대학교)</span>
             </div>
+          </div>
         </section>
-        
+
         {/* 6. CTA(콜 투 액션): 바로 시작/회원가입 유도 */}
         <section className={styles.ctaSection}>
-            <h2>이제, 당신의 캔버스에<br/>첫 획을 그을 시간입니다.</h2>
-            <motion.a href="#" className={styles.ctaButton} whileHover={{ scale: 1.05, filter: 'brightness(1.2)' }}>
-              팀플메이트 시작하기 <FiArrowRight />
-            </motion.a>
+          <h2>이제, 당신의 캔버스에<br />첫 획을 그을 시간입니다.</h2>
+          <MotionLink
+            to="/login"
+            className={styles.ctaButton}
+            whileHover={{ scale: 1.05, filter: 'brightness(1.2)' }}
+          >
+            팀플메이트 시작하기 <FiArrowRight />
+          </MotionLink>
+
         </section>
-        
+
         {/* 푸터(저작권/마무리) */}
         <footer className={styles.footer}>
           <p>&copy; {new Date().getFullYear()} 팀플메이트. All Rights Reserved.</p>
