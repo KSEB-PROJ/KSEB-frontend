@@ -36,8 +36,6 @@ const RegisterForm: React.FC = () => {
         setShowPassword(prev => !prev);
     };
 
-
-
     return (
         <div className={styles.wrapper}>
             {/* 로그인 폼 전체를 감싸는 컨테이너 (중앙 정렬/배경 등 적용) */}
@@ -117,7 +115,13 @@ const RegisterForm: React.FC = () => {
                             type={showPassword ? "text" : "password"} // 보이기 여부에 따라 type 전환
                             className={styles.inputField}
                             value={passwordconfirm}
-                            onChange={(e) => setPasswordConfirm(e.target.value)}
+                            onChange={(e) => {setPasswordConfirm(e.target.value);
+                            // 입력시마다 일치여부 체크 (에러 해제)
+                            if (password !== e.target.value) {
+                                e.target.setCustomValidity("비밀번호가 일치하지 않습니다.");
+                            } else {
+                                e.target.setCustomValidity("");
+                            }}}
                             required
                         />
                         {/* 입력란 라벨 */}
