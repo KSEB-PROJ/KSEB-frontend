@@ -69,11 +69,11 @@ const RegisterForm: React.FC = () => {
                     <div className={styles.inputBox}>
                         {/* 텍스트 입력 필드 (사용자이메일) */}
                         <input
-                            type="text"
+                            type="email"
                             id="email" //html id
                             className={styles.inputField} //CSS Modules로부터 스타일 적용
                             value={useremail} //현재 값
-                            onChange={(e) => setUseremail(e.target.value)} //값 변경 시 상태 업데이트
+                            onChange={(e) => {setUseremail(e.target.value)}} //값 변경 시 상태 업데이트
                             required //필수 입력
                         />
                         {/* 입력란 라벨 (floating label 효과, 스타일로 제어) */}
@@ -116,12 +116,12 @@ const RegisterForm: React.FC = () => {
                             className={styles.inputField}
                             value={passwordconfirm}
                             onChange={(e) => {setPasswordConfirm(e.target.value);
-                            // 입력시마다 일치여부 체크 (에러 해제)
-                            if (password !== e.target.value) {
-                                e.target.setCustomValidity("비밀번호가 일치하지 않습니다.");
-                            } else {
-                                e.target.setCustomValidity("");
-                            }}}
+                                // 입력시마다 일치여부 체크 (에러 해제)
+                                if (password !== e.target.value) {
+                                    e.target.setCustomValidity("비밀번호가 일치하지 않습니다.");
+                                } else {
+                                    e.target.setCustomValidity("");
+                                }}}
                             required
                         />
                         {/* 입력란 라벨 */}
