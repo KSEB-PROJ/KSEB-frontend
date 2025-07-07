@@ -3,9 +3,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Lenis from '@studio-freight/lenis';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import MainPage from './pages/MainPage';
-import LoginPage from './pages/LoginForm'; // 경로는 프로젝트에 맞게 조정!
-import RegisterPage from './pages/RegisterForm';
+import MainPage from './pages/MainPage/MainPage';
+import LoginPage from './pages/LoginForm/LoginForm'; // 경로는 프로젝트에 맞게 조정!
+import RegisterPage from './pages/RegisterForm/RegisterForm';
 
 const App: React.FC = () => {
   useEffect(() => {
