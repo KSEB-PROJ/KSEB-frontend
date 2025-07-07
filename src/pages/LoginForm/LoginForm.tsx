@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // 페이지 이동(네비게이션)을 위한 훅 import
 import styles from './LoginForm.module.css';   // CSS 모듈 import (컴포넌트 전용 스타일 적용)
+import { Link } from 'react-router-dom';
 
 // ※ 'boxicons' 아이콘 사용을 위해서는 public/index.html <head>에 CDN 링크 필요!
 // 예: <link rel='stylesheet' href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css'>
@@ -112,7 +113,7 @@ const LoginForm: React.FC = () => {
                     {/* 회원가입 안내 (아직 계정 없으면) */}
                     <div className={styles.register}>
                         <span>
-                            Don't have an account? <a href="#">Register</a>
+                            Don't have an account? <Link to="/register">Register</Link>
                         </span>
                     </div>
                 </form>
