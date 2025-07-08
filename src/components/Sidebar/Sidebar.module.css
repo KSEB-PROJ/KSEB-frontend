@@ -219,7 +219,7 @@
 }
 
 
-/*  채널 아이템과 링크 관련 스타일 */
+/* 채널 아이템과 링크 관련 스타일 */
 
 .channelItem {
     list-style: none;
@@ -291,20 +291,33 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px;
+    /* padding: 10px;  <- 기존 값 */
+    padding: 10px 10px 10px 4px; /* ▼▼▼ 이렇게 수정해주세요 ▼▼▼ */
     border-radius: .5rem;
     position: relative;
     z-index: 1;
     transition: background-color .2s ease;
 }
 
+.profileArrow {
+    color: #a0a0a0;
+    transition: color 0.2s ease, transform .3s ease .1s, opacity .3s ease .1s;
+    transform: translateX(-250px);
+    opacity: 0;
+    margin-left: auto; /* ▼▼▼ 이 줄을 추가해주세요 ▼▼▼ */
+}
+
 .profileLink:hover {
     background-color: rgba(255, 255, 255, 0.05);
 }
 
-.profileActive {
+/* ▼▼▼ 수정된 코드 ▼▼▼ */
+/* 사이드바가 열려있을 때만 활성 프로필 링크에 배경색 적용 */
+.menu.open .profileLink.profileActive {
     background-color: rgba(132, 0, 255, 0.2);
 }
+/* ▲▲▲ 수정된 코드 ▲▲▲ */
+
 .profileActive .profileIcon {
     color: #fff;
     background-color: rgb(132, 0, 255);
@@ -319,6 +332,7 @@
     display: flex;
     align-items: center;
     gap: 15px;
+    transition: gap .2s ease;
 }
 
 .profileIcon {
@@ -369,4 +383,8 @@
 .profileArrow.openText {
     transform: translateX(0);
     opacity: 1;
+}
+
+.menu:not(.open) .profileDetails {
+    gap: 0; /* 아이콘과 텍스트 사이의 간격을 제거 */
 }
