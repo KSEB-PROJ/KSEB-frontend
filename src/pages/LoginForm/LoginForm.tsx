@@ -25,7 +25,7 @@ const LoginForm: React.FC = () => {
         event.preventDefault(); // 페이지 새로고침 방지
         if (username === "Ajmal" && password === 'Ajmal07') {
             alert('Successfully Verified'); // 성공 알림
-            navigate('/main'); // 메인페이지(랜딩/대시보드 등)로 이동
+            navigate('/app'); // 메인페이지(랜딩/대시보드 등)로 이동
         } else {
             alert('Enter Your Details');    // 실패 알림
         }
@@ -123,4 +123,3 @@ const LoginForm: React.FC = () => {
 };
 
 export default LoginForm;
-
