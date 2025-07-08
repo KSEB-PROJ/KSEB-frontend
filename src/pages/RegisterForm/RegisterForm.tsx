@@ -28,7 +28,7 @@ const RegisterForm: React.FC = () => {
         navigate('/login');    
     };
 
-    /**
+    /*
      * 비밀번호 보이기/숨기기 토글 함수
      * - showPassword 상태값을 반전시켜 input type을 text/password로 전환
      */
