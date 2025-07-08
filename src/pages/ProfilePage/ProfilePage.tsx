@@ -4,6 +4,7 @@ import styles from './ProfilePage.module.css';   // CSS 모듈 import (컴포넌
 
 const ProfilePage: React.FC = () => {
     // 사용자 입력 상태값 선언 (입력창 제어)
+    const [profilePreview, setProfilePreview] = useState<string | null>(null);
     const [prevusername] = useState('기존 설정된 사용자명');
     const [username, setUsername] = useState('');       // 사용자명
     const [userprofile, setProfile] = useState('');
@@ -38,18 +39,36 @@ const ProfilePage: React.FC = () => {
                 <form onSubmit={handleProfileEdit}>
                     
                     {/* 프로필 수정 영역 */}
-                    <div className={styles.profileField}>
-                        {/* 텍스트 입력 필드 (사용자프로필) */}
-                        <input
-                            type="file"
-                            accept="image/*"
-                            id="userprofile"
-                            value={userprofile}
-                            style={{ display: "none" }}
-                        />
-                        {/* 사용자 아이콘 (boxicons 아이콘 사용) */}
-                        <i className={`bx bx-user ${styles.icon}`}></i>
-                    </div>
+                    <label htmlFor="userprofile" className={styles.profileField} style={{ cursor: "pointer" }}>
+                    {/* 숨겨진 파일 업로드 input */}
+                    <input
+                        type="file"
+                        accept="image/*"
+                        id="userprofile"
+                        style={{ display: "none" }}
+                        onChange={e => {
+                            if (e.target.files && e.target.files[0]) {
+                                const file = e.target.files[0];
+                                setProfile(file.name);
+                                setProfilePreview(URL.createObjectURL(file));
+                            }
+                        }}/>
+                        {/* 미리보기 이미지 */}
+                        {profilePreview && (
+                            <img src={profilePreview} alt="프로필 미리보기"
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    borderRadius: '50%',
+                                    position: 'absolute',
+                                    left: 0,
+                                    top: 0,
+                                    zIndex: 1
+                                }}/> )}
+                    {/* 연필 아이콘 (hover 시만 보임) */}
+                    <i className={`bx bx-edit ${styles.editIcon}`}></i>
+                </label>
 
                     {/* 사용자명 수정 영역 */}
                     <div className={styles.inputBox}>
@@ -83,8 +102,8 @@ const ProfilePage: React.FC = () => {
                         <label htmlFor="email" className={styles.label}>
                             {prevuseremail}
                         </label>
-                        {/* 사용자 아이콘 (boxicons 아이콘 사용) */}
-                        <i className={`bx bx-user ${styles.icon}`}></i>
+                        {/* 이메일 아이콘 (boxicons 아이콘 사용) */}
+                        <i className={`bx bx-envelope-open ${styles.icon}`}></i>
                     </div>
 
                     {/* 기존 비밀번호 확인 영역 */}

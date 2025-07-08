@@ -80,8 +80,8 @@ const RegisterForm: React.FC = () => {
                         <label htmlFor="email" className={styles.label}>
                             Useremail
                         </label>
-                        {/* 사용자 아이콘 (boxicons 아이콘 사용) */}
-                        <i className={`bx bx-user ${styles.icon}`}></i>
+                        {/* 이메일 아이콘 (boxicons 아이콘 사용) */}
+                        <i className={`bx bx-envelope-open ${styles.icon}`}></i>
                     </div>
 
                     {/* 비밀번호 입력 영역 */}
