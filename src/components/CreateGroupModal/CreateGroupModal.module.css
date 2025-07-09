@@ -1,0 +1,150 @@
+/* --- 키프레임: 모달 페이드, 팝업, 버튼 그라데이션 애니메이션 --- */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+@keyframes popOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.95); } }
+/* 버튼에 사용하는 움직이는 그라데이션 효과 */
+@keyframes moveGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* --- 모달 오버레이: 테마 컬러 HSL 변수, 블러 배경, 중앙 정렬 --- */
+.modalOverlay {
+    /* 동적으로 적용되는 테마 컬러 (JS에서 HSL 값 변경) */
+    --theme-hue: 271;
+    --theme-saturation: 100%;
+    --theme-lightness: 50%;
+    --theme-color-hsl: var(--theme-hue), var(--theme-saturation), var(--theme-lightness);
+    --theme-color: hsl(var(--theme-color-hsl));
+    /* 중앙 배치, 블러, 반투명 배경 */
+    position: fixed; inset: 0; z-index: 2000;
+    display: flex; justify-content: center; align-items: center;
+    padding: 1rem;
+    background: rgba(18, 18, 18, 0.7);
+    backdrop-filter: blur(16px);
+    animation: fadeIn 0.4s ease-out forwards;
+}
+.modalOverlay.closing { animation: fadeOut 0.3s ease-out forwards; }
+
+/* --- 모달 컨텐츠 박스: 테마 색상, 팝업 애니메이션, 둥근 모서리, 그림자 --- */
+.modalContent {
+    max-width: 500px; border-radius: 20px;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    background: radial-gradient(ellipse at 50% -50%, hsla(var(--theme-hue),30%,20%,0.7), transparent 80%), #1c1c1c;
+    animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.modalContent.closing { animation: popOut 0.3s cubic-bezier(0.7,0,0.84,0) forwards; }
+
+/* --- 모달 닫기(X) 버튼: 상단 고정, 호버시 컬러/회전 효과 --- */
+.closeButton {
+    position: absolute; top: 1.25rem; right: 1.25rem; z-index: 20;
+    background: rgba(255,255,255,0.1);
+    color: #aaa; border-radius: 50%; border: none;
+    transition: all 0.2s;
+}
+.closeButton:hover {
+    background: var(--theme-color);
+    color: #fff;
+    transform: rotate(90deg) scale(1.1);
+}
+
+/* --- 헤더/뒤로가기: view 전환 UX, 위치 조정 --- */
+.header { text-align: center; position: relative; }
+.header.hasBackButton { text-align: left; }
+.backButton {
+    position: absolute; left: -0.5rem; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none; color: #aaa;
+    cursor: pointer; font-size: 1.2rem;
+}
+.backButton:hover { color: var(--theme-color); }
+
+/* --- 화면 전환/페이드: view별로 활성화 여부 제어 --- */
+.view {
+    grid-area: 1 / 1;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transform: translateY(10px);
+    transition: all 0.4s cubic-bezier(0.16,1,0.3,1);
+}
+.view.active {
+    opacity: 1; visibility: visible; pointer-events: all;
+    transform: translateY(0);
+}
+
+/* --- 카드형 선택 UI: hover시 강조, 라이트 효과 --- */
+.selectionCard {
+    background: rgba(35,35,35,0.5); border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 1.5rem; color: #fff; cursor: pointer;
+    position: relative; overflow: hidden;
+    transition: transform 0.3s, border-color 0.3s;
+}
+.selectionCard:hover {
+    transform: translateY(-5px);
+    border-color: hsla(var(--theme-hue), 80%, 70%, 0.3);
+}
+.selectionCard::before { /* 호버시 은은한 라이트 배경 */
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    width: 250px; height: 250px;
+    background-image: radial-gradient(circle, hsla(var(--theme-hue),80%,70%,0.1), transparent 70%);
+    transform: translate(-50%, -50%);
+    filter: blur(50px);
+    opacity: 0; z-index: 0;
+    transition: opacity 0.4s;
+}
+.selectionCard:hover::before { opacity: 1; }
+
+/* --- 컬러 선택 버튼(동그라미): 클릭시 테두리 강조, scale 효과 --- */
+.colorOrb {
+    width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+    border: none; position: relative; transition: all 0.2s;
+}
+.colorOrb.selected::after { /* 선택됨 표시 */
+    border-color: var(--theme-color);
+}
+.colorOrb:hover { transform: scale(1.2); }
+
+/* --- 폼 인풋: 포커스/입력시 라벨 컬러/플로팅 --- */
+.inputGroup input:focus {
+    border-color: var(--theme-color);
+    box-shadow: 0 0 0 3px hsla(var(--theme-hue),var(--theme-saturation),var(--theme-lightness),0.2);
+}
+.inputGroup input:focus + label,
+.inputGroup input:not(:placeholder-shown) + label {
+    color: var(--theme-color);
+}
+
+/* --- 제출 버튼: 테마 기반 그라데이션, 움직이는 배경, 화살표 이동 효과 --- */
+.submitButton {
+    width: 100%; padding: 1rem; margin-top: 1rem;
+    border: none; border-radius: 12px;
+    font-weight: 600; cursor: pointer;
+    background: linear-gradient(
+        110deg,
+        hsl(var(--theme-hue), calc(var(--theme-saturation) * 0.9), calc(var(--theme-lightness) * 0.8)) 0%,
+        hsl(var(--theme-hue), var(--theme-saturation), calc(var(--theme-lightness) * 0.6)) 50%,
+        hsl(var(--theme-hue), calc(var(--theme-saturation) * 0.9), calc(var(--theme-lightness) * 0.8)) 100%
+    );
+    background-size: 200% 100%;
+    box-shadow: 0 4px 15px hsla(var(--theme-hue),var(--theme-saturation),var(--theme-lightness),0.2);
+    animation: moveGradient 8s ease infinite;
+    transition: all 0.3s;
+    display: flex; justify-content: center; align-items: center;
+}
+.submitButton:hover {
+    color: #fff;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px hsla(var(--theme-hue),var(--theme-saturation),var(--theme-lightness),0.4);
+    animation-duration: 4s; /* 호버시 배경 빨리 움직임 */
+}
+.submitButton span::after { /* 텍스트 옆 → 아이콘 */
+    content: '→';
+    font-weight: 400;
+    transition: transform 0.2s;
+    display: inline-block;
+}
+.submitButton:hover span::after { transform: translateX(4px); }
