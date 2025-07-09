@@ -1,3 +1,11 @@
+/* 전체 기본 스타일 및 폰트 지정 */
+/* * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "poppins", sans-serif;
+} */
+
 .container {
     padding: 2rem;
     color: #E0E0E0;
@@ -14,4 +22,151 @@
 .description {
     font-size: 1.2rem;
     color: #a0a0a0;
+}
+/* 인풋 박스 (입력란, 아이콘 포함) */
+.inputBox {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    max-width: 400px;
+    margin: 20px auto;
+}
+/* 인풋 박스 (입력란, 아이콘 포함) */
+.removeBox {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    margin: 30px 0;
+}
+/* 프로필 박스 (입력란, 아이콘 포함) */
+.profileField {
+    position: relative;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    margin: 20px auto 30px auto;
+    width: 200px;
+    height: 200px;
+    background:#8a2be2;
+    color: var(--second-color);
+    border: 2px solid var(--primary-color);
+    border-radius: 50%;
+    outline: none;
+    display: flex;
+    overflow: hidden;
+}
+.profileField:hover{
+    background: var(--primary-color);
+}
+.profileField:hover .editIcon {
+    opacity: 1;
+}
+.editIcon {
+    opacity: 0;
+    position: absolute;
+    align-items: center;
+    margin: auto;
+    width: 50px;
+    height: 50px;  
+    display: flex;
+    font-size: 3rem;
+    color: #8a2be2;
+    background: var(--primary-color);
+    align-items: center;
+}
+
+/* 입력 필드(사용자명/사용자이메일/아이디/비밀번호 수정) */
+.inputField {
+    width: 100%;
+    max-width: 400px;
+    height: 55px;
+    font-size: 16px;
+    background: transparent;
+    color: var(--second-color);
+    padding-inline: 20px 50px;
+    border: 2px solid var(--primary-color);
+    border-radius: 30px;
+    outline: none;
+    margin: auto;
+    padding: 0 20px;
+}
+.inputField:hover {
+    border-color: #8a2be2;
+}
+
+/* 포커스/입력 시 라벨이 위로 올라가는 효과 */
+.inputField:focus + .label,
+.inputField:valid + .label {
+    position: absolute;
+    top: -10px;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 14px;
+    background-color: var(--primary-color);
+    border-radius: 30px;
+    color: var(--black-color);
+    padding: 0 10px;
+}
+/* 입력 필드의 라벨 (플로팅 레이블) */
+.label {
+    position: absolute;
+    top: 15px;
+    left: 20px;
+    transition: 0.2s;
+}
+/* 입력란 아이콘 (오른쪽 아이콘: 유저/자물쇠 등) */
+.icon {
+    position: absolute;
+    top: 32%;
+    right: 25px;
+    font-size: 20px;
+    cursor: pointer;
+}
+   /* 아래쪽: 로그인 유지, 비번찾기, 버튼/회원가입 */
+   /* 회원가입 버튼 */
+.inputSubmit {
+    width: 100%;
+    height: 50px;
+    background: #8a2be2;
+    font-size: 16px;
+    font-weight: 500;
+    color: #E0E0E0;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.inputSubmit:hover {
+    background: var(--second-color);
+    color:#8a2be2
+}
+   /* 탈퇴하기 버튼 */
+.inputRemove {
+    width: 100%;
+    height: 50px;
+    background: var(--primary-color);
+    font-size: 16px;
+    font-weight: 500;
+    color: #da1414;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: 0.3s;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+
+}
+.inputRemove:hover {
+    background: var(--second-color);
+    color:#da1414;
+}
+   /* 반응형 */
+
+@media only screen and (max-width: 564px) {
+    .wrapper {
+        padding: 20px;
+    }
+    .loginBox {
+        padding: 7.5em 1.5em 4em 1.5em;
+    }
 }
