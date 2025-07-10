@@ -1,23 +1,45 @@
-/* 전체 레이아웃 및 기본 스타일 */
+@keyframes live-bg {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+@keyframes overlay-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes card-in {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* 전체 레이아웃 */
 .menu {
+    /* --group-color 변수를 사용하도록 수정, JS에서 값을 주입받음 */
+    --group-color-fallback: 132, 0, 255; /* JS 실패 시 대비용 */
     width: 80px;
     height: 100vh;
-    background-color: #000;
     position: fixed;
     top: 0;
     left: 0;
     z-index: 1000;
-    border-right: 1px solid #222;
-    transition: width .3s ease;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    transition: width .4s cubic-bezier(0.2, 0.9, 0.3, 1.2), background .4s ease;
     font-family: sans-serif;
     display: flex;
     flex-direction: column;
+    background: linear-gradient(170deg, rgba(var(--group-color, var(--group-color-fallback)), 0.15), rgba(var(--group-color, var(--group-color-fallback)), 0.05) 30%, #000 70%);
+    background-size: 200% 200%;
+    animation: live-bg 15s ease infinite;
 }
-
 .menu.open {
     width: 280px;
 }
-
 .menu a {
     text-decoration: none;
     color: #eef0f4;
@@ -25,77 +47,184 @@
 
 /* 상단 액션 바 */
 .actionBar {
-    padding: 1rem;
+    padding: 0 1rem;
     flex-shrink: 0;
-}
-
-.groupSelector {
     display: flex;
     align-items: center;
+    position: relative;
+    height: 65px;
+    justify-content: space-between;
+}
+
+/* 그룹 크레스트(아이콘) */
+.groupCrest {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+    transition: transform 0.3s ease;
+}
+.groupCrest:hover {
+    transform: scale(1.1);
+}
+.crestInner {
     width: 100%;
-    cursor: pointer;
-}
-
-.menuBtn {
-    background-color: transparent;
-    outline: none;
-    border: none;
-    color: #fff;
-    min-width: 45px;
-    height: 45px;
+    height: 100%;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 1.2rem;
-    cursor: pointer;
-    transition: .3s ease;
-    border-radius: .5rem;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(45deg, rgba(var(--group-color, var(--group-color-fallback)), 1), rgba(var(--group-color, var(--group-color-fallback)), 0.7));
+    box-shadow: 0 0 15px -2px rgba(var(--group-color, var(--group-color-fallback)), 0.5);
+    transition: background .4s ease, box-shadow .4s ease;
 }
 
-.menuBtn:hover {
-    background-color: rgb(132, 0, 255);
-}
-
+/* 그룹명 */
 .groupDisplay {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    flex-grow: 1;
+    margin-left: 15px;
+    overflow: hidden;
+    height: 100%;
+}
+
+/* 그룹 선택 오버레이 */
+.groupOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(18, 18, 18, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    padding: 1rem;
+}
+.groupOverlay.open {
+    opacity: 1;
+    pointer-events: all;
+    animation: overlay-in 0.4s ease;
+}
+
+/* 오버레이 내부 컨텐츠 (헤더 + 그룹 그리드) */
+.overlayContent {
+    max-width: 680px; /* 최대 너비 설정 */
     width: 100%;
-    padding: 0 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem; /* 헤더와 그리드 사이 간격 */
 }
 
-.groupDropdown {
-    margin-top: 10px;
-    background-color: #1a1a1a;
-    border-radius: .5rem;
-    padding: 0.5rem;
+/* 오버레이 헤더 스타일 */
+.overlayHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #fff;
+    padding: 0 0.5rem; /* 좌우 패딩 추가 */
+}
+.overlayHeader h4 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.closeOverlayBtn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+}
+.closeOverlayBtn:hover {
+    background: rgba(255,255,255,0.2);
+    transform: rotate(90deg);
 }
 
-.groupItem {
+.groupGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1.5rem;
+    width: 100%;
+}
+.groupCard {
+    --group-hover-color: rgba(var(--group-color-fallback), 0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
+    padding: 1.5rem;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: transform 0.2s, background-color 0.2s;
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+    animation: card-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+}
+.groupCard:hover {
+    transform: translateY(-5px);
+    background: var(--group-hover-color);
+}
+.groupCardCrest {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
-    padding: 10px;
-    border-radius: .5rem;
-    cursor: pointer;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 700;
     color: #fff;
-    gap: 15px;
 }
-.groupItem:hover {
-    background-color: rgb(132, 0, 255);
+.groupCardName {
+    font-weight: 500;
+    color: #e0e0e0;
 }
 
-/* 메뉴 텍스트 스타일 */
+.purple { background: linear-gradient(45deg, #8400ff, #c46eff); }
+.teal { background: linear-gradient(45deg, #14d6ae, #59e4c5); }
+.pink { background: linear-gradient(45deg, #ec4899, #f871b1); }
+.blue { background: linear-gradient(45deg, #3b82f6, #60a5fa); }
+.orange { background: linear-gradient(45deg, #f97316, #fb923c); }
+.green { background: linear-gradient(45deg, #22c55e, #6ee7b7); }
+.yellow { background: linear-gradient(45deg, #eab308, #fde047); }
+.cyan { background: linear-gradient(45deg, #06b6d4, #67e8f9); }
+.red { background: linear-gradient(45deg, #ef4444, #f87171); }
+.indigo { background: linear-gradient(45deg, #6366f1, #a5b4fc); }
+
+
+/* 메뉴 텍스트 */
 .menuText {
-    color: #eef0f4;
+    color: #a0a0a0;
     transform: translateX(-250px);
     opacity: 0;
-    transition: transform .3s ease .1s, opacity .3s ease .1s;
+    transition: transform .3s ease .1s, opacity .3s ease .1s, color .2s ease;
     white-space: nowrap;
 }
-
 .menuText.openText {
     opacity: 1;
     transform: translateX(0);
 }
 
-/* 메인 네비게이션 바 */
+/* 메인 네비게이션 */
 .optionsBar {
     position: relative;
     list-style: none;
@@ -103,21 +232,15 @@
     margin: 0;
     flex-shrink: 0;
 }
-
-/* 슬라이딩 인디케이터 */
 .activeIndicator {
     position: absolute;
     left: 1rem;
     width: calc(100% - 2rem);
-    background-color: rgb(132, 0, 255);
     border-radius: .5rem;
-    transition: top 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2), 
-                height 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2), 
-                opacity 0.2s ease;
+    transition: top 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2), height 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2), opacity 0.2s ease, background-color 0.4s ease;
     z-index: 0;
+    background-color: rgb(var(--group-color, var(--group-color-fallback)));
 }
-
-/* 모든 메뉴 아이템 공통 스타일 (li 태그) */
 .menuItem {
     list-style: none;
     position: relative;
@@ -125,12 +248,9 @@
     height: 45px;
     margin: 0.5rem 0;
 }
-
-/* 상단 메뉴 아이템 (홈, 스케줄 등) */
 .menuOption {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
     gap: 20px;
     width: 100%;
     height: 100%;
@@ -140,13 +260,23 @@
     overflow: hidden;
     color: #eef0f4;
     background-color: transparent;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
-
 .menuOption:hover {
     background-color: rgba(255, 255, 255, 0.05);
 }
 
+.menu.open .menuOption.active,
+.menu.open .menuOption:hover {
+    color: #fff;
+}
+.menu.open .menuOption.active .icon,
+.menu.open .menuOption:hover .icon {
+    color: #fff;
+}
+.menu.open .menuOption.active .menuText {
+    color: #fff;
+}
 .icon {
     font-size: 1.1rem;
     min-width: 20px;
@@ -155,33 +285,22 @@
     transition: color 0.2s ease;
 }
 
-/* 활성화 텍스트/아이콘 색상 */
-.textActive .icon, 
-.textActive h5 {
-    color: #fff;
-}
-
-/* 챗봇 활성화 스타일 (배경색 + 텍스트) */
 .chatbotActive {
-    background-color: rgba(20, 214, 174, 0.15) !important;
+    background-color: rgba(var(--group-color, var(--group-color-fallback)), 0.15) !important;
+    box-shadow: 0 0 15px -2px rgba(var(--group-color, var(--group-color-fallback)), 0.4);
 }
-.chatbotActive .icon,
-.chatbotActive h5 {
-    color: rgb(20, 214, 174);
+.chatbotActive .icon, .chatbotActive .menuText {
+    color: rgb(var(--group-color, var(--group-color-fallback))) !important;
+    text-shadow: 0 0 10px rgba(var(--group-color, var(--group-color-fallback)), 0.7);
 }
 
-/* 구분선 */
 .menuBreak {
     padding: 0.5rem 1rem;
-    list-style: none;
-    flex-shrink: 0;
 }
 .menuBreak hr {
-    width: 100%;
-    margin: 0 auto;
-    height: 1px;
-    background-color: #353535;
     border: none;
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* 채널 섹션 */
@@ -192,14 +311,12 @@
     display: flex;
     flex-direction: column;
 }
-
 .channelHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0 10px 10px;
 }
-
 .addChannelBtn {
     background: none;
     border: none;
@@ -211,39 +328,57 @@
 .addChannelBtn:hover {
     color: #fff;
 }
-
 .optionsBarChannel {
     list-style: none;
     padding: 0;
     margin: 0;
+    position: relative;
 }
-
-
-/* 채널 아이템과 링크 관련 스타일 */
-
+.channelActiveIndicator {
+    position: absolute;
+    left: -8px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    transition: top 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2), opacity 0.2s ease, background-color 0.4s ease;
+    transform: translateY(-50%);
+    background-color: rgb(var(--group-color, var(--group-color-fallback)));
+    box-shadow: 0 0 10px rgb(var(--group-color, var(--group-color-fallback)));
+}
 .channelItem {
     list-style: none;
     height: 45px;
     margin: 0.5rem 0;
-    border-radius: .5rem; /* 호버 효과를 위해 부모에 radius 설정 */
-    overflow: hidden; /* 내부 요소가 튀어나가지 않도록 */
+    border-radius: .5rem;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
 }
-
-/* 채널 아이템 링크 */
 .channelLink {
-    position: relative; /* 자식 요소의 position absolute 기준 */
+    position: relative;
     display: flex;
     align-items: center;
     width: 100%;
     height: 100%;
-    color: #eef0f4;
+    color: #a0a0a0;
+    transition: color 0.2s ease, background-color 0.2s ease;
 }
 
 .channelLink:hover {
     background-color: rgba(255, 255, 255, 0.05);
 }
+.channelLink:hover .menuText,
+.channelLink:hover .icon {
+    color: rgb(var(--group-color, var(--group-color-fallback)));
+}
+.channelLink.active .menuText {
+    font-weight: 600;
+}
+.channelLink.active .icon {
+    color: #fff;
+}
 
-/* 채널 아이콘 + 텍스트를 감싸는 컨테이너 */
+
 .channelContent {
     display: flex;
     align-items: center;
@@ -251,90 +386,99 @@
     width: 100%;
     height: 100%;
     padding: 0 12px;
-    transition: padding-left 0.2s ease-in-out; /* 패딩 애니메이션 */
+    transition: padding-left 0.2s ease-in-out;
 }
-
-/* 드래그 핸들 스타일 */
 .dragHandle {
     position: absolute;
     left: 0;
     top: 0;
     height: 100%;
-    width: 30px; /* 핸들 클릭 영역 */
+    width: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #888;
     cursor: grab;
-    opacity: 0; /* 평소에는 숨김 */
+    opacity: 0;
     transition: opacity 0.2s ease-in-out;
 }
-
-/* 드래그 가능한 아이템에 마우스를 올렸을 때의 변화 */
 .draggableItem:hover .dragHandle {
-    opacity: 1; /* 핸들 나타내기 */
+    opacity: 1;
+}
+.draggableItem:hover .channelContent {
+    padding-left: 30px;
 }
 
-.draggableItem:hover .channelContent {
-    padding-left: 30px; /* 핸들이 나타날 공간만큼 오른쪽으로 밀기 */
+.collapseSection {
+    padding: 0.5rem 1rem;
+    margin-top: auto;
+}
+.collapseButton {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    height: 100%;
+    padding: 0 12px;
+    height: 45px;
+    border-radius: .5rem;
+    cursor: pointer;
+    overflow: hidden;
+    color: #a0a0a0;
+    background-color: transparent;
+    border: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+.collapseButton:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+.collapseIcon {
+    font-size: 1.1rem;
+    min-width: 20px;
+    text-align: center;
+    transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+.menu:not(.open) .collapseIcon {
+    transform: rotate(180deg);
 }
 
 /* 프로필 섹션 */
 .profileSection {
-    padding: 1rem;
-    margin-top: auto;
-    border-top: 1px solid #222;
+    padding: 0.5rem 1rem 1rem 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     flex-shrink: 0;
 }
-
 .profileLink {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    /* padding: 10px;  <- 기존 값 */
-    padding: 10px 10px 10px 4px; /* ▼▼▼ 이렇게 수정해주세요 ▼▼▼ */
+    padding: 10px 4px;
     border-radius: .5rem;
     position: relative;
     z-index: 1;
     transition: background-color .2s ease;
 }
-
-.profileArrow {
-    color: #a0a0a0;
-    transition: color 0.2s ease, transform .3s ease .1s, opacity .3s ease .1s;
-    transform: translateX(-250px);
-    opacity: 0;
-    margin-left: auto; /* ▼▼▼ 이 줄을 추가해주세요 ▼▼▼ */
-}
-
 .profileLink:hover {
     background-color: rgba(255, 255, 255, 0.05);
 }
-
-/* ▼▼▼ 수정된 코드 ▼▼▼ */
-/* 사이드바가 열려있을 때만 활성 프로필 링크에 배경색 적용 */
-.menu.open .profileLink.profileActive {
-    background-color: rgba(132, 0, 255, 0.2);
+.profileLink.profileActive {
+    background-color: rgba(var(--group-color, var(--group-color-fallback)), 0.2);
 }
-/* ▲▲▲ 수정된 코드 ▲▲▲ */
-
 .profileActive .profileIcon {
     color: #fff;
-    background-color: rgb(132, 0, 255);
-    box-shadow: 0 0 10px rgba(132, 0, 255, 0.7);
+    background-color: rgb(var(--group-color, var(--group-color-fallback)));
+    box-shadow: 0 0 10px rgba(var(--group-color, var(--group-color-fallback)), 0.7);
 }
-.profileActive .profileName,
-.profileActive .profileArrow {
+.profileActive .profileName, .profileActive .profileRole {
     color: #fff;
 }
-
 .profileDetails {
     display: flex;
     align-items: center;
     gap: 15px;
     transition: gap .2s ease;
 }
-
 .profileIcon {
     font-size: 1.5rem;
     min-width: 25px;
@@ -345,7 +489,6 @@
     background-color: #333;
     transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
-
 .profileTextContainer {
     display: flex;
     flex-direction: column;
@@ -355,36 +498,40 @@
     transition: transform .3s ease .1s, opacity .3s ease .1s;
     white-space: nowrap;
 }
-
 .profileTextContainer.openText {
     transform: translateX(0);
     opacity: 1;
 }
-
 .profileName {
     font-weight: 600;
     color: #eef0f4;
     transition: color 0.2s ease;
 }
-
 .profileRole {
     font-size: 0.8rem;
     color: #a0a0a0;
     transition: color 0.2s ease;
 }
-
-.profileArrow {
-    color: #a0a0a0;
-    transition: color 0.2s ease, transform .3s ease .1s, opacity .3s ease .1s;
-    transform: translateX(-250px);
-    opacity: 0;
-}
-
-.profileArrow.openText {
-    transform: translateX(0);
-    opacity: 1;
-}
-
 .menu:not(.open) .profileDetails {
-    gap: 0; /* 아이콘과 텍스트 사이의 간격을 제거 */
+    gap: 0;
+}
+
+/* 그룹 생성 카드에 대한 별도 스타일 */
+.createGroupCard .groupCardCrest {
+    background: #333;
+    border: 2px dashed #666;
+    transition: all 0.2s ease;
+}
+.createGroupCard:hover {
+    background-color: rgba(255, 255, 255, 0.1); 
+    transform: translateY(-5px); 
+}
+.createGroupCard:hover .groupCardCrest {
+    background: #444; 
+    border-color: #fff; 
+    border-style: solid;
+    transform: rotate(90deg);
+}
+.createGroupCard:hover .groupCardName {
+    color: #fff; 
 }

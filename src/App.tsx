@@ -6,12 +6,10 @@ import LoginPage from './pages/LoginForm/LoginForm';
 import RegisterPage from './pages/RegisterForm/RegisterForm';
 import SchedulePage from './pages/SchedulePage/SchedulePage';
 import FeedbackPage from './pages/FeedbackPage/FeedbackPage';
-import ProfilePage from './pages/ProfilePage/ProfilePage'; // 프로필 페이지 import
+import ProfilePage from './pages/ProfilePage/ProfilePage';
+import ChannelLayout from './pages/ChannelPage/ChannelLayout'; // 👈 추가
 
 const App: React.FC = () => {
-  // GSAP/Lenis 관련 코드는 유지합니다.
-  // useEffect(() => { ... });
-
   return (
     <BrowserRouter>
       <Routes>
@@ -28,8 +26,9 @@ const App: React.FC = () => {
           } />
           <Route path="schedule" element={<SchedulePage />} />
           <Route path="feedback" element={<FeedbackPage />} />
-          <Route path="profile" element={<ProfilePage />} /> {/* 프로필 페이지 라우트 추가 */}
-          {/* 채널 페이지 라우팅은 추후 추가 */}
+          <Route path="profile" element={<ProfilePage />} />
+          {/* 👇 채널 페이지 라우팅 추가 */}
+          <Route path="channels/:channelId" element={<ChannelLayout />} />
         </Route>
 
         {/* 잘못된 접근 리디렉션 */}

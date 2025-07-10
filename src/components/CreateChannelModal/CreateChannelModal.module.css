@@ -88,15 +88,16 @@
 }
 
 .createButton {
-    /* 생성 버튼 강조: 메인 악센트 컬러 */
-    background: rgb(132,0,255); border-color: transparent;
+    /* 생성 버튼 강조: 현재 그룹의 테마 컬러를 변수로 받아옴 */
+    background: rgb(var(--group-color, 132, 0, 255)); 
+    border-color: transparent;
     color: #fff;
-    box-shadow: 0 5px 15px rgba(132,0,255,0.2);
+    box-shadow: 0 5px 15px rgba(var(--group-color, 132, 0, 255), 0.2);
 }
 
 .createButton:hover {
-    background: rgb(145,20,255);
-    box-shadow: 0 5px 20px rgba(132,0,255,0.4);
+    filter: brightness(1.15);
+    box-shadow: 0 5px 20px rgba(var(--group-color, 132, 0, 255), 0.4);
 }
 
 .button:active {

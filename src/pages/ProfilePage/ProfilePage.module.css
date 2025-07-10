@@ -6,6 +6,13 @@
     font-family: "poppins", sans-serif;
 } */
 
+/* 👇 테마 컬러 변수를 다시 정의하여 이 파일 내에서만 사용하도록 합니다. */
+:root {
+    --primary-color: #c6c3c3;
+    --second-color: #ffffff;
+    --black-color: #000000;
+}
+
 .container {
     padding: 2rem;
     color: #E0E0E0;
@@ -14,9 +21,11 @@
 .title {
     font-size: 2.5rem;
     margin-bottom: 1rem;
-    border-bottom: 2px solid rgb(132, 0, 255);
+    /* 타이틀 밑줄 색상은 그룹 색상을 유지 */
+    border-bottom: 2px solid rgb(var(--group-color, 132, 0, 255));
     padding-bottom: 0.5rem;
     display: inline-block;
+    transition: border-color 0.4s ease;
 }
 
 .description {
@@ -47,16 +56,19 @@
     margin: 20px auto 30px auto;
     width: 200px;
     height: 200px;
-    background:#8a2be2;
-    color: var(--second-color);
-    border: 2px solid var(--primary-color);
+    /* 프로필 배경은 그룹 색상 유지 */
+    background: linear-gradient(45deg, rgba(var(--group-color, 132, 0, 255), 1), rgba(var(--group-color, 132, 0, 255), 0.7));
+    color: #fff;
+    border: 2px solid rgba(var(--group-color, 132, 0, 255), 0.5);
     border-radius: 50%;
     outline: none;
     display: flex;
     overflow: hidden;
+    transition: all 0.4s ease;
 }
 .profileField:hover{
-    background: var(--primary-color);
+    transform: scale(1.05);
+    box-shadow: 0 0 25px rgba(var(--group-color, 132, 0, 255), 0.5);
 }
 .profileField:hover .editIcon {
     opacity: 1;
@@ -67,12 +79,15 @@
     align-items: center;
     margin: auto;
     width: 50px;
-    height: 50px;  
+    height: 50px;
     display: flex;
     font-size: 3rem;
-    color: #8a2be2;
-    background: var(--primary-color);
+    color: #fff;
+    background: rgba(0,0,0,0.3);
+    border-radius: 50%;
     align-items: center;
+    justify-content: center;
+    transition: opacity 0.3s ease;
 }
 
 /* 입력 필드(사용자명/사용자이메일/아이디/비밀번호 수정) */
@@ -84,35 +99,39 @@
     background: transparent;
     color: var(--second-color);
     padding-inline: 20px 50px;
-    border: 2px solid var(--primary-color);
+    border: 2px solid #555;
     border-radius: 30px;
     outline: none;
     margin: auto;
     padding: 0 20px;
+    transition: border-color 0.3s ease;
 }
-.inputField:hover {
-    border-color: #8a2be2;
+.inputField:hover,
+.inputField:focus {
+    /* 입력 필드 포커스/호버 시 테두리 색상은 그룹 색상 유지 */
+    border-color: rgb(var(--group-color, 132, 0, 255));
 }
 
-/* 포커스/입력 시 라벨이 위로 올라가는 효과 */
+/* 👇 포커스/입력 시 라벨 스타일을 원래의 고정 색상으로 되돌렸습니다. */
 .inputField:focus + .label,
 .inputField:valid + .label {
     position: absolute;
     top: -10px;
-    margin-left: auto;
-    margin-right: auto;
+    left: 20px;
     font-size: 14px;
     background-color: var(--primary-color);
     border-radius: 30px;
     color: var(--black-color);
     padding: 0 10px;
 }
-/* 입력 필드의 라벨 (플로팅 레이블) */
+/* 👇 입력 필드의 기본 라벨 색상도 원래대로 되돌렸습니다. */
 .label {
     position: absolute;
     top: 15px;
     left: 20px;
     transition: 0.2s;
+    pointer-events: none;
+    color: #888;
 }
 /* 입력란 아이콘 (오른쪽 아이콘: 유저/자물쇠 등) */
 .icon {
@@ -121,34 +140,37 @@
     right: 25px;
     font-size: 20px;
     cursor: pointer;
+    color: #888;
 }
    /* 아래쪽: 로그인 유지, 비번찾기, 버튼/회원가입 */
    /* 회원가입 버튼 */
 .inputSubmit {
     width: 100%;
     height: 50px;
-    background: #8a2be2;
+    /* 정보 수정 버튼은 그룹 색상 유지 */
+    background: rgb(var(--group-color, 132, 0, 255));
     font-size: 16px;
     font-weight: 500;
     color: #E0E0E0;
     border: none;
     border-radius: 30px;
     cursor: pointer;
-    transition: 0.3s;
+    transition: all 0.3s;
 }
 .inputSubmit:hover {
-    background: var(--second-color);
-    color:#8a2be2
+    filter: brightness(1.2);
+    box-shadow: 0 5px 15px rgba(var(--group-color, 132, 0, 255), 0.4);
 }
    /* 탈퇴하기 버튼 */
 .inputRemove {
     width: 100%;
     height: 50px;
-    background: var(--primary-color);
+    background: transparent;
     font-size: 16px;
     font-weight: 500;
     color: #da1414;
     border-radius: 30px;
+    border: 1px solid #da1414;
     cursor: pointer;
     transition: 0.3s;
     max-width: 400px;
@@ -157,8 +179,8 @@
 
 }
 .inputRemove:hover {
-    background: var(--second-color);
-    color:#da1414;
+    background: #da1414;
+    color:#fff;
 }
    /* 반응형 */
 

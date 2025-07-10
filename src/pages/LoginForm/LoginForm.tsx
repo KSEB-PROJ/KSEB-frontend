@@ -23,7 +23,7 @@ const LoginForm: React.FC = () => {
      */
     const handleLogin = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault(); // 페이지 새로고침 방지
-        if (username === "Ajmal" && password === 'Ajmal07') {
+        if (username === "1" && password === '1') {
             alert('Successfully Verified'); // 성공 알림
             navigate('/app'); // 메인페이지(랜딩/대시보드 등)로 이동
         } else {
