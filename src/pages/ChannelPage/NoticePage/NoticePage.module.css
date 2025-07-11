@@ -1,0 +1,147 @@
+@import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap');
+
+.container {
+    padding: 3rem 4rem;
+    font-family: 'Gowun Dodum', sans-serif;
+    background: #18191d;
+    color: #e0e0e0;
+}
+
+.timeline {
+    position: relative;
+    max-width: 800px;
+    margin: 0 auto;
+}
+/* 타임라인 중앙선 */
+.timeline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 8px; /* 마커 너비의 절반 */
+    bottom: 0;
+    width: 2px;
+    background: #2a2e37;
+}
+
+.timelineEntry {
+    position: relative;
+    padding-left: 50px;
+    margin-bottom: 3rem;
+}
+
+/* 타임라인 마커 */
+.marker {
+    position: absolute;
+    left: 0;
+    top: 5px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #18191d;
+    border: 3px solid #555;
+    transition: all 0.3s ease;
+    z-index: 2;
+}
+.timelineEntry:hover .marker {
+    border-color: rgb(var(--group-color));
+}
+.timelineEntry.pinned .marker {
+    border-color: rgb(var(--group-color));
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(var(--group-color), 0.7);
+}
+
+.dateLabel {
+    position: absolute;
+    left: -120px;
+    top: -2px;
+    width: 100px;
+    text-align: right;
+    font-size: 0.8rem;
+    color: #777;
+    font-weight: 600;
+}
+
+/* 공지 카드 */
+.noticeCard {
+    background: transparent;
+    padding: 0;
+}
+
+/* === 커넥터 라인  */
+.noticeCard::before {
+    content: '';
+    position: absolute;
+    top: 9px;
+    left: 18px;
+    width: 32px; /* addping-left - marker-width */
+    height: 2px;
+    background: #555;
+    transform-origin: left;
+    transform: scaleX(0);
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    z-index: 1;
+}
+.timelineEntry:hover .noticeCard::before {
+    transform: scaleX(1);
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+.author {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #999;
+}
+.pinButton {
+    background: none; border: none;
+    color: #666;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: color 0.2s ease;
+}
+.pinButton:hover { color: #fff; }
+.timelineEntry.pinned .pinButton { color: rgb(var(--group-color)); }
+
+.contentWrapper {
+    position: relative;
+    max-height: 68px;
+    overflow: hidden;
+    transition: max-height 0.5s ease-in-out;
+}
+.noticeCard.expanded .contentWrapper {
+    max-height: 1000px; /* 큰 값 아무거나*/
+}
+
+.content {
+    margin: 0;
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: #ccc;
+    -webkit-box-orient: vertical;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: -webkit-line-clamp 0.5s ease;
+}
+.noticeCard.expanded .content {
+    -webkit-line-clamp: 100; 
+    line-clamp: 100;
+}
+
+.readMoreButton {
+    background: none; border: none;
+    color: rgb(var(--group-color));
+    font-family: 'Gowun Dodum', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    margin-top: 0.5rem;
+}

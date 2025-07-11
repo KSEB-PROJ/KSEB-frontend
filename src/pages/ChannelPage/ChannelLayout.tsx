@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import NoticePage from './NoticePage';
+import NoticePage from './NoticePage/NoticePage';
 import CalendarPage from './CalendarPage';
 import ChatPage from './ChatPage';
 import styles from './ChannelPage.module.css';
