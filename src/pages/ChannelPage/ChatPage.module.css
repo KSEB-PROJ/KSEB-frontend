@@ -78,7 +78,6 @@
     display: flex;
     flex-grow: 1;
     overflow-y: auto;
-    scrollbar-width: thin; 
     padding-right: 1rem; /* 스크롤바 공간 */
 }
 
@@ -90,12 +89,6 @@
     margin-bottom: 1rem;
     line-height: 1.5;
     position: relative;
-}
-.chatMessageRow {
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: 1px;
-    width: 100%;
 }
 .chatTimemyMessage {
     position: absolute;
@@ -113,49 +106,22 @@
     color: #bcbcbc;
     opacity: 0.7;
 }
-.timeLeft {
-    font-size: 11px;
-    color: #bcbcbc;
-    margin-bottom: 18px;
-    margin-right: 3px;
-    align-self: flex-end;
-    text-align: left;
-}
-
-.timeRight {
-    font-size: 11px;
-    color: #bcbcbc;
-    margin-bottom: 18px;
-    margin-left: 3px;
-    align-self: flex-end;
-    text-align: right;
-}
 .myMessage {
     /* 내 메시지 배경 색상을 그룹 색상으로 변경 */
     background-color: rgb(var(--group-color));
     color: #fff;
-    margin-left: 0;
-    padding: 10px 15px;
+    margin-right: 0;
+    margin-left: auto;
     border-bottom-right-radius: 4px;
     transition: background-color 0.4s ease;
     position: relative;
 }
-.profileImg{
-    margin-top: 5px;
-    margin-right: 3px;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: #36393f;
-    object-fit: cover;
-}
+
 .otherMessage {
     background-color: #3a3a3a;
     color: #e0e0e0;
-    margin-right: 0;
-    padding: 10px 15px;
+    margin-right: auto;
     border-bottom-left-radius: 4px;
-    position: relative;
 }
 
 .chatWrapper {
@@ -171,53 +137,7 @@
     background-color: #121212; /* 배경색 통일 */
     flex-direction: row;
 }
-.img{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    background: #222;
-    border-radius: 3px;        /* 모서리 3px */
-    margin: 3px;
-}
-.img img {
-  max-width: 100%;
-  max-height: 100%;
-  display: block;
-}
-.fileInChatList{
-    display: row;
-    flex-wrap: wrap;
-    margin:0px;
-    margin-top: 3px;
-    gap: 3px;
-}
-.fileBox {
-    display: flex;
-    align-items: center;
-    background: #23272a;
-    color: #aaa;
-    gap: 8px; 
-    padding: 6px 10px;          
-    border-radius: 6px;
-    margin: 5px;
-    max-width: 300px;  
-}
 
-.fileName {
-    font-size: 13px;
-    margin-top: 5px;
-    text-align: center;
-    word-break: break-all;
-}
-.fileIcon { color: #aaa; }
-.fileIcon--image { color: orange; }
-.fileIcon--video { color: green; }
-.fileIcon--audio { color: blue; }
-.fileIcon--pdf   { color: red; }
-.fileIcon--word  { color: #2364ae; }
-.fileIcon--excel { color: #1ea97c; }
-.fileIcon--etc   { color: #999; }
 .chatInput {
     flex-grow: 1;
     min-width: 60px;
