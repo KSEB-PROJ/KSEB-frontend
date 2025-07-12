@@ -37,27 +37,34 @@ const getFileIconClass = (file: File) => {
 //파일 미리보기 컴포넌트
 export const FilePreviewItem: React.FC<{file: File; }> = ({ file }) => {
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
-  React.useEffect(() => {
+  const [downloading, setDownloading] = useState(false);
+  useEffect(() => {
     if (file.type.startsWith("image/")) {
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
       return () => URL.revokeObjectURL(url);
     }
   }, [file]);
+const handleDoubleClick = () => {
+    setDownloading(true);
+    setTimeout(() => setDownloading(false), 700); };
 //이미지 썸네일
   if (file.type.startsWith("image/") && previewUrl) {
     return (
       <img
       src={previewUrl}
       alt={file.name}
-      className={styles.image} 
+      className={`${styles.image} ${downloading ? styles.downloading : ""}`} 
       draggable={false}
+      onDoubleClick={handleDoubleClick}
+      title="더블클릭시 다운로드 모션"
     />
     );
   }
 // 아이콘+파일명(가로 직사각형으로)
   return (
-     <div className={styles.fileBox}>
+     <div className={`${styles.fileBox} ${downloading ? styles.downloading : ""}` }
+     onDoubleClick={handleDoubleClick} title="더블클릭시 다운로드 모션" >
     <FontAwesomeIcon icon={getFileIcon(file)} size="lg" className={`${styles.fileIcon} ${getFileIconClass(file)}`}/>
     <span className={styles.fileName}>{file.name}</span>
   </div>
@@ -66,6 +73,13 @@ export const FilePreviewItem: React.FC<{file: File; }> = ({ file }) => {
 
 //메인 컴포넌트
 const ChatPage: React.FC = () => {
+    function sortFiles(files: File[]): File[] {
+    // 파일(이미지 아님) 먼저, 이미지 마지막에
+    return [
+        ...files.filter(f => !f.type.startsWith("image/")),
+        ...files.filter(f => f.type.startsWith("image/"))
+    ];
+    }
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [files, setFiles] = useState<File[]>([]);
     const [input, setInput] = useState("");
@@ -95,8 +109,7 @@ const ChatPage: React.FC = () => {
         prev.map((msg, i) =>
         i === index ? { ...msg, horned: !msg.horned } : msg
         )
-    );
-    };
+    );};
     //전송
     const handleSend = () => {
         if (input.trim() === "" && files.length === 0) return; // 빈칸 방지
@@ -217,7 +230,7 @@ const ChatPage: React.FC = () => {
             <div className={styles.chatWrapper}>
                 {files.length > 0 && (
                     <div className={styles.filePreviewList}>
-                        {files.map((file, idx) => (
+                        {sortFiles(files).map((file, idx) => (
                         <span key={idx} className={styles.filePreviewItem}>{file.name}
                         <button className={styles.removeFileButton}
                             onClick={() => handleRemoveFile(idx)}

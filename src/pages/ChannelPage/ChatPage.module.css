@@ -200,7 +200,7 @@
 }
 .chatInputWrapper {
     display: flex;
-    padding: 1rem 0;
+    padding: 0 0;
     background-color: #121212; /* 배경색 통일 */
     flex-direction: row;
 }
@@ -214,6 +214,10 @@
     margin: 4px 0;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     display: block;
+}
+.downloading {
+  animation: downloadPop 0.7s cubic-bezier(.25,.46,.45,.94);
+  box-shadow: 0 0 18px 2px rgb(var(--group-color));
 }
 .fileInChatList{
     display: row;
