@@ -34,6 +34,27 @@ const getFileIconClass = (file: File) => {
     if (file.name.match(/\.(xls|xlsx)$/)) return styles["fileIcon--excel"];
     return styles["fileIcon--etc"];
 };
+function sortFiles(files: File[]): File[] {
+  // 확장자 소문자로 통일
+  const pdfs   = files.filter(f => f.name.toLowerCase().endsWith('.pdf'));
+  const words  = files.filter(f => f.name.toLowerCase().match(/\.(doc|docx)$/));
+  const excels = files.filter(f => f.name.toLowerCase().match(/\.(xls|xlsx)$/));
+  const ppt    = files.filter(f => f.name.toLowerCase().match(/\.(ppt|pptx)$/));
+  const zips   = files.filter(f => f.name.toLowerCase().match(/\.(zip|7z|rar)$/));
+  const images = files.filter(f => f.type.startsWith('image/'));
+  // 기타(위에 포함 안되고 이미지도 아님)
+  const others = files.filter(
+    f =>
+      !pdfs.includes(f) &&
+      !words.includes(f) &&
+      !excels.includes(f) &&
+      !ppt.includes(f) &&
+      !zips.includes(f) &&
+      !images.includes(f)
+  );
+  // 순서: PDF > Word > Excel > PPT > ZIP > 기타 > 이미지
+  return [...pdfs, ...words, ...excels, ...ppt, ...zips, ...others, ...images];
+}
 //파일 미리보기 컴포넌트
 export const FilePreviewItem: React.FC<{file: File; }> = ({ file }) => {
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
@@ -73,13 +94,6 @@ const handleDoubleClick = () => {
 
 //메인 컴포넌트
 const ChatPage: React.FC = () => {
-    function sortFiles(files: File[]): File[] {
-    // 파일(이미지 아님) 먼저, 이미지 마지막에
-    return [
-        ...files.filter(f => !f.type.startsWith("image/")),
-        ...files.filter(f => f.type.startsWith("image/"))
-    ];
-    }
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [files, setFiles] = useState<File[]>([]);
     const [input, setInput] = useState("");
@@ -170,7 +184,7 @@ const ChatPage: React.FC = () => {
                                     {/*파일첨부*/}
                                     {msg.files && msg.files.length > 0 && (
                                         <div className={styles.fileInChatList}>
-                                        {msg.files.map((file, fileIdx) => (
+                                        {sortFiles(msg.files).map((file, fileIdx) => (
                                             <FilePreviewItem key={fileIdx} file={file} />
                                         ))}
                                         </div>
@@ -180,7 +194,7 @@ const ChatPage: React.FC = () => {
                                     /* 텍스트가 없으면 말풍선 없이 파일 미리보기만 */
                                     msg.files && (
                                     <div className={styles.fileInChatList}>
-                                        {msg.files.map((file, fileIdx) => (
+                                        {sortFiles(msg.files).map((file, fileIdx) => (
                                             <FilePreviewItem key={fileIdx} file={file} />
                                         ))}
                                     </div>
@@ -205,7 +219,7 @@ const ChatPage: React.FC = () => {
                                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
                                         {msg.files && msg.files.length > 0 && (
                                             <div className={styles.fileInChatList}>
-                                                {msg.files.map((file, fileIdx) => (
+                                                {sortFiles(msg.files).map((file, fileIdx) => (
                                                     <FilePreviewItem key={fileIdx} file={file} />
                                                 ))}
                                             </div>
@@ -214,7 +228,7 @@ const ChatPage: React.FC = () => {
                                     ) : (
                                         msg.files && (
                                             <div className={styles.fileInChatList}>
-                                                {msg.files.map((file, fileIdx) => (
+                                                {sortFiles(msg.files).map((file, fileIdx) => (
                                                     <FilePreviewItem key={fileIdx} file={file} />
                                                 ))}
                                             </div>
