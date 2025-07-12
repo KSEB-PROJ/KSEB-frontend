@@ -1,7 +1,8 @@
-import React, { useState, useMemo, useRef, useLayoutEffect } from 'react';
+import React, { useState, useMemo, useRef, useLayoutEffect, useEffect } from 'react';
 import styles from './NoticePage.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faThumbtack, faPen, faTrash, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
+import { faThumbtack, faPen, faTrash, faTimes, faCheck } from '@fortawesome/free-solid-svg-icons';
+
 
 // --- 데이터 타입 및 예시 데이터 ---
 interface Notice {
@@ -120,23 +121,39 @@ const NoticeItem: React.FC<{
     onMouseEnter: () => void;
 }> = ({ notice, isExpanded, onToggleExpand, onPin, onDelete, onUpdate, showDate, isHovered, onMouseEnter }) => {
     const contentRef = useRef<HTMLParagraphElement>(null);
+    const editableContentRef = useRef<HTMLDivElement>(null);
     const [isOverflowing, setIsOverflowing] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [editedContent, setEditedContent] = useState(notice.content);
-    const [heights, setHeights] = useState({ collapsed: '68px', full: '68px' });
-
+    
     useLayoutEffect(() => {
         const el = contentRef.current;
         if (el && !isEditing) {
-            const collapsedHeight = el.clientHeight;
-            const fullHeight = el.scrollHeight;
-            setHeights({ collapsed: `${collapsedHeight}px`, full: `${fullHeight}px` });
-            setIsOverflowing(fullHeight > collapsedHeight);
+            const isOverflow = el.scrollHeight > el.clientHeight;
+            setIsOverflowing(isOverflow);
         }
-    }, [notice.content, isEditing]);
+    }, [notice.content, isExpanded, isEditing]);
+
+    useEffect(() => {
+        if (isEditing && editableContentRef.current) {
+            editableContentRef.current.focus();
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(editableContentRef.current);
+            range.collapse(false);
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+        }
+    }, [isEditing]);
 
     const handleUpdate = () => {
-        onUpdate(editedContent);
+        const newContent = editableContentRef.current?.innerText || '';
+        if (newContent.trim()) {
+            onUpdate(newContent);
+        }
+        setIsEditing(false);
+    };
+
+    const handleCancelEdit = () => {
         setIsEditing(false);
     };
 
@@ -150,33 +167,40 @@ const NoticeItem: React.FC<{
         >
             <Marker notice={notice} isHovered={isHovered} />
             {showDate && <span className={styles.dateLabel}>{dateString}</span>}
-            <article className={`${styles.noticeCard}`}>
+            <article className={styles.noticeCard}>
                 <div className={styles.cardHeader}>
                     <span className={styles.author}>{notice.author}</span>
                     <div className={styles.buttonGroup}>
-                         <button title="수정" className={styles.iconButton} onClick={() => setIsEditing(!isEditing)}><FontAwesomeIcon icon={faPen} /></button>
+                         <button title="수정" className={styles.iconButton} onClick={() => setIsEditing(true)}><FontAwesomeIcon icon={faPen} /></button>
                          <button title="삭제" className={styles.iconButton} onClick={onDelete}><FontAwesomeIcon icon={faTrash} /></button>
                          <button title={notice.isPinned ? "고정 해제" : "고정하기"} className={`${styles.iconButton} ${styles.pinButton}`} onClick={onPin}><FontAwesomeIcon icon={faThumbtack} /></button>
                     </div>
                 </div>
-                 {isEditing ? (
-                    <div className={styles.editWrapper}>
-                        <textarea className={styles.editTextarea} value={editedContent} onChange={(e) => setEditedContent(e.target.value)} rows={5} autoFocus />
-                        <button className={styles.saveButton} onClick={handleUpdate}>저장</button>
+                <div className={`${styles.contentWrapper} ${isEditing ? styles.editingWrapper : ''}`}>
+                    <div
+                        ref={isEditing ? editableContentRef : contentRef}
+                        className={`${styles.content} ${isExpanded && !isEditing ? styles.expandedContent : ''}`}
+                        contentEditable={isEditing}
+                        suppressContentEditableWarning={true}
+                    >
+                        {notice.content}
                     </div>
-                ) : (
-                    <>
-                        <div className={styles.contentWrapper} style={{ maxHeight: isExpanded ? heights.full : heights.collapsed }}>
-                            <p ref={contentRef} className={`${styles.content} ${isExpanded ? styles.expandedContent : ''}`}>{notice.content}</p>
-                        </div>
-                        {(isOverflowing || isExpanded) && (
-                            <button className={styles.readMoreButton} onClick={onToggleExpand}>
-                                {isExpanded ? '접기' : '더 보기'}
-                                <FontAwesomeIcon icon={isExpanded ? faChevronUp : faChevronDown} />
+                     {isEditing && (
+                        <div className={styles.editActions}>
+                            <button className={`${styles.actionButton} ${styles.cancelButton}`} onClick={handleCancelEdit} title="취소">
+                                <FontAwesomeIcon icon={faTimes} />
                             </button>
-                        )}
-                    </>
-                )}
+                            <button className={`${styles.actionButton} ${styles.saveButton}`} onClick={handleUpdate} title="저장">
+                                <FontAwesomeIcon icon={faCheck} />
+                            </button>
+                        </div>
+                    )}
+                    {!isEditing && (isOverflowing || isExpanded) && (
+                        <button className={styles.readMoreButton} onClick={onToggleExpand}>
+                            {isExpanded ? '간략히' : '더 보기'}
+                        </button>
+                    )}
+                </div>
             </article>
         </div>
     );
@@ -186,15 +210,10 @@ const NoticeItem: React.FC<{
 // --- 공지사항 페이지 메인 컴포넌트 ---
 const NoticePage: React.FC = () => {
     const [notices, setNotices] = useState<Notice[]>(initialNotices.filter(n => {
-        // 만료일이 있는 공지는 현재 시간보다 이후인 것만 필터링
         return n.expiresAt ? new Date(n.expiresAt) > new Date() : true;
     }));
     const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
     const [hoveredId, setHoveredId] = useState<number | null>(null);
-    const [lineStyle, setLineStyle] = useState({});
-
-    const timelineRef = useRef<HTMLDivElement>(null);
-    const entryRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
     const handlePinNotice = (id: number) => {
         setNotices(notices.map(n => (n.id === id ? { ...n, isPinned: !n.isPinned } : n)));
@@ -216,26 +235,6 @@ const NoticePage: React.FC = () => {
         });
     };
 
-    const handleMouseEnter = (id: number) => {
-        if (!timelineRef.current || !entryRefs.current[id]) return;
-
-        const timelineRect = timelineRef.current.getBoundingClientRect();
-        const entryRect = entryRefs.current[id]!.getBoundingClientRect();
-        
-        const markerTop = entryRect.top - timelineRect.top + 5 + (18 / 2);
-
-        setLineStyle({
-            top: `${markerTop}px`,
-            height: `calc(100% - ${markerTop}px)`,
-            opacity: 1,
-        });
-        setHoveredId(id);
-    };
-
-    const handleMouseLeave = () => {
-        setLineStyle(prev => ({ ...prev, opacity: 0 }));
-    };
-
     const sortedNotices = useMemo(() => {
         return [...notices].sort((a, b) => {
             if (a.isPinned && !b.isPinned) return -1;
@@ -246,25 +245,23 @@ const NoticePage: React.FC = () => {
 
     return (
         <div className={styles.container}>
-            <div className={styles.timeline} ref={timelineRef} onMouseLeave={handleMouseLeave}>
-                <div className={styles.animatedLine} style={lineStyle} />
+            <div className={styles.timeline}>
                 {sortedNotices.map((notice, index) => {
                     const prevDate = index > 0 ? new Date(sortedNotices[index - 1].timestamp).toLocaleDateString() : null;
                     const showDate = new Date(notice.timestamp).toLocaleDateString() !== prevDate;
                     return (
-                        <div key={notice.id} ref={el => { entryRefs.current[notice.id] = el; }}>
-                            <NoticeItem
-                                notice={notice}
-                                isExpanded={expandedIds.has(notice.id)}
-                                onToggleExpand={() => toggleExpand(notice.id)}
-                                onPin={() => handlePinNotice(notice.id)}
-                                onDelete={() => handleDeleteNotice(notice.id)}
-                                onUpdate={(newContent) => handleUpdateNotice(notice.id, newContent)}
-                                showDate={showDate}
-                                isHovered={hoveredId === notice.id}
-                                onMouseEnter={() => handleMouseEnter(notice.id)}
-                            />
-                        </div>
+                        <NoticeItem
+                            key={notice.id}
+                            notice={notice}
+                            isExpanded={expandedIds.has(notice.id)}
+                            onToggleExpand={() => toggleExpand(notice.id)}
+                            onPin={() => handlePinNotice(notice.id)}
+                            onDelete={() => handleDeleteNotice(notice.id)}
+                            onUpdate={(newContent) => handleUpdateNotice(notice.id, newContent)}
+                            showDate={showDate}
+                            isHovered={hoveredId === notice.id}
+                            onMouseEnter={() => setHoveredId(notice.id)}
+                        />
                     );
                 })}
             </div>
