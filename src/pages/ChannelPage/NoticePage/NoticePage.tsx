@@ -75,7 +75,7 @@ const Marker: React.FC<{ notice: Notice; isHovered: boolean; }> = ({ notice, isH
     );
 };
 
-// ▼▼▼ 오류 수정 부분: DatePicker를 독립된 컴포넌트로 정의 ▼▼▼
+// DatePicker를 독립된 컴포넌트로 정의 
 const DatePicker = ({ value, onChange }: { value: string | null, onChange: (value: string | null) => void }) => {
     const dateInputRef = useRef<HTMLInputElement>(null);
     const getLocalDate = (isoDate: string | null) => isoDate ? isoDate.split('T')[0] : '';
@@ -91,7 +91,6 @@ const DatePicker = ({ value, onChange }: { value: string | null, onChange: (valu
         </div>
     );
 };
-// ▲▲▲ 오류 수정 부분 ▲▲▲
 
 const NoticeItem: React.FC<{
     notice: Notice; isExpanded: boolean; isEditing: boolean;
