@@ -10,19 +10,20 @@ import styles from './ChannelPage.module.css';
 interface Channel {
     name: string;
     type: 'notice' | 'calendar' | 'chat';
+    description: string;
 }
 
 // --- [채널 전체 목록] ---
 // - key: 채널 id (URL 파라미터와 매칭됨)
 // - value: 채널 정보 객체 { name, type }
 const allChannels: Record<string, Channel> = {
-    'notice-1': { name: '공지사항', type: 'notice' },
-    'calendar-1': { name: '개발 일정', type: 'calendar' },
-    'chat-1': { name: '일반', type: 'chat' },
-    'chat-2': { name: '프론트엔드', type: 'chat' },
-    'notice-2': { name: '필독 공지', type: 'notice' },
-    'calendar-2': { name: '회의 일정', type: 'calendar' },
-    'chat-3': { name: '회의록', type: 'chat' },
+    'notice-1': { name: '공지사항', type: 'notice', description: '시간의 흐름 속, 중요한 기록들' },
+    'calendar-1': { name: '개발 일정', type: 'calendar', description: '팀의 모든 일정을 한 눈에 확인하세요.' },
+    'chat-1': { name: '일반', type: 'chat', description: '자유롭게 대화하고 아이디어를 공유하세요.' },
+    'chat-2': { name: '프론트엔드', type: 'chat', description: '프론트엔드 개발에 대한 모든 것을 이야기합니다.' },
+    'notice-2': { name: '필독 공지', type: 'notice', description: '반드시 숙지해야 할 핵심 공지사항입니다.' },
+    'calendar-2': { name: '회의 일정', type: 'calendar', description: '정기 및 비정기 회의 일정을 관리합니다.' },
+    'chat-3': { name: '회의록', type: 'chat', description: '진행된 회의의 내용과 결정사항을 기록합니다.' },
 };
 
 // --- [채널 상세/메인 페이지 컴포넌트] ---
@@ -60,9 +61,9 @@ const ChannelLayout: React.FC = () => {
     // - 하단: 해당 채널 타입별 메인 페이지 컴포넌트
     return (
         <div className={styles.channelContainer}>
-            <header className={styles.channelHeader}>
+            <header className={`${styles.channelHeader} ${channel.type === 'notice' ? styles.noticeHeader : ''}`}>
                 <h1>{channel.name}</h1>
-                <p>이곳은 '{channel.name}' 채널입니다. 자유롭게 소통하고 정보를 공유하세요.</p>
+                <p>{channel.description}</p>
             </header>
             <main className={styles.channelBody}>
                 {renderChannelPage()}

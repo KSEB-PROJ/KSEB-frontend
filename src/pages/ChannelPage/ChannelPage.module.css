@@ -3,16 +3,24 @@
     display: flex;
     flex-direction: column;
     height: 100vh;
-    padding: 2rem;
     box-sizing: border-box;
+    background-color: #121212; /* 앱 전체 배경색과 통일 */
 }
 
 /* 채널 헤더 (채널명, 설명) */
 .channelHeader {
-    padding-bottom: 1.5rem;
+    padding: 2rem 2rem 1.5rem 2rem;
     border-bottom: 1px solid #333;
     margin-bottom: 1.5rem;
 }
+
+/* 공지사항 페이지 전용 헤더 스타일 */
+.noticeHeader {
+    border-bottom: 1px solid #2a2e37; /* <<< 구분선 추가 */
+    padding-bottom: 2rem;             /* <<< 구분선 아래 간격 추가 */
+    margin-bottom: 1rem;              /* <<< 콘텐츠와의 간격 조정 */
+}
+
 
 .channelHeader h1 {
     font-size: 2rem;

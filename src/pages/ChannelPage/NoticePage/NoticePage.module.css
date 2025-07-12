@@ -1,9 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap');
 
+/* '시간의 고리' 위험 상태일 때 고동치는 애니메이션 */
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); }
+  70% { transform: scale(1.05); }
+  100% { transform: scale(0.95); }
+}
+
 .container {
-    padding: 3rem 4rem;
+    padding: 2rem 4rem 3rem 4rem; /* 상단 패딩 조정 */
     font-family: 'Gowun Dodum', sans-serif;
-    background: #18191d;
+    background: #121212; /* 앱 전체 배경색과 통일 */
     color: #e0e0e0;
 }
 
@@ -12,12 +19,12 @@
     max-width: 800px;
     margin: 0 auto;
 }
-/* 타임라인 중앙선 */
+
 .timeline::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 8px; /* 마커 너비의 절반 */
+    left: 8px;
     bottom: 0;
     width: 2px;
     background: #2a2e37;
@@ -26,55 +33,109 @@
 .timelineEntry {
     position: relative;
     padding-left: 50px;
-    margin-bottom: 3rem;
+    margin-bottom: 4rem; /* <<< 기존 3rem에서 간격 확대 */
 }
 
-/* 타임라인 마커 */
-.marker {
+/* 마커 스타일 시작 */
+.markerContainer {
     position: absolute;
     left: 0;
     top: 5px;
     width: 18px;
     height: 18px;
+    z-index: 2;
+    cursor: pointer;
+}
+
+.markerBase {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
     border-radius: 50%;
-    background: #18191d;
+    background: #121212; /* 배경색 통일 */
     border: 3px solid #555;
     transition: all 0.3s ease;
-    z-index: 2;
 }
-.timelineEntry:hover .marker {
+.timelineEntry:hover .markerBase {
     border-color: rgb(var(--group-color));
 }
-.timelineEntry.pinned .marker {
-    border-color: rgb(var(--group-color));
-    transform: scale(1.1);
-    box-shadow: 0 0 10px rgba(var(--group-color), 0.7);
+
+.markerSvg {
+    width: 22px;
+    height: 22px;
+    transform: rotate(-90deg);
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    overflow: visible;
+    pointer-events: none;
+}
+.markerProgress {
+    fill: none;
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s ease, stroke 0.5s ease, opacity 0.3s ease-out;
+}
+.timelineEntry:hover .markerProgress {
+    opacity: 0;
+}
+
+.markerProgress.safe { stroke: #22c55e; }
+.markerProgress.warning { stroke: #f97316; }
+.markerProgress.danger {
+    stroke: #ef4444;
+    transform-origin: center;
+    animation: pulse-ring 1.5s infinite;
+}
+/* 마커 스타일 끝 */
+
+/* D-Day 툴팁 스타일 */
+.tooltip {
+    position: absolute;
+    bottom: 150%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #22c55e;
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    pointer-events: none;
+}
+.tooltip.tooltipDanger {
+    background-color: #ef4444;
+}
+.tooltip.tooltipInfo {
+    background-color: #3b82f6;
 }
 
 .dateLabel {
     position: absolute;
-    left: -120px;
-    top: -2px;
-    width: 100px;
+    right: 100%;
+    top: 5px;
+    padding-right: 35px;
     text-align: right;
     font-size: 0.8rem;
     color: #777;
     font-weight: 600;
+    white-space: nowrap;
 }
 
-/* 공지 카드 */
 .noticeCard {
     background: transparent;
     padding: 0;
 }
 
-/* === 커넥터 라인  */
 .noticeCard::before {
     content: '';
     position: absolute;
-    top: 9px;
+    top: 13px;
     left: 18px;
-    width: 32px; /* addping-left - marker-width */
+    width: 32px;
     height: 2px;
     background: #555;
     transform-origin: left;
@@ -90,52 +151,70 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.8rem;
 }
 .author {
     font-size: 0.9rem;
     font-weight: 700;
     color: #999;
 }
-.pinButton {
+
+.buttonGroup {
+    display: flex;
+    gap: 0.25rem;
+    opacity: 0; /* 평소에는 숨김 */
+    transition: opacity 0.2s ease-in-out;
+}
+.timelineEntry:hover .buttonGroup {
+    opacity: 1; /* 호버 시 나타남 */
+}
+
+.iconButton {
     background: none; border: none;
     color: #666;
     cursor: pointer;
     font-size: 0.9rem;
-    transition: color 0.2s ease;
+    padding: 0.4rem;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s, background-color 0.2s;
 }
-.pinButton:hover { color: #fff; }
+.iconButton:hover {
+    color: #fff;
+    background-color: #333;
+}
 .timelineEntry.pinned .pinButton { color: rgb(var(--group-color)); }
 
 .contentWrapper {
-    position: relative;
-    max-height: 68px;
     overflow: hidden;
-    transition: max-height 0.5s ease-in-out;
-}
-.noticeCard.expanded .contentWrapper {
-    max-height: 1000px; /* 큰 값 아무거나*/
+    transition: max-height 0.4s ease-in-out;
 }
 
 .content {
     margin: 0;
-    font-size: 1.1rem;
-    line-height: 1.7;
+    font-size: 1.2rem;   /* <<< 기존 1.1rem에서 폰트 크기 확대 */
+    line-height: 1.8;      /* <<< 기존 1.7에서 줄 간격 확대 */
     color: #ccc;
-    -webkit-box-orient: vertical;
     display: -webkit-box;
+    -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     line-clamp: 2;
     overflow: hidden;
     text-overflow: ellipsis;
-    transition: -webkit-line-clamp 0.5s ease;
 }
-.noticeCard.expanded .content {
-    -webkit-line-clamp: 100; 
-    line-clamp: 100;
+.content.expandedContent {
+    -webkit-line-clamp: none;
+    line-clamp: none;
 }
 
 .readMoreButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     background: none; border: none;
     color: rgb(var(--group-color));
     font-family: 'Gowun Dodum', sans-serif;
@@ -144,4 +223,37 @@
     cursor: pointer;
     padding: 0.5rem 0;
     margin-top: 0.5rem;
+}
+
+.editWrapper {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.editTextarea {
+    width: 100%;
+    background-color: #2c2c2c;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 10px 15px;
+    color: #fff;
+    font-family: 'Gowun Dodum', sans-serif;
+    font-size: 1.1rem;
+    resize: vertical;
+    outline-color: rgb(var(--group-color));
+}
+.saveButton {
+    align-self: flex-end;
+    background-color: rgb(var(--group-color));
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1.25rem;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.2s;
+}
+.saveButton:hover {
+    filter: brightness(1.2);
 }

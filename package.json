@@ -29,6 +29,7 @@
     "react-intersection-observer": "^9.16.0",
     "react-router-dom": "^7.6.3",
     "react-tsparticles": "^2.12.2",
+    "simplebar-react": "^3.3.2",
     "three": "^0.178.0",
     "zustand": "^5.0.6"
   },
