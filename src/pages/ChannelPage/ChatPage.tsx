@@ -97,6 +97,7 @@ const ChatPage: React.FC = () => {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [files, setFiles] = useState<File[]>([]);
     const [input, setInput] = useState("");
+    const [shouldScroll, setShouldScroll] = useState(false);
     const chatAreaRef = useRef<HTMLDivElement | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([
         {
@@ -134,13 +135,15 @@ const ChatPage: React.FC = () => {
         setMessages(prev => [...prev, { text: input.trim()? input : undefined, sender: "me", files: files.length > 0 ? files : undefined, time, }]);
         setInput(""); // 입력창 비우기
         setFiles([]);
+        setShouldScroll(true);
     };
     //스크롤 항상 아래로
     useEffect(() => {
-        if (chatAreaRef.current) {
+        if (shouldScroll&&chatAreaRef.current) {
             chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight;
+            setShouldScroll(false);
         }
-        }, [messages]);
+        }, [messages, shouldScroll]);
     //엔터키로 전송
     const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter") handleSend();
