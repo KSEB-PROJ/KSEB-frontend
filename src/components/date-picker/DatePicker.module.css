@@ -1,0 +1,116 @@
+.wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ── 버튼·텍스트 ─────────────────────────────── */
+
+.trigger,
+.clear {
+    all: unset;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    color: #888;
+    transition: background 0.2s, color 0.2s;
+}
+
+.trigger:hover,
+.clear:hover {
+    background: rgba(var(--group-color), 0.25);
+    color: #fff;
+}
+
+.text {
+    font-size: 0.85rem;
+    color: #888;
+    font-weight: 600;
+}
+
+/* ── 팝업 달력 ─────────────────────────────── */
+
+.calendar {
+    position: absolute;
+    top: 110%;
+    left: 0;
+    width: 260px;
+    padding: 1rem;
+    border-radius: 12px;
+    background: #1a1a1a;
+    border: 1px solid rgba(var(--group-color), 0.3);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    animation: pop-up 0.25s ease-out forwards;
+}
+
+/* 네비게이션 헤더 */
+.nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.nav button {
+    all: unset;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    color: #ccc;
+    transition: background 0.2s;
+}
+
+.nav button:hover {
+    background: rgba(var(--group-color), 0.25);
+    color: #fff;
+}
+
+/* 요일 / 날짜 그리드 */
+.weekHead,
+.weekRow {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
+
+.weekHead span {
+    font-size: 0.75rem;
+    text-align: center;
+    color: #666;
+    margin-bottom: 0.25rem;
+}
+
+.day {
+    all: unset;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.day:hover {
+    background: rgba(var(--group-color), 0.15);
+}
+
+.dimmed {
+    color: #555;
+}
+
+.today {
+    outline: 2px dashed rgba(var(--group-color), 0.6);
+    outline-offset: -3px;
+}
+
+.chosen {
+    background: rgb(var(--group-color));
+    color: #fff;
+}

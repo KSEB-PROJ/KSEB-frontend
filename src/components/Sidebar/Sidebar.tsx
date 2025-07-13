@@ -131,7 +131,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
     }, [selectedGroup, groups]);
 
     // 인디케이터 위치 업데이트
-     useEffect(() => {
+    useEffect(() => {
         // 메인 메뉴 인디케이터 위치 갱신
         const mainIndex = mainMenuItems.findIndex(item => item.path === location.pathname);
         const mainActiveEl = mainIndex > -1 ? mainmenuRefs.current[mainIndex] : null;
@@ -210,7 +210,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
                     initialColorName={selectedGroup.color}
                 />
             )}
-            
+
             <nav className={`${styles.menu} ${isOpen ? styles.open : ''}`}>
                 {/* -- 상단: 그룹/팀 뱃지 & 이름 (클릭시 그룹 오버레이) -- */}
                 <div className={styles.actionBar}>
@@ -238,12 +238,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
                         </div>
                         <div className={styles.groupGrid}>
                             {groups.map((group, index) => (
-                                <div 
-                                    key={group.id} 
-                                    className={styles.groupCard} 
-                                    style={{ 
+                                <div
+                                    key={group.id}
+                                    className={styles.groupCard}
+                                    style={{
                                         animationDelay: `${index * 80}ms`,
-                                        '--group-hover-color': `rgba(${group.colorValue}, 0.2)` 
+                                        '--group-hover-color': `rgba(${group.colorValue}, 0.2)`
                                     } as React.CSSProperties}
                                     onClick={() => handleSelectGroup(group)}
                                 >
@@ -252,8 +252,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
                                 </div>
                             ))}
                             {/* 그룹 추가 버튼 */}
-                            <div 
-                                className={`${styles.groupCard} ${styles.createGroupCard}`} 
+                            <div
+                                className={`${styles.groupCard} ${styles.createGroupCard}`}
                                 style={{ animationDelay: `${groups.length * 80}ms` }}
                                 onClick={() => {
                                     setGroupOverlayOpen(false);
@@ -309,7 +309,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
                         </DndContext>
                     </div>
                 )}
-                
+
                 {/* -- 사이드바 접기 버튼 -- */}
                 <div className={styles.collapseSection}>
                     <button className={styles.collapseButton} onClick={onToggle}>
