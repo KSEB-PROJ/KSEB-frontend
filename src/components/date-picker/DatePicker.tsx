@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import dayjs, { Dayjs } from 'dayjs';
 import clsx from 'clsx';
 import styles from './DatePicker.module.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 
 interface Props {
     value: string | null;                 // ISO 8601 문자열
@@ -16,9 +18,7 @@ const DatePicker: React.FC<Props> = ({ value, onChange }) => {
         value ? dayjs(value) : dayjs()
     );
 
-    /* ────────────────────────────────────────────────────────────
-       외부 클릭 시 달력 닫기
-    ──────────────────────────────────────────────────────────── */
+    /* 외부 클릭 시 달력 닫기 */
     useEffect(() => {
         function handleClick(e: MouseEvent) {
             if (
@@ -33,9 +33,7 @@ const DatePicker: React.FC<Props> = ({ value, onChange }) => {
         return () => document.removeEventListener('mousedown', handleClick);
     }, [open]);
 
-    /* ────────────────────────────────────────────────────────────
-       현재 달력에 표시할 주 단위 배열 생성
-    ──────────────────────────────────────────────────────────── */
+    /* 현재 달력에 표시할 주 단위 배열 생성 */
     const weeks = () => {
         const start = cursor.startOf('month').startOf('week');
         const end = cursor.endOf('month').endOf('week');
@@ -59,7 +57,7 @@ const DatePicker: React.FC<Props> = ({ value, onChange }) => {
                 className={styles.trigger}
                 title="만료일 설정"
             >
-                📅
+                <FontAwesomeIcon icon={faCalendarAlt} />
             </button>
 
             {/* 선택된 날짜 텍스트 / 클리어 */}

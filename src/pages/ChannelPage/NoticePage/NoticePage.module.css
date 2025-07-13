@@ -93,7 +93,6 @@
     transition: all 0.3s ease;
 }
 
-/* ▼▼▼ 수정된 부분 ▼▼▼ */
 .markerBase.infiniteMarker {
     border-color: #3b82f6;
     /* 영구 공지 파란색 */
@@ -102,8 +101,6 @@
 .timelineEntry:hover .markerBase {
     border-color: rgb(var(--group-color));
 }
-
-/* ▲▲▲ 수정된 부분 ▲▲▲ */
 
 .markerSvg {
     width: 22px;

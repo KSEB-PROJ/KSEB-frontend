@@ -1,5 +1,3 @@
-/* 디자인 토큰: --group-color(R,G,B), --dark-bg 등은 전역 styles.css 에 선언돼 있다고 가정 */
-
 .wrapper {
     position: relative;
     display: flex;
