@@ -1,0 +1,205 @@
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 18, 18, 0.6);
+  backdrop-filter: blur(10px);
+  z-index: 1200;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.modalContainer {
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  background: #212124;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  animation: popIn 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+.closeButton:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  transform: rotate(90deg);
+}
+
+.content {
+  padding: 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #a0a0a0;
+  padding-left: 0.25rem;
+}
+
+.input, .textarea {
+  background: #1a1a1c;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: #e0e0e0;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.2s;
+}
+.input:focus, .textarea:focus {
+  border-color: rgb(var(--group-color));
+  box-shadow: 0 0 0 3px rgba(var(--group-color), 0.2);
+}
+.textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.timeGroup {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+.timeGroup .input {
+  flex-grow: 1;
+}
+
+.checkboxGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #ccc;
+  cursor: pointer;
+  padding: 0.5rem 0;
+}
+.checkboxInput {
+  display: none;
+}
+.checkboxStyled {
+  width: 20px;
+  height: 20px;
+  background: #1a1a1c;
+  border: 1px solid #444;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.checkboxStyled svg {
+  color: #fff;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.2s;
+}
+.checkboxInput:checked + .checkboxStyled {
+  background: rgb(var(--group-color));
+  border-color: rgb(var(--group-color));
+}
+.checkboxInput:checked + .checkboxStyled svg {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #2a2a2e;
+  border-radius: 0 0 16px 16px;
+}
+
+.deleteButton {
+  background: none;
+  border: none;
+  color: #b94545;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.deleteButton:hover {
+  color: #ff6b6b;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.button {
+  padding: 0.6rem 1.25rem;
+  border: 1px solid #555;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelButton {
+  background: #333;
+  color: #ccc;
+}
+.cancelButton:hover {
+  background: #444;
+  color: #fff;
+}
+
+.saveButton {
+  background: rgb(var(--group-color));
+  border-color: rgb(var(--group-color));
+  color: #fff;
+}
+.saveButton:hover {
+  filter: brightness(1.15);
+}

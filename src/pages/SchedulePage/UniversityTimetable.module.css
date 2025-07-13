@@ -1,0 +1,395 @@
+/* --- Animations --- */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes popIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+@keyframes slideOutLeft {
+    to {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+}
+@keyframes slideOutRight {
+    to {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+}
+
+/* --- Container: The "Architecture of Time" --- */
+.timetableContainer {
+    flex-shrink: 0;
+    padding: 1.25rem;
+    position: relative;
+    overflow: hidden;
+    background: #1a1a1e;
+}
+.timetableHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 0.25rem 1rem 0.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.semesterNavigator {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.semesterTitle {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #fff;
+    width: 200px;
+    text-align: center;
+}
+.navButton {
+    background: none;
+    border: 1px solid #444;
+    color: #999;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: all 0.2s ease;
+}
+.navButton:hover {
+    background-color: #333;
+    color: #fff;
+    border-color: #666;
+}
+.addButton {
+    background: none;
+    border: none;
+    color: #999;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+}
+.addButton:hover {
+    color: #fff;
+    background-color: rgba(var(--group-color), 0.2);
+    transform: scale(1.1);
+}
+
+/* --- Grid with hover-based guiding lines --- */
+.timetableGrid {
+    display: grid;
+    grid-template-columns: 40px repeat(5, 1fr);
+    grid-template-rows: 25px repeat(13, 40px);
+    position: relative;
+    padding-top: 1rem;
+}
+.slideIn { animation: slideIn 0.2s ease-out forwards; }
+.slideOutLeft { animation: slideOutLeft 0.2s ease-in forwards; }
+.slideOutRight { animation: slideOutRight 0.2s ease-in forwards; }
+
+.gridHeader,
+.gridTime {
+    font-size: 0.7rem;
+    color: #888;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+}
+.gridTime {
+    align-items: flex-start;
+}
+.gridCell {
+    position: relative;
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+    z-index: 1;
+    border-radius: 4px;
+    border: 1px solid transparent;
+}
+.gridCell:hover {
+    background-color: rgba(var(--group-color), 0.08);
+    border-color: rgba(var(--group-color), 0.2);
+}
+
+/* --- Course Block --- */
+.courseBlock {
+    --course-color-rgb: var(--group-color);
+    position: absolute;
+    width: calc(100% - 2px);
+    left: 1px;
+    background: linear-gradient(145deg, rgba(var(--course-color-rgb), 0.5), rgba(var(--course-color-rgb), 0.3));
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border-radius: 6px;
+    padding: 0.6rem;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    border: 1px solid rgba(var(--course-color-rgb), 0.5);
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+    z-index: 3;
+    cursor: pointer;
+}
+.courseBlock:hover {
+    transform: translateY(-4px) scale(1.03);
+    z-index: 10;
+    box-shadow: 0 0 20px rgba(var(--course-color-rgb), 0.3);
+}
+.courseName {
+    font-weight: bold;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.courseSubInfo {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 0.25rem;
+    opacity: 0;
+    max-height: 0;
+    transition: all 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+}
+.courseBlock:hover .courseSubInfo {
+    opacity: 1;
+    max-height: 3em;
+}
+.courseSubInfo > span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* --- Modal & Custom Time Picker --- */
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(18, 18, 18, 0.6);
+    backdrop-filter: blur(10px);
+    z-index: 1300;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    animation: fadeIn 0.3s ease;
+}
+.modalContainer {
+    width: 100%;
+    max-width: 480px;
+    background: #252528;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+    animation: popIn 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+.modalHeader {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.modalHeader h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+.closeButton {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 1.2rem;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    transition: all 0.2s;
+    display: grid;
+    place-items: center;
+}
+.closeButton:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    transform: rotate(90deg);
+}
+.modalContent {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.inputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.rowGroup {
+    display: flex;
+    gap: 1rem;
+}
+.rowGroup > .inputGroup {
+    flex: 1;
+}
+.label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #a0a0a0;
+}
+.input, .select {
+    background: #1c1c1e;
+    border: 1px solid #555;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: #e0e0e0;
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.2s;
+    width: 100%;
+    -webkit-appearance: none; /* 브라우저 기본 UI 제거 */
+    -moz-appearance: none;
+    appearance: none;
+}
+.input:focus, .select:focus {
+    border-color: rgb(var(--group-color));
+    box-shadow: 0 0 0 3px rgba(var(--group-color), 0.2);
+}
+/* elect 드롭다운 스타일 */
+.select {
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23AAA%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 0.65em auto;
+    padding-right: 2.5rem;
+}
+.modalFooter {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.deleteButton {
+    background: none;
+    border: none;
+    color: #b94545;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.deleteButton:hover {
+    color: #ff6b6b;
+}
+.actionButtons {
+    display: flex;
+    gap: 0.75rem;
+}
+.button {
+    padding: 0.6rem 1.25rem;
+    border: 1px solid #555;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.cancelButton {
+    background: #333;
+    color: #ccc;
+}
+.cancelButton:hover {
+    background: #444;
+    color: #fff;
+}
+.saveButton {
+    background: rgb(var(--group-color));
+    border-color: rgb(var(--group-color));
+    color: #fff;
+}
+.saveButton:hover {
+    filter: brightness(1.15);
+}
+.colorPalette {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+.colorOrb {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: all 0.2s ease;
+    padding: 2px;
+}
+.colorOrb:hover {
+    transform: scale(1.1);
+}
+.colorOrb.selected {
+    border-color: #fff;
+    box-shadow: 0 0 10px rgba(255,255,255,0.5);
+}
+.timePicker {
+    position: relative;
+}
+.timeInput {
+    cursor: pointer;
+}
+.timePickerPopup {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background: #333;
+    border: 1px solid #666;
+    border-radius: 8px;
+    z-index: 1400;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+.timeOption {
+    padding: 0.6rem 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 0.9rem;
+}
+.timeOption:hover {
+    background-color: rgba(var(--group-color), 0.3);
+}
+.timeOption.selected {
+    background-color: rgb(var(--group-color));
+    font-weight: bold;
+}
