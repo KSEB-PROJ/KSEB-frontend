@@ -216,7 +216,7 @@ const ChatPage: React.FC = () => {
                                     />
                                 </div>
                                 {msg.text ? (
-                                    <div className={`${styles.chatMessage} ${styles.myMessage}`}>
+                                    <div className={`${styles.chatMessage} ${styles.otherMessage}`}>
                                     {msg.horned && (
                                         <FontAwesomeIcon icon={faBullhorn} className={`${styles.hornIcon} ${styles.hornIconRight}`}/>)}
                                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
