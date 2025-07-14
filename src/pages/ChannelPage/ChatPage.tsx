@@ -11,6 +11,7 @@ type ChatMessage = {
     time?:string;
     profileImg?: string; // 프로필 사진 URL
     pinned?: boolean;
+    username?:string;
 }
 //파일 미리보기 아이콘
 const getFileIcon = (file: File) => {
@@ -103,12 +104,14 @@ const ChatPage: React.FC = () => {
         {
             sender: "other",
             text: "안녕하세요! 저는 상대방이에요 ",
+            username: "상대방",
             profileImg: "https://randomuser.me/api/portraits/men/1.jpg",
             time: "09:00",
         },
         {
             sender: "other",
             text: "안녕하세요! 저는 상대방이에요 ",
+            username: "상대방",
             profileImg: "https://randomuser.me/api/portraits/men/1.jpg",
             time: "09:00",
         },
@@ -165,7 +168,7 @@ const ChatPage: React.FC = () => {
 
     return (
         <div className={styles.chatContainer}>
-            {/* 채팅 메시지 출력 영역 */}
+                        {/* 채팅 메시지 출력 영역 */}
             <div className={styles.chatArea} ref={chatAreaRef}>
                 {messages.map((msg, idx) => (
                     <div className={styles.chatMessageRow} key={idx}>
@@ -221,13 +224,12 @@ const ChatPage: React.FC = () => {
                                         src={msg.profileImg || "https://i.imgur.com/5cLDeXy.png"}
                                         className={styles.profileImg}
                                     />
+                                    <div className={styles.username}>{msg.username}</div>
                                 </div>
                                 {msg.text ? (
                                     <>
                                         <div className={styles.iconRight}>
                                             <FontAwesomeIcon icon={faThumbTack} className={styles.pinIcon} />
-                                            <FontAwesomeIcon icon={faEdit} className={styles.editIcon} />
-                                            <FontAwesomeIcon icon={faTrashCan} className={styles.trashcanIcon} />
                                         </div>
                                     <div className={`${styles.chatMessage} ${styles.otherMessage}`}>
                                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
@@ -242,16 +244,13 @@ const ChatPage: React.FC = () => {
                                     </>
                                     ) : (
                                         msg.files && (
-                                            <>
                                             <div className={styles.fileInChatList}>
                                                 {sortFiles(msg.files).map((file, fileIdx) => (
                                                     <FilePreviewItem key={fileIdx} file={file} />
                                                 ))}
                                             </div>
-                                <span className={styles.timeRight}>{msg.time}</span>
-                                </>
-                                )
-                                )}
+                                        ))}
+                                    <span className={styles.timeRight}>{msg.time}</span>
                             </div>
                         )}
                     </div>

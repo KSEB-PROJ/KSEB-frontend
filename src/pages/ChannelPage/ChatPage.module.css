@@ -82,21 +82,30 @@
     padding-right: 1rem; /* 스크롤바 공간 */
 }
 .pinIcon, .trashcanIcon, .editIcon {
-    color: #da1414;
-    font-size: 10px;
+    color: rgb(var(--group-color));
+    font-size: 12px;
 }
-.iconLeft, .iconRight{
+.iconLeft{
     display: none;
     position: absolute;
     gap: 6px;
     z-index: 10;
+    margin-left: 0;
+    margin-right: 8px;
+    top: 1px;
+    left: 3px;
     align-self: flex-end;
 }
-.myMessageRow:hover .iconLeft{
-    display:flex;
-    transform: scaleX(-1);
+.iconRight{
+    display: none;
+    position: absolute;
+    gap: 6px;
+    z-index: 10;
+    left: 8px;
+    top: 1px;
+    align-self: flex-end;
 }
-.otherMessageRow:hover .iconRight{
+.myMessageRow:hover .iconLeft, .otherMessageRow:hover .iconRight{
     display: flex;
 }
 .myMessageRow {
@@ -147,13 +156,13 @@
     text-align: right;
     order: 1;
 }
-
 .timeRight {
     font-size: 11px;
     color: #bcbcbc;
     margin-right: 6px;
     margin-left: 0;
     margin-top:-8px;
+    top: 15px;
     text-align: left;
     align-self: flex-end;
     order: 3;
@@ -169,14 +178,18 @@
     order: 2;
     position: relative;
 }
+.username{
+    font-size: 11px;
+    color: #888;
+}
 .profileArea {
     margin-right: 6px;
     order: 1;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
+    flex-direction: column;
 }
 .profileImg{
-    margin-top: 5px;
     margin-right: 0;
     margin-left: 0;
     width: 36px;
@@ -193,6 +206,7 @@
     border-bottom-left-radius: 4px;
     position: relative;
     order: 2;
+    bottom: 15px;
 }
 
 .chatWrapper {
