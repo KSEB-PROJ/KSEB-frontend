@@ -12,17 +12,18 @@ export interface ScheduleEvent {
   color?: string;
   rrule?: string;
   description?: string;
+  tasks?: EventTask[]; // 해당 이벤트에 종속된 할 일 목록
 }
 
+// [수정] EventTask 인터페이스를 DB 스키마에 맞게 변경
 export interface EventTask {
   id: number;
-  eventId: string; // 반드시 ScheduleEvent의 id (즉, id+날짜 조합까지 포함!)
+  eventId: string; // ScheduleEvent의 인스턴스 ID (예: event-1-20250711)
   title: string;
-  isCompleted: boolean;
+  status: 'TODO' | 'DOING' | 'DONE';
+  dueDate: string | null; 
 }
-
 // 대학 강의 데이터 타입
-
 export interface Course {
   id: number;
   course_code: string;

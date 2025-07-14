@@ -12,16 +12,16 @@
     gap: 0.5rem;
 }
 
-/* ── 버튼·텍스트 ─────────────────────────────── */
+/* --- 버튼·텍스트 --- */
 
 .trigger,
 .clear {
     all: unset;
     height: 30px;
-    padding: 0 8px; /* 너비를 유동적으로 변경 */
-    border-radius: 15px; /* 더 둥글게 */
+    padding: 0 8px;
+    border-radius: 15px;
     font-size: 0.9rem;
-    display: flex; /* 아이콘 정렬 */
+    display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
@@ -45,31 +45,23 @@
     font-size: 0.85rem;
     color: #888;
     font-weight: 600;
+    white-space: nowrap; /* 날짜 텍스트 줄바꿈 방지 */
 }
 
-/* ── 팝업 달력 ─────────────────────────────── */
+/* --- 팝업 달력 --- */
 
 .calendar {
-    position: absolute;
-    top: 110%;
-    left: 0;
-    width: 280px; /* 너비 살짝 증가 */
+    width: 280px;
     border-radius: 12px;
     background: #1a1a1a;
     border: 1px solid rgba(var(--group-color), 0.3);
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
-    z-index: 1000;
+    z-index: 1300; /* 모달(1200)보다 위에 오도록 설정 */
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(10px); /* 애니메이션 시작 위치 */
     animation: pop-up 0.25s ease-out forwards;
     display: flex;
     flex-direction: column;
-}
-
-/* 캘린더를 위쪽으로 표시하는 스타일 */
-.calendarPositionedTop {
-    top: auto;
-    bottom: 110%;
 }
 
 
@@ -120,7 +112,7 @@
     place-items: center;
     cursor: pointer;
     font-size: 0.9rem;
-    border-radius: 50%; /* 원형으로 변경 */
+    border-radius: 50%;
     transition: background 0.2s, color 0.2s;
 }
 
@@ -151,7 +143,7 @@
     margin-top: 0.5rem;
     padding: 0.5rem;
     display: grid;
-    grid-template-columns: repeat(4, 1fr); /* 4열로 변경 */
+    grid-template-columns: repeat(4, 1fr);
     gap: 0.5rem;
 }
 
@@ -180,7 +172,7 @@
     padding: 0.75rem;
     border-top: 1px solid #333;
     display: flex;
-    justify-content: flex-end; /* 오른쪽 정렬 */
+    justify-content: flex-end;
 }
 
 .confirmButton {

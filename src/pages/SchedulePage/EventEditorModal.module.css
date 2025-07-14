@@ -1,173 +1,407 @@
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
+/* ... 상단 애니메이션 및 스타일 ... */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
 @keyframes popIn {
-  from {
-    opacity: 0;
-    transform: scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes popOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(20px) scale(0.97); }
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(18, 18, 18, 0.7);
-  backdrop-filter: blur(10px);
+  background: rgba(18, 18, 18, 0.6);
+  backdrop-filter: blur(12px);
   z-index: 1200;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: grid;
+  place-items: center;
   padding: 1rem;
   animation: fadeIn 0.4s ease;
-  overflow-y: auto;
+}
+.overlay.closing {
+  animation: fadeOut 0.3s ease forwards;
 }
 
 .modalContainer {
   width: 100%;
-  max-width: 720px;
-  background: #1e1e21;
+  max-width: 680px;
+  background: #252528;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  animation: popIn 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2);
   display: flex;
   flex-direction: column;
-  animation: popIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2);
   max-height: 90vh;
 }
+.modalContainer.closing {
+  animation: popOut 0.3s ease forwards;
+}
 
-.mainGrid {
-  display: grid;
-  grid-template-columns: 1fr 280px;
-  padding: 1.75rem;
-  gap: 1.75rem;
+.header {
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: #202023;
+  flex-shrink: 0;
+}
+.header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.closeButton {
+  background: none;
+  border: none;
+  color: #777;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all .2s;
+  padding: 0.5rem;
+  line-height: 1;
+}
+.closeButton:hover {
+  color: #fff;
+  transform: rotate(90deg);
+}
+
+.content {
+  padding: 1.5rem 2rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex-grow: 1;
   overflow-y: auto;
 }
 
-.contentColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+/* --- Input with animated underline --- */
+.inputGroup {
+  position: relative;
 }
-.controlsColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
-  padding-left: 1.75rem;
+.inputGroup input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid #555;
+  padding: 0.75rem 0.25rem;
+  color: #fff;
+  font-size: 1.1rem;
+  outline: none;
+  transition: border-color 0.3s;
 }
-
-.formModule {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+.inputGroup::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 0;
+  height: 2px;
+  background: rgb(var(--group-color));
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateX(-50%);
 }
-.label {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #a0a0a0;
+.inputGroup:focus-within::after {
+  width: 100%;
+}
+.inputGroup label {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.25rem;
+  color: #888;
+  pointer-events: none;
+  transition: all 0.2s ease-in-out;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
-.label svg {
-  color: #666;
+.inputGroup:focus-within label,
+.inputGroup input:not(:placeholder-shown)+label {
+  top: -1.2rem;
+  font-size: 0.8rem;
+  color: rgb(var(--group-color));
 }
 
-.input,
+.textareaGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.textareaLabel {
+  color: #888;
+  font-size: 0.8rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
 .textarea {
-  background: #2a2a2e;
+  width: 100%;
+  background: #1e1e21;
   border: 1px solid #444;
   border-radius: 8px;
   padding: 0.85rem 1rem;
-  color: #e0e0e0;
+  min-height: 100px;
+  resize: vertical;
   font-size: 1rem;
+  color: #e0e0e0;
   outline: none;
   transition: all 0.2s;
-  width: 100%;
 }
-.input:focus,
 .textarea:focus {
   border-color: rgb(var(--group-color));
   box-shadow: 0 0 0 3px rgba(var(--group-color), 0.2);
 }
 
-.titleInput {
-  font-size: 1.75rem;
-  font-weight: 600;
-  padding: 0.75rem 1rem;
-  background: #161618;
-}
-.textarea {
-  min-height: 200px;
-  flex-grow: 1;
-  resize: vertical;
+.sectionDivider {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.switchRow {
+/* --- Control Section Layout --- */
+.controlSection {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 1rem;
   background-color: rgba(0, 0, 0, 0.15);
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
+  padding: 1rem;
+  border-radius: 12px;
 }
+.controlRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  min-height: 40px;
+}
+.controlLabel {
+  flex-shrink: 0;
+  color: #a0a0a0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.controlContent {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+.datePickerGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+.timeSeparator {
+  color: #888;
+  white-space: nowrap;
+  margin: 0 0.5rem;
+}
+
+/* --- Toggle Switch --- */
 .switch {
   position: relative;
   display: inline-block;
   width: 44px;
   height: 24px;
 }
-.switch input { opacity: 0; width: 0; height: 0; }
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
 .slider {
-  position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-  background-color: #333;
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #444;
   transition: .3s;
   border-radius: 24px;
 }
 .slider:before {
-  position: absolute; content: ""; height: 18px; width: 18px;
-  left: 3px; bottom: 3px;
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
   background-color: white;
-  transition: .3s;
+  transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 50%;
 }
-.switch input:checked + .slider { background-color: rgb(var(--group-color)); }
-.switch input:checked + .slider:before { transform: translateX(20px); }
+.switch input:checked+.slider {
+  background-color: rgb(var(--group-color));
+  box-shadow: 0 0 10px rgba(var(--group-color), 0.5);
+}
+.switch input:checked+.slider:before {
+  transform: translateX(20px);
+}
 
+.recurrenceEditorWrapper {
+  width: 100%;
+  margin-top: 1rem;
+  animation: slideDown 0.4s ease-out forwards;
+}
 
+/* --- [V2] To-Do List Section --- */
+.todoSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.todoList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.taskItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: #1e1e21;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px solid #333;
+  transition: border-color 0.2s;
+}
+.taskItem:focus-within {
+  border-color: rgba(var(--group-color), 0.5);
+}
+.statusPillGroup {
+  display: flex;
+  align-items: center;
+  background-color: #2a2a2e;
+  padding: 4px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+.statusPill {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.25rem 0.8rem;
+  border: none;
+  background: transparent;
+  color: #777;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+.statusPill.active {
+  color: #fff;
+  box-shadow: 0 2px 8px -2px var(--status-color-shadow, #000);
+}
+
+/* --- Status Colors --- */
+:root {
+    --status-color-todo: #555;
+    --status-color-doing: #3b82f6;
+    --status-color-done: #22c55e; 
+}
+
+.statusPill[data-status="TODO"].active {
+  background-color: var(--status-color-todo);
+  --status-color-shadow: #333;
+}
+.statusPill[data-status="DOING"].active {
+  background-color: var(--status-color-doing);
+  --status-color-shadow: var(--status-color-doing);
+}
+.statusPill[data-status="DONE"].active {
+  background-color: var(--status-color-done);
+  --status-color-shadow: var(--status-color-done);
+}
+
+.taskTitleInput {
+  flex-grow: 1;
+  background: transparent;
+  border: none;
+  color: #e0e0e0;
+  font-size: 0.95rem;
+  outline: none;
+  padding: 0.5rem 0;
+  min-width: 0; /* 입력창이 유연하게 줄어들도록 설정 */
+}
+.taskTitleInput::placeholder { color: #555; }
+.taskDueDate { flex-shrink: 0; }
+.deleteTaskButton {
+  background: none; border: none; color: #555;
+  cursor: pointer; font-size: 0.9rem; transition: color 0.2s;
+  padding: 0.5rem; border-radius: 50%; width: 32px; height: 32px;
+  flex-shrink: 0;
+}
+.deleteTaskButton:hover {
+  color: #f43f5e;
+  background-color: rgba(244, 63, 94, 0.1);
+}
+.addTaskButton {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px dashed #444; color: #888;
+  padding: 0.75rem 1rem; border-radius: 8px;
+  cursor: pointer; transition: all 0.2s; font-weight: 500;
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+}
+.addTaskButton:hover {
+  background-color: rgba(var(--group-color), 0.15);
+  color: rgb(var(--group-color));
+  border-color: rgba(var(--group-color), 0.5);
+  border-style: solid;
+}
+
+/* --- Footer & Buttons --- */
 .footer {
-  padding: 1rem 1.75rem;
+  padding: 1rem 1.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #2a2a2e;
+  background: #202023;
   flex-shrink: 0;
 }
 .deleteButton {
-  background: none; border: none; color: #b94545; font-size: 0.9rem;
-  font-weight: 500; cursor: pointer; transition: color .2s;
+  background: none; border: none; font-size: 0.95rem; font-weight: 500;
+  cursor: pointer; transition: all .2s; padding: 0.6rem 1rem; border-radius: 8px;
+  color: #f43f5e;
 }
-.deleteButton:hover { color: #ff6b6b; }
-.actionButtons { display: flex; gap: 0.75rem; }
+.deleteButton:hover {
+  background: #f43f5e20;
+  color: #fb7185;
+}
+.actionButtons {
+  display: flex;
+  gap: 0.75rem;
+}
 .button {
-  padding: .7rem 1.4rem; border: 1px solid #555; border-radius: 8px;
-  font-size: .95rem; font-weight: 500; cursor: pointer;
-  transition: all .2s;
+  padding: .7rem 1.4rem; border: none; border-radius: 8px; font-size: .95rem;
+  font-weight: 600; cursor: pointer; transition: all .2s;
 }
-.cancelButton { background: #333; color: #ccc; }
-.cancelButton:hover { background: #444; color: #fff; }
-.saveButton {
-  background: rgb(var(--group-color)); border-color: rgb(var(--group-color));
+.cancelButton {
+  background: #3a3a3e;
+  color: #aaa;
+}
+.cancelButton:hover {
+  background: #4a4a4e;
   color: #fff;
 }
-.saveButton:hover { filter: brightness(1.15); }
+.saveButton {
+  color: #fff;
+  background: rgb(var(--group-color));
+  box-shadow: 0 4px 15px -5px rgba(var(--group-color), 0.4);
+}
+.saveButton:hover {
+  filter: brightness(1.15);
+}

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import dayjs, { Dayjs } from 'dayjs';
+import { createPortal } from 'react-dom';
+import dayjs, { type Dayjs } from 'dayjs';
 import clsx from 'clsx';
 import styles from './DatePicker.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -13,22 +14,20 @@ interface Props {
 
 const DatePicker: React.FC<Props> = ({ value, onChange, showTime = false }) => {
     const [open, setOpen] = useState(false);
-    const wrapperRef = useRef<HTMLDivElement>(null);
     const anchorRef = useRef<HTMLButtonElement>(null);
     const calendarRef = useRef<HTMLDivElement>(null);
-    const [position, setPosition] = useState<'bottom' | 'top'>('bottom');
+    const [calendarStyle, setCalendarStyle] = useState<React.CSSProperties>({});
 
     const [selectedDateTime, setSelectedDateTime] = useState<Dayjs>(() =>
         value ? dayjs(value) : dayjs()
     );
     const [cursor, setCursor] = useState<Dayjs>(value ? dayjs(value) : dayjs());
 
-    // useEffect의 의존성 경고를 해결하기 위해 함수형 업데이트를 사용합니다.
     useEffect(() => {
         const externalDate = value ? dayjs(value) : null;
         setSelectedDateTime(currentInternalDate => {
             if (externalDate && !externalDate.isSame(currentInternalDate)) {
-                setCursor(externalDate); // 커서도 함께 업데이트
+                setCursor(externalDate);
                 return externalDate;
             }
             if (!externalDate && value === null) {
@@ -36,21 +35,36 @@ const DatePicker: React.FC<Props> = ({ value, onChange, showTime = false }) => {
                 setCursor(now);
                 return now;
             }
-            return currentInternalDate; // 변경이 없으면 기존 상태 유지
+            return currentInternalDate;
         });
     }, [value]);
-    
+
     useEffect(() => {
-        if (open && wrapperRef.current) {
-            const rect = wrapperRef.current.getBoundingClientRect();
+        if (open && anchorRef.current) {
+            const rect = anchorRef.current.getBoundingClientRect();
             const spaceBelow = window.innerHeight - rect.bottom;
-            if (spaceBelow < 350) {
-                setPosition('top');
+            const calendarHeight = showTime ? 420 : 350; // 시간 선택 시 높이 고려
+            const calendarWidth = 280;
+
+            let top, left = rect.left;
+
+            if (spaceBelow < calendarHeight && rect.top > calendarHeight) {
+                top = rect.top - calendarHeight - 5;
             } else {
-                setPosition('bottom');
+                top = rect.bottom + 5;
             }
+
+            if (left + calendarWidth > window.innerWidth) {
+                left = window.innerWidth - calendarWidth - 5;
+            }
+
+            setCalendarStyle({
+                position: 'fixed',
+                top: `${top}px`,
+                left: `${left}px`,
+            });
         }
-    }, [open]);
+    }, [open, showTime]);
 
     useEffect(() => {
         function handleClick(e: MouseEvent) {
@@ -109,9 +123,59 @@ const DatePicker: React.FC<Props> = ({ value, onChange, showTime = false }) => {
         onChange(selectedDateTime.toISOString());
         setOpen(false);
     };
+    
+    const CalendarPopup = (
+        <div ref={calendarRef} className={styles.calendar} style={calendarStyle}>
+            <header className={styles.nav}>
+                <button onClick={() => setCursor((c) => c.subtract(1, 'month'))}>‹</button>
+                <span>{cursor.format('YYYY MMM')}</span>
+                <button onClick={() => setCursor((c) => c.add(1, 'month'))}>›</button>
+            </header>
+            <div className={styles.weekHead}>
+                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => <span key={d}>{d}</span>)}
+            </div>
+            {weeks.map((w, i) => (
+                <div key={i} className={styles.weekRow}>
+                    {w.map((day: Dayjs) => (
+                        <button
+                            key={day.toString()}
+                            className={clsx(styles.day, {
+                                [styles.today]: day.isSame(dayjs(), 'day'),
+                                [styles.chosen]: day.isSame(selectedDateTime, 'day'),
+                                [styles.dimmed]: !day.isSame(cursor, 'month'),
+                            })}
+                            onClick={() => handleDateSelect(day)}
+                        >
+                            {day.date()}
+                        </button>
+                    ))}
+                </div>
+            ))}
+            {showTime ? (
+                <>
+                    <div className={styles.timePicker}>
+                        {timeOptions.map(time => (
+                            <button
+                                key={time.format('HH:mm')}
+                                className={clsx(styles.timeOption, {
+                                    [styles.chosenTime]: time.hour() === selectedDateTime.hour() && time.minute() === selectedDateTime.minute(),
+                                })}
+                                onClick={() => handleTimeSelect(time)}
+                            >
+                                {time.format('HH:mm')}
+                            </button>
+                        ))}
+                    </div>
+                    <div className={styles.actions}>
+                        <button className={styles.confirmButton} onClick={handleConfirm}>확인</button>
+                    </div>
+                </>
+            ) : (<div style={{height: '1rem'}}></div>)}
+        </div>
+    );
 
     return (
-        <div className={styles.wrapper} ref={wrapperRef}>
+        <div className={styles.wrapper}>
             <button
                 ref={anchorRef}
                 onClick={() => setOpen((o) => !o)}
@@ -121,83 +185,15 @@ const DatePicker: React.FC<Props> = ({ value, onChange, showTime = false }) => {
                 <FontAwesomeIcon icon={faCalendarAlt} />
                 {showTime && <FontAwesomeIcon icon={faClock} style={{fontSize: '0.8em', marginLeft: '4px'}} />}
             </button>
-
             {value && (
                 <>
                     <span className={styles.text}>
                         {dayjs(value).format(showTime ? 'YYYY-MM-DD HH:mm' : 'YYYY-MM-DD')}
                     </span>
-                    <button
-                        className={styles.clear}
-                        onClick={() => onChange(null)}
-                        title="삭제"
-                    >
-                        ×
-                    </button>
+                    <button className={styles.clear} onClick={() => onChange(null)} title="삭제">×</button>
                 </>
             )}
-
-            {open && (
-                <div ref={calendarRef} className={`${styles.calendar} ${position === 'top' ? styles.calendarPositionedTop : ''}`}>
-                    <header className={styles.nav}>
-                        <button onClick={() => setCursor((c) => c.subtract(1, 'month'))}>‹</button>
-                        <span>{cursor.format('YYYY MMM')}</span>
-                        <button onClick={() => setCursor((c) => c.add(1, 'month'))}>›</button>
-                    </header>
-
-                    <div className={styles.weekHead}>
-                        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
-                            <span key={d}>{d}</span>
-                        ))}
-                    </div>
-
-                    {weeks.map((w, i) => (
-                        <div key={i} className={styles.weekRow}>
-                            {w.map((day: Dayjs) => {
-                                const isToday = day.isSame(dayjs(), 'day');
-                                const isChosen = day.isSame(selectedDateTime, 'day');
-                                const isDimmed = !day.isSame(cursor, 'month');
-                                return (
-                                    <button
-                                        key={day.toString()}
-                                        className={clsx(styles.day, {
-                                            [styles.today]: isToday,
-                                            [styles.chosen]: isChosen,
-                                            [styles.dimmed]: isDimmed,
-                                        })}
-                                        onClick={() => handleDateSelect(day)}
-                                    >
-                                        {day.date()}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    ))}
-                    
-                    {showTime ? (
-                        <>
-                            <div className={styles.timePicker}>
-                                {timeOptions.map(time => (
-                                    <button
-                                        key={time.format('HH:mm')}
-                                        className={clsx(styles.timeOption, {
-                                            [styles.chosenTime]: time.hour() === selectedDateTime.hour() && time.minute() === selectedDateTime.minute(),
-                                        })}
-                                        onClick={() => handleTimeSelect(time)}
-                                    >
-                                        {time.format('HH:mm')}
-                                    </button>
-                                ))}
-                            </div>
-                            <div className={styles.actions}>
-                                <button className={styles.confirmButton} onClick={handleConfirm}>확인</button>
-                            </div>
-                        </>
-                    ) : (
-                        <div style={{height: '1rem'}}></div>
-                    )}
-                </div>
-            )}
+            {open && createPortal(CalendarPopup, document.body)}
         </div>
     );
 };

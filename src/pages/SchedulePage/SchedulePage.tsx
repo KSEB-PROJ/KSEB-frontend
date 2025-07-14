@@ -34,17 +34,18 @@ const mockEvents: ScheduleEvent[] = [
 ];
 
 const mockTasks: EventTask[] = [
-    { id: 1, eventId: 'event-1-20250704', title: '발표 PPT 최종 검토', isCompleted: true },
-    { id: 2, eventId: 'event-1-20250711', title: '발표 대본 암기', isCompleted: false },
-    { id: 3, eventId: 'event-1-20250718', title: '시연 영상 렌더링', isCompleted: false },
-    { id: 4, eventId: 'event-3-20250728', title: 'README 파일 작성', isCompleted: true },
-    { id: 5, eventId: 'event-3-20250728', title: '최종 코드 푸시', isCompleted: false },
+    { id: 1, eventId: 'event-1-20250711', title: '발표 PPT 최종 검토', status: 'DONE', dueDate: '2025-07-11T16:00:00Z' },
+    { id: 2, eventId: 'event-1-20250711', title: '발표 대본 암기', status: 'DOING', dueDate: '2025-07-11T23:59:59Z' },
+    { id: 3, eventId: 'event-1-20250718', title: '시연 영상 렌더링', status: 'TODO', dueDate: null },
+    { id: 4, eventId: 'event-3-20250728', title: 'README 파일 작성', status: 'DONE', dueDate: '2025-07-28T23:59:59Z' },
+    { id: 5, eventId: 'event-3-20250728', title: '최종 코드 푸시', status: 'TODO', dueDate: null },
 ];
 
 function getEventInstanceId(event: ScheduleEvent, date: Date | string) {
     const d = dayjs(date);
     return `${event.id}-${d.format('YYYYMMDD')}`;
 }
+
 
 const SchedulePage: React.FC = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -55,7 +56,7 @@ const SchedulePage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
 
-    // 반복 규칙 확장 + instance별 id 생성
+    // ... (processedEvents useMemo 훅은 그대로 사용)
     const processedEvents = useMemo(() => {
         const calendarEvents: EventInput[] = [];
         const viewStart = dayjs(viewRange.start).startOf('day');
@@ -68,12 +69,11 @@ const SchedulePage: React.FC = () => {
                     dtstart: dayjs(event.start).toDate(),
                 });
 
-                // RRule.between을 사용하여 현재 뷰의 시작과 끝 날짜 사이의 모든 반복을 가져옵니다.
                 rule.between(viewStart.toDate(), viewEnd.toDate()).forEach(date => {
                     const duration = dayjs(event.end).diff(dayjs(event.start));
                     const instanceStart = dayjs(date);
                     const instanceEnd = instanceStart.add(duration, 'ms');
-                    
+
                     calendarEvents.push({
                         ...event,
                         id: getEventInstanceId(event, instanceStart.toDate()),
@@ -83,8 +83,7 @@ const SchedulePage: React.FC = () => {
                     });
                 });
             } else {
-                // 반복되지 않는 이벤트는 그대로 추가합니다.
-                 if (dayjs(event.start).isBefore(viewEnd) && dayjs(event.end).isAfter(viewStart)) {
+                if (dayjs(event.start).isBefore(viewEnd) && dayjs(event.end).isAfter(viewStart)) {
                     calendarEvents.push({
                         ...event,
                         id: getEventInstanceId(event, event.start),
@@ -95,6 +94,7 @@ const SchedulePage: React.FC = () => {
         });
         return calendarEvents;
     }, [events, viewRange]);
+
 
     const handleDateClick = (arg: DateClickArg) => {
         const tempId = `temp-${Date.now()}`;
@@ -107,6 +107,7 @@ const SchedulePage: React.FC = () => {
             allDay: arg.allDay,
             ownerType: 'USER',
             ownerId: 123,
+            tasks: [], //새 이벤트는 빈 tasks 배열로 시작
         });
         setIsModalOpen(true);
     };
@@ -119,12 +120,16 @@ const SchedulePage: React.FC = () => {
         if (originalEvent) {
             const instanceId = getEventInstanceId(originalEvent, instanceStart);
 
+            // 이벤트에 해당하는 Task들을 찾아서 함께 전달
+            const eventTasks = tasks.filter(t => t.eventId === instanceId);
+
             setEditingEvent({
                 ...originalEvent,
                 id: instanceId,
                 originalId: originalEvent.id,
                 start: dayjs(instanceStart).format(originalEvent.allDay ? 'YYYY-MM-DD' : 'YYYY-MM-DDTHH:mm'),
                 end: originalEvent.end,
+                tasks: eventTasks,
             });
             setIsModalOpen(true);
             setSelectedEventId(instanceId);
@@ -132,27 +137,46 @@ const SchedulePage: React.FC = () => {
     };
 
 
+    // [수정] 저장 로직: 이벤트와 Task를 함께 업데이트
     const handleSaveEvent = (eventData: ScheduleEvent) => {
-        const isEdit = events.findIndex(e => e.id === (eventData.originalId || eventData.id)) > -1;
+        const originalEventId = eventData.originalId || eventData.id;
+        const isEdit = events.some(e => e.id === originalEventId);
+
+        // 1. 이벤트 정보 업데이트 또는 추가
         if (isEdit) {
-            setEvents(prev =>
-                prev.map(e =>
-                    e.id === (eventData.originalId || eventData.id)
-                        ? { ...e, ...eventData, id: eventData.originalId || eventData.id }
-                        : e
-                )
-            );
+            setEvents(prev => prev.map(e =>
+                e.id === originalEventId ? { ...e, ...eventData, id: originalEventId } : e
+            ));
         } else {
-            setEvents(prev => [...prev, { ...eventData, id: eventData.id, originalId: eventData.id }]);
+            setEvents(prev => [...prev, { ...eventData, id: originalEventId }]);
         }
+
+        // 2. Task 정보 업데이트
+        setTasks(prevTasks => {
+            // 기존에 이 이벤트(originalId 기준)에 속했던 모든 Task를 제거
+            const otherTasks = prevTasks.filter(t => !t.eventId.startsWith(originalEventId));
+            // 모달에서 전달받은 새 Task 목록을 추가 (eventId를 현재 인스턴스 ID로 설정)
+            const updatedTasks = (eventData.tasks || []).map(task => ({
+                ...task,
+                eventId: eventData.id,
+            }));
+            return [...otherTasks, ...updatedTasks];
+        });
+
         setIsModalOpen(false);
     };
 
+
     const handleDeleteEvent = (eventId: string) => {
-        setEvents(prev => prev.filter(e => e.id !== eventId && e.id !== (events.find(ev => getEventInstanceId(ev, ev.start) === eventId)?.id)));
-        setTasks(prev => prev.filter(t => t.eventId !== eventId));
+        const eventToDelete = events.find(e => e.id === eventId);
+        if (!eventToDelete) return;
+
+        setEvents(prev => prev.filter(e => e.id !== eventId));
+        // 해당 이벤트의 모든 인스턴스에 대한 Task 삭제
+        setTasks(prev => prev.filter(t => !t.eventId.startsWith(eventId)));
+
         setIsModalOpen(false);
-        if (selectedEventId === eventId) setSelectedEventId(null);
+        if (selectedEventId?.startsWith(eventId)) setSelectedEventId(null);
     };
 
     const todaysEvents = useMemo(() =>
@@ -168,20 +192,29 @@ const SchedulePage: React.FC = () => {
     );
 
     const handleToggleTask = (taskId: number) => {
-        setTasks(prev => prev.map(t => (t.id === taskId ? { ...t, isCompleted: !t.isCompleted } : t)));
+        setTasks(prev => prev.map(t => {
+            if (t.id === taskId) {
+                const nextStatus = { TODO: 'DOING', DOING: 'DONE', DONE: 'TODO' };
+                return { ...t, status: nextStatus[t.status] as 'TODO' | 'DOING' | 'DONE' };
+            }
+            return t;
+        }));
     };
+
     const handleAddTask = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && selectedEventId && e.currentTarget.value.trim()) {
             const newTask: EventTask = {
                 id: Date.now(),
                 eventId: selectedEventId,
                 title: e.currentTarget.value.trim(),
-                isCompleted: false,
+                status: 'TODO',
+                dueDate: null,
             };
             setTasks(prev => [...prev, newTask]);
             e.currentTarget.value = '';
         }
     };
+
 
     useEffect(() => {
         if (todaysEvents.length > 0 && !todaysEvents.find(e => e.id === selectedEventId)) {
@@ -207,12 +240,11 @@ const SchedulePage: React.FC = () => {
                             eventClick={handleEventClick}
                             dateClick={handleDateClick}
                             datesSet={(arg) => {
-                                // 뷰가 변경될 때마다 현재 날짜와 뷰의 범위를 업데이트합니다.
                                 setCurrentDate(arg.view.currentStart);
                                 setViewRange({ start: arg.view.activeStart, end: arg.view.activeEnd });
                             }}
-                            height="100%" // 부모 컨테이너 높이에 맞추도록 설정
-                            aspectRatio={1.8} // 캘린더의 가로세로 비율 유지
+                            height="100%"
+                            aspectRatio={1.8}
                         />
                     </div>
                 </div>
@@ -247,9 +279,9 @@ const SchedulePage: React.FC = () => {
                             {selectedEventId ? (
                                 <ul className={styles.todoList}>
                                     {selectedEventTasks.map(task => (
-                                        <li key={task.id} className={`${styles.todoItem} ${task.isCompleted ? styles.completed : ''}`}>
+                                        <li key={task.id} className={`${styles.todoItem} ${task.status === 'DONE' ? styles.completed : ''}`}>
                                             <span className={styles.todoCheckbox} onClick={() => handleToggleTask(task.id)}>
-                                                <FontAwesomeIcon icon={faCheck} size="xs" />
+                                                {task.status === 'DONE' && <FontAwesomeIcon icon={faCheck} size="xs" />}
                                             </span>
                                             <span className={styles.todoTitle}>{task.title}</span>
                                         </li>

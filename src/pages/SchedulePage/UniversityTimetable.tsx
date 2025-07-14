@@ -1,26 +1,10 @@
-import React, {
-    useState,
-    useMemo,
-    useEffect,
-    useLayoutEffect,
-    useRef,
-} from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import React, { useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
 import {
-    faPlus,
-    faChevronLeft,
-    faChevronRight,
-    faTimes,
-    faSignature,
-    faUserTie,
-    faCalendarDay,
-    faClock,
-    faMapMarkerAlt,
-    faPalette,
-    faArrowRight,
-    faArrowLeft,
-    faCheck,
+    faPlus, faChevronLeft, faChevronRight, faTimes, faSignature, faUserTie, faCalendarDay, faClock,
+    faMapMarkerAlt, faPalette, faArrowRight, faArrowLeft, faCheck
 } from '@fortawesome/free-solid-svg-icons';
+
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import type { Course } from './types';
 import styles from './UniversityTimetable.module.css';
 import panelStyles from './SchedulePage.module.css';
@@ -50,7 +34,11 @@ const allMockCourses: Course[] = [
         location: '공학관 203호', color: '23, 168, 143'
     },
 ];
-const colorPalette = ['88, 80, 230', '229, 9, 111', '23, 168, 143', '232, 119, 45', '45, 155, 229', '34, 197, 94', '234, 179, 8'];
+// [수정] 색상 팔레트를 8개로 조정하여 그리드 균형 맞춤 나중에 hex 코드로 변경
+const colorPalette = [
+    '88, 80, 230', '229, 9, 111', '23, 168, 143', '59, 130, 246',
+    '232, 119, 45', '34, 197, 94', '234, 179, 8', '239, 68, 68'
+];
 
 /* ----- 유틸 ----- */
 const timeToMin = (t: string) => {
@@ -95,11 +83,7 @@ const TimePicker: React.FC<{ selected: string; onChange: (v: string) => void }> 
 };
 
 
-/* 
-   - 4단계로 나누어 정보를 입력받는 UI/UX
-   - 각 단계에 맞는 아이콘과 안내 메시지 제공
-   - 프로그레스 바를 통해 진행 상황 시각화
- */
+/* CourseModal 컴포넌트 */
 const CourseModal: React.FC<{
     course: Partial<Course> | null;
     onClose: () => void;
@@ -123,10 +107,9 @@ const CourseModal: React.FC<{
 
     if (!form) return null;
 
-    const change = (key: keyof Course, value: Course[keyof Course]) => {
+    const change = (key: keyof Course, value: string) => {
         setForm(prev => prev ? { ...prev, [key]: value } : null);
     };
-
 
     const nextStep = () => setStep(s => Math.min(s + 1, 4));
     const prevStep = () => setStep(s => Math.max(s - 1, 1));
@@ -150,7 +133,6 @@ const CourseModal: React.FC<{
         }
     };
 
-    // 단계별 제목 추가
     const stepTitles: { [key: number]: string } = {
         1: "핵심 정보",
         2: "시간 설정",
@@ -164,7 +146,6 @@ const CourseModal: React.FC<{
     return (
         <div className={styles.modalOverlayV2} onClick={handleClose}>
             <div className={modalContainerClass} onClick={e => e.stopPropagation()}>
-                {/* --- 헤더: 프로그레스바, 단계 제목, 닫기 버튼 통합 --- */}
                 <header className={styles.modalHeaderV2}>
                     <div className={styles.progressInfo}>
                         <span className={styles.stepTitle}>{`Step ${step}/4: ${stepTitles[step]}`}</span>
@@ -176,7 +157,6 @@ const CourseModal: React.FC<{
                 </header>
 
                 <main className={styles.modalContentV2}>
-                    {/* --- Step 1: 강의 & 교수 정보 --- */}
                     {step === 1 && (
                         <div className={`${styles.modalStep} ${styles.activeStep}`}>
                             <div className={styles.stepHeader}>
@@ -195,7 +175,6 @@ const CourseModal: React.FC<{
                         </div>
                     )}
 
-                    {/* --- Step 2: 요일 & 시간 정보 --- */}
                     {step === 2 && (
                         <div className={`${styles.modalStep} ${styles.activeStep}`}>
                             <div className={styles.stepHeader}>
@@ -222,7 +201,6 @@ const CourseModal: React.FC<{
                         </div>
                     )}
 
-                    {/* --- Step 3: 강의실 정보 --- */}
                     {step === 3 && (
                         <div className={`${styles.modalStep} ${styles.activeStep}`}>
                             <div className={styles.stepHeader}>
@@ -237,7 +215,6 @@ const CourseModal: React.FC<{
                         </div>
                     )}
 
-                    {/* --- Step 4: 색상 선택 --- */}
                     {step === 4 && (
                         <div className={`${styles.modalStep} ${styles.activeStep}`}>
                             <div className={styles.stepHeader}>
@@ -253,7 +230,7 @@ const CourseModal: React.FC<{
                                         style={{ '--swatch-color': `rgb(${c})` } as React.CSSProperties}
                                         onClick={() => change('color', c)}
                                     >
-                                        {form.color === c && <FontAwesomeIcon icon={faCheck} />}
+                                        <FontAwesomeIcon icon={faCheck} />
                                     </button>
                                 ))}
                             </div>
@@ -261,15 +238,14 @@ const CourseModal: React.FC<{
                     )}
                 </main>
 
-                {/* --- 푸터: 버튼 배치 --- */}
                 <footer className={styles.modalFooterV2}>
                     <div>
                         {form.id && <button onClick={handleDelete} className={styles.deleteButtonV2}>삭제하기</button>}
                     </div>
                     <div className={styles.stepActions}>
                         {step > 1 && <button onClick={prevStep} className={styles.stepButton}><FontAwesomeIcon icon={faArrowLeft} /> 이전</button>}
-                        {step < 4 && <button onClick={nextStep} className={`${styles.stepButton} ${styles.nextButton}`}>다음 <FontAwesomeIcon icon={faArrowRight} /></button>}
-                        {step === 4 && <button onClick={handleSave} className={`${styles.stepButton} ${styles.saveButtonV2}`}>저장하기</button>}
+                        {step < 4 && <button onClick={nextStep} className={`${styles.stepButton} ${styles.nextButton}`}><span>다음</span> <FontAwesomeIcon icon={faArrowRight} /></button>}
+                        {step === 4 && <button onClick={handleSave} className={`${styles.stepButton} ${styles.saveButtonV2}`}><span>저장하기</span> <FontAwesomeIcon icon={faCheck} /></button>}
                     </div>
                 </footer>
             </div>
@@ -278,21 +254,18 @@ const CourseModal: React.FC<{
 };
 
 
-/* Main Component */
+/* Main Component (수정 없음)*/
 const UniversityTimetable: React.FC = () => {
-    /* --- state --- */
     const [courses, setCourses] = useState<Course[]>(allMockCourses);
     const [semester, setSemester] = useState({ year: 2025, term: 1 });
     const [modal, setModal] = useState(false);
     const [editing, setEditing] = useState<Partial<Course> | null>(null);
     const [anim, setAnim] = useState<'forward' | 'backward' | null>(null);
 
-    /* 요일, 학기 매핑 */
     const termMap: Record<number, string> = { 1: '1학기', 2: '여름학기', 3: '2학기', 4: '겨울학기' };
     const semKey = `${semester.year}-${{ 1: '1', 2: 'S', 3: '2', 4: 'W' }[semester.term]}`;
     const dayIdx: Record<string, number> = { MO: 0, TU: 1, WE: 2, TH: 3, FR: 4 };
 
-    /* --- 레퍼런스 & 레이아웃 측정 --- */
     const gridRef = useRef<HTMLDivElement>(null);
     const [colW, setColW] = useState(0);
 
@@ -308,28 +281,18 @@ const UniversityTimetable: React.FC = () => {
         return () => window.removeEventListener('resize', measureLayout);
     }, []);
 
-    /* --- 학기 이동 --- */
     const moveSem = (dir: 'prev' | 'next') => {
         setAnim(dir === 'next' ? 'forward' : 'backward');
 
         setTimeout(() => {
             setSemester((prev) => {
                 let { year, term } = prev;
-
                 if (dir === 'next') {
-                    if (term === 4) {
-                        year += 1;
-                        term = 1;
-                    } else {
-                        term += 1;
-                    }
+                    term = term === 4 ? 1 : term + 1;
+                    year = term === 1 ? year + 1 : year;
                 } else {
-                    if (term === 1) {
-                        year -= 1;
-                        term = 4;
-                    } else {
-                        term -= 1;
-                    }
+                    term = term === 1 ? 4 : term - 1;
+                    year = term === 4 ? year - 1 : year;
                 }
                 return { year, term };
             });
@@ -337,7 +300,6 @@ const UniversityTimetable: React.FC = () => {
         }, 200);
     };
 
-    /* --- 필터 & 충돌 검사 --- */
     const current = useMemo(() => courses.filter(c => c.semester === semKey), [courses, semKey]);
     const saveCourse = (d: Course) => {
         const ns = timeToMin(d.start_time), ne = timeToMin(d.end_time);
@@ -349,23 +311,19 @@ const UniversityTimetable: React.FC = () => {
     };
     const deleteCourse = (id: number) => { setCourses(p => p.filter(c => c.id !== id)); setModal(false); };
 
-    /* --- 모달 오픈 --- */
     const openAdd = () => {
         setEditing({ semester: semKey, day_of_week: 'MO', start_time: '09:00', end_time: '10:00', color: colorPalette[0] });
         setModal(true);
     };
     const openEdit = (c: Course) => { setEditing(c); setModal(true); };
 
-    /* --- 루프용 상수 --- */
     const hours = Array.from({ length: HOUR_ROWS }, (_, i) => START_HOUR + i);
     const days = ['MON', 'TUE', 'WED', 'THU', 'FRI'];
     const animClass = anim === 'forward' ? styles.slideOutLeft : anim === 'backward' ? styles.slideOutRight : styles.slideIn;
 
-    /* ================= render ================= */
     return (
         <>
             <div className={`${panelStyles.panel} ${styles.timetableContainer}`}>
-                {/* 헤더 */}
                 <div className={styles.timetableHeader}>
                     <div className={styles.semesterNavigator}>
                         <button onClick={() => moveSem('prev')} className={styles.navButton}><FontAwesomeIcon icon={faChevronLeft} /></button>
@@ -375,46 +333,28 @@ const UniversityTimetable: React.FC = () => {
                     <button onClick={openAdd} className={styles.addButton}><FontAwesomeIcon icon={faPlus} /></button>
                 </div>
 
-                {/* 그리드 & 강의 블록*/}
                 <div ref={gridRef} className={`${styles.timetableGrid} ${animClass}`}>
-                    {/* 빈 그리드(헤더, 시간, 셀) */}
                     <div />{days.map(d => <div key={d} className={styles.gridHeader}>{d}</div>)}
                     {hours.map(h => (
                         <React.Fragment key={h}>
                             <div className={styles.gridTime}>{h}:00</div>
                             {days.map((_, col) => {
-                                const hasLecture = current.some(c => {
-                                    if (dayIdx[c.day_of_week] !== col) return false;
-                                    const s = timeToMin(c.start_time), e = timeToMin(c.end_time);
-                                    const cs = h * 60, ce = (h + 1) * 60;
-                                    return s < ce && e > cs;
-                                });
+                                const hasLecture = current.some(c => dayIdx[c.day_of_week] === col && timeToMin(c.start_time) < (h + 1) * 60 && timeToMin(c.end_time) > h * 60);
                                 return <div key={col} className={styles.gridCell} onClick={hasLecture ? undefined : openAdd} />;
                             })}
                         </React.Fragment>
                     ))}
 
-                    {/* 강의 블록 렌더링 */}
                     {current.map(c => {
                         if (colW <= 0) return null;
-
                         const col = dayIdx[c.day_of_week];
-
-                        const minutesSinceGridStart = timeToMin(c.start_time) - (START_HOUR * 60);
-                        const top = HEADER_H + (minutesSinceGridStart / 60) * CELL_H + 15;
-                        const durationMinutes = timeToMin(c.end_time) - timeToMin(c.start_time);
-                        const height = (durationMinutes / 60) * CELL_H;
+                        const top = HEADER_H + (timeToMin(c.start_time) - START_HOUR * 60) / 60 * CELL_H + 15;
+                        const height = (timeToMin(c.end_time) - timeToMin(c.start_time)) / 60 * CELL_H;
                         const left = TIME_COL_W + colW * col;
 
                         return (
                             <div key={c.id} className={styles.courseBlock}
-                                style={{
-                                    top: `${top}px`,
-                                    left: `${left}px`,
-                                    height: `${height - 1}px`,
-                                    width: `${colW - 2}px`,
-                                    '--course-color-rgb': c.color || colorPalette[0]
-                                } as React.CSSProperties}
+                                style={{ top: `${top}px`, left: `${left}px`, height: `${height - 1}px`, width: `${colW - 2}px`, '--course-color-rgb': c.color || colorPalette[0] } as React.CSSProperties}
                                 onClick={e => { e.stopPropagation(); openEdit(c); }}>
                                 <div className={styles.courseName}>{c.course_name}</div>
                                 <div className={styles.courseSubInfo}><span>{c.professor}</span><span>{c.location}</span></div>

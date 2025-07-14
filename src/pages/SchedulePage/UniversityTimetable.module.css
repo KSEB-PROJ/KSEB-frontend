@@ -168,7 +168,7 @@
     background-color: rgba(var(--group-color), 0.1);
 }
 
-/* --- Course Block (수정됨) --- */
+/* --- Course Block --- */
 .courseBlock {
     --course-color-rgb: var(--group-color);
     position: absolute;
@@ -221,7 +221,7 @@
 }
 
 /* ===============================================================
-   [추가/수정] 새로운 모달 (V2) 스타일 
+   [최종 수정] 새로운 모달 (V2) 스타일 
    =============================================================== */
 .modalOverlayV2 {
     position: fixed;
@@ -249,13 +249,11 @@
     animation: popInV2 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
 }
 .modalContainerV2.closing {
     animation: popOutV2 0.3s ease forwards;
 }
 
-/* [수정] 헤더 레이아웃 변경 */
 .modalHeaderV2 {
     padding: 1rem 1.5rem;
     display: flex;
@@ -263,6 +261,7 @@
     justify-content: space-between;
     position: relative;
     border-bottom: 1px solid rgba(255,255,255,0.1);
+    background: #202023;
 }
 .progressInfo {
     display: flex;
@@ -276,7 +275,7 @@
     color: #ccc;
 }
 .progressWrapper {
-    width: 95%; /* 닫기 버튼과 겹치지 않게 */
+    width: 95%;
     height: 6px;
     background: #3a3a3e;
     border-radius: 3px;
@@ -299,7 +298,7 @@
 
 .modalContentV2 {
     padding: 0 2.5rem 2rem;
-    display: grid; /* For step transition */
+    display: grid;
     min-height: 280px;
 }
 .modalStep {
@@ -316,7 +315,7 @@
 .stepHeader {
     text-align: center;
     margin-bottom: 2rem;
-    margin-top: 1rem;
+    margin-top: 1.5rem;
 }
 .stepHeader svg {
     font-size: 1.8rem;
@@ -358,7 +357,7 @@
 .inputGroupV2 input:not(:placeholder-shown) + label {
     top: -1.2rem;
     font-size: 0.8rem;
-    color: rgb(var(--group-color));
+    color: #999999
 }
 
 .daySelector {
@@ -389,27 +388,31 @@
 }
 .timePicker .timeInput:hover { background-color: #444; }
 
+/* [수정] 컬러 팔레트 그리드 레이아웃 */
 .colorPaletteV2 {
-    display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
     margin-top: 1rem;
 }
 .colorPaletteV2 button {
     --swatch-color: #fff;
-    width: 48px; height: 48px;
-    border-radius: 50%;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 102px;
     border: 3px solid transparent;
-    background: var(--swatch-color);
+    background-color: var(--swatch-color);
     cursor: pointer;
     transition: all .2s;
     position: relative;
     display: grid; place-items: center;
-    font-size: 1.2rem; color: #fff;
+    font-size: 1.5rem; color: #fff;
     text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
-.colorPaletteV2 button:hover { transform: scale(1.1); }
+.colorPaletteV2 button:hover { transform: scale(1.05); }
 .colorPaletteV2 button.active {
     border-color: #fff;
-    box-shadow: 0 0 15px var(--swatch-color), 0 0 5px #fff;
+    box-shadow: 0 0 15px rgba(255,255,255,0.4), 0 0 20px var(--swatch-color);
 }
 .colorPaletteV2 button.active > svg {
     opacity: 1;
@@ -421,7 +424,7 @@
     transition: all .2s;
 }
 
-/* [수정] 푸터 버튼 배치 변경 */
+/* [수정] 푸터 및 버튼 스타일 */
 .modalFooterV2 {
     padding: 1rem 1.5rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -431,7 +434,7 @@
     background: #202023;
 }
 .deleteButtonV2, .stepButton {
-    background: none; border: none; font-size: 0.9rem; font-weight: 500; cursor: pointer;
+    background: none; border: none; font-size: 0.95rem; font-weight: 500; cursor: pointer;
     transition: all .2s;
     padding: 0.6rem 1rem;
     border-radius: 8px;
@@ -446,56 +449,36 @@
     display: flex;
     gap: 0.75rem;
 }
-.stepButton { color: #aaa; }
-.stepButton:hover { background: #333; color: #fff; }
-.stepButton.nextButton {
+.stepButton { color: #aaa; background-color: #3a3a3e; }
+.stepButton:hover { background-color: #4a4a4e; color: #fff; }
+
+.stepButton span { transition: transform 0.2s; display: inline-block; }
+.stepButton svg { transition: transform 0.2s; }
+.stepButton:hover span { transform: translateX(-2px); }
+.stepButton:hover svg { transform: translateX(2px); }
+
+.stepButton.nextButton, .stepButton.saveButtonV2 {
     color: #fff;
-    background: rgb(var(--group-color));
+    background: linear-gradient(to right, #4f46e5, #7c3aed);
+    box-shadow: 0 4px 15px -5px #6d28d9aa;
 }
-.stepButton.saveButtonV2 {
-    background: rgb(var(--group-color));
-    color: #fff;
-    box-shadow: 0 5px 15px #22c55e20;
-}
-.stepButton.saveButtonV2:hover { filter: brightness(1.15); }
+.stepButton.nextButton:hover, .stepButton.saveButtonV2:hover { filter: brightness(1.15); }
 
 
-/* ----- (기존) TimePicker 스타일 ----- */
-.timePicker {
-    position: relative;
-}
+/* ----- TimePicker (기존과 동일) ----- */
+.timePicker { position: relative; }
 .timePickerPopup {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    width: 250px;
-    max-height: 200px;
-    overflow-y: auto;
-    background: #3a3a3e;
-    border: 1px solid #666;
-    border-radius: 8px;
-    z-index: 1400;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    padding: 0.5rem;
-    display: grid;
+    position: absolute; top: calc(100% + 8px); left: 50%;
+    transform: translateX(-50%); width: 250px; max-height: 200px;
+    overflow-y: auto; background: #3a3a3e; border: 1px solid #666;
+    border-radius: 8px; z-index: 1400; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    padding: 0.5rem; display: grid;
     grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
     gap: 0.25rem;
 }
 .timeOption {
-    padding: 0.6rem 0.5rem;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    font-size: 0.9rem;
-    text-align: center;
-    border-radius: 6px;
-    color: #eee;
+    padding: 0.6rem 0.5rem; cursor: pointer; transition: background-color 0.2s;
+    font-size: 0.9rem; text-align: center; border-radius: 6px; color: #eee;
 }
-.timeOption:hover {
-    background-color: rgba(var(--group-color), 0.3);
-}
-.timeOption.selected {
-    background-color: rgb(var(--group-color));
-    color: #fff;
-    font-weight: bold;
-}
+.timeOption:hover { background-color: rgba(var(--group-color), 0.3); }
+.timeOption.selected { background-color: rgb(var(--group-color)); color: #fff; font-weight: bold; }
