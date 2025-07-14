@@ -1,7 +1,7 @@
 import React, { useRef, useState,useEffect } from 'react';
 import styles from './ChatPage.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBullhorn,faPaperPlane, faXmark, faPaperclip,faFilePdf, faFileWord, faFileExcel, faFileImage, faFileVideo, faFileAudio, faFileAlt } from '@fortawesome/free-solid-svg-icons';
+import { faThumbTack,faPaperPlane, faXmark, faPaperclip,faFilePdf, faFileWord, faFileExcel, faFileImage, faFileVideo, faFileAudio, faFileAlt } from '@fortawesome/free-solid-svg-icons';
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 type ChatMessage = {
@@ -180,7 +180,7 @@ const ChatPage: React.FC = () => {
                                     /* 텍스트가 있으면 기존 말풍선 */
                                     <div className={`${styles.chatMessage} ${styles.myMessage}`}>
                                     {msg.horned && (
-                                        <FontAwesomeIcon icon={faBullhorn} className={`${styles.hornIcon} ${msg.sender === "me" ? styles.hornIconLeft : styles.hornIconRight}`}/>
+                                        <FontAwesomeIcon icon={faThumbTack} className={`${styles.hornIcon} ${msg.sender === "me" ? styles.hornIconLeft : styles.hornIconRight}`}/>
                                     )}
                                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
                                     {/* 마크다운: # 제목, **굵게**, *기울임*, ~~취소선~~ */}
@@ -218,7 +218,7 @@ const ChatPage: React.FC = () => {
                                 {msg.text ? (
                                     <div className={`${styles.chatMessage} ${styles.otherMessage}`}>
                                     {msg.horned && (
-                                        <FontAwesomeIcon icon={faBullhorn} className={`${styles.hornIcon} ${styles.hornIconRight}`}/>)}
+                                        <FontAwesomeIcon icon={faThumbTack} className={`${styles.hornIcon} ${styles.hornIconRight}`}/>)}
                                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
                                         {msg.files && msg.files.length > 0 && (
                                             <div className={styles.fileInChatList}>
