@@ -81,19 +81,23 @@
     scrollbar-width: thin;
     padding-right: 1rem; /* 스크롤바 공간 */
 }
-.hornIcon{
-    position: absolute;
+.pinIcon, .trashcanIcon, .editIcon {
     color: #da1414;
-    font-size: 20px;
-    top: -12px;
+    font-size: 10px;
 }
-.hornIconLeft {
-  left: -10px;
-  transform: scaleX(-1);
+.iconLeft, .iconRight{
+    display: none;
+    position: absolute;
+    gap: 6px;
+    z-index: 10;
+    align-self: flex-end;
 }
-
-.hornIconRight {
-  right: -10px; 
+.myMessageRow:hover .iconLeft{
+    display:flex;
+    transform: scaleX(-1);
+}
+.otherMessageRow:hover .iconRight{
+    display: flex;
 }
 .myMessageRow {
     justify-content: flex-end;
@@ -114,6 +118,7 @@
     align-items: flex-end;
     margin-bottom: 1px;
     width: 100%;
+    position: relative;
 }
 
 .chatTimemyMessage {
@@ -162,6 +167,7 @@
     border-bottom-right-radius: 4px;
     transition: background-color 0.4s ease;
     order: 2;
+    position: relative;
 }
 .profileArea {
     margin-right: 6px;
