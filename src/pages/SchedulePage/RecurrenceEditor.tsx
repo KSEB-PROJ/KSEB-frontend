@@ -1,73 +1,124 @@
-import React, { useState, useEffect } from 'react';
-import { RRule, rrulestr, type Options } from 'rrule';
+import React, { useState, useEffect, useRef } from 'react';
+import { RRule, rrulestr } from 'rrule';
 import dayjs from 'dayjs';
 import styles from './RecurrenceEditor.module.css';
+import DatePicker from '../../components/date-picker/DatePicker';
 
 interface Props {
-  rruleString: string | undefined;
+  rruleString?: string;
   onChange: (rrule: string | undefined) => void;
   startDate: string;
+  modalKey?: string; // 모달 구분용
 }
 
+interface WeekdayObj {
+  weekday: number;
+  n?: number;
+}
+
+// 0=월, ... 6=일
+const RRuleWeekdays = [
+  RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR, RRule.SA, RRule.SU,
+];
+
 const weekdayMap = [
-  { value: 0, label: '월' }, { value: 1, label: '화' },
-  { value: 2, label: '수' }, { value: 3, label: '목' },
-  { value: 4, label: '금' }, { value: 5, label: '토' },
+  { value: 0, label: '월' },
+  { value: 1, label: '화' },
+  { value: 2, label: '수' },
+  { value: 3, label: '목' },
+  { value: 4, label: '금' },
+  { value: 5, label: '토' },
   { value: 6, label: '일' },
 ];
 
-const RecurrenceEditor = ({ rruleString, onChange, startDate }: Props) => {
+function extractWeekdayNum(w: unknown): number {
+  if (typeof w === 'object' && w !== null && 'weekday' in w) {
+    return (w as WeekdayObj).weekday;
+  }
+  if (typeof w === 'number') {
+    return w;
+  }
+  throw new Error('Invalid weekday value');
+}
+
+const RecurrenceEditor: React.FC<Props> = ({ rruleString, onChange, startDate, modalKey }) => {
   const [freq, setFreq] = useState<string>('NONE');
   const [byweekday, setByweekday] = useState<number[]>([]);
-  const [until, setUntil] = useState<string>('');
+  const [until, setUntil] = useState<string | null>(null);
+  const didInit = useRef(false);
 
+  // 모달이 새로 열릴 때마다 didInit 초기화!
   useEffect(() => {
-    if (rruleString) {
-      try {
-        const rule = rrulestr(rruleString);
-        const options = rule.options;
-        setFreq(String(options.freq));
-        setByweekday(options.byweekday || []);
-        setUntil(options.until ? dayjs(options.until).format('YYYY-MM-DD') : '');
-      } catch {
-        setFreq('NONE');
+    didInit.current = false;
+  }, [modalKey]);
+
+  // 최초 1회만 prop → state 동기화
+  useEffect(() => {
+    if (didInit.current) return;
+    if (!rruleString) {
+      setFreq('NONE'); setByweekday([]); setUntil(null);
+      didInit.current = true;
+      return;
+    }
+    try {
+      const rule = rrulestr(rruleString);
+      setFreq(String(rule.options.freq));
+      const bwd = rule.options.byweekday;
+      if (Array.isArray(bwd)) {
+        setByweekday(bwd.map(extractWeekdayNum));
+      } else if (typeof bwd === 'object' && bwd !== null && 'weekday' in bwd) {
+        setByweekday([extractWeekdayNum(bwd)]);
+      } else if (typeof bwd === 'number') {
+        setByweekday([bwd]);
+      } else {
+        setByweekday([]);
       }
+      setUntil(rule.options.until ? dayjs(rule.options.until).toISOString() : null);
+      didInit.current = true;
+    } catch {
+      setFreq('NONE'); setByweekday([]); setUntil(null);
+      didInit.current = true;
     }
   }, [rruleString]);
 
+  // state 변화 → onChange (didInit 완료 후에만!)
   useEffect(() => {
-    if (freq === 'NONE') {
+    if (!didInit.current) return;
+    if (freq === 'NONE' || !dayjs(startDate).isValid()) {
       onChange(undefined);
       return;
     }
-    const options: Partial<Options> = {
+    const selectedWeekdays = byweekday.map((i) => RRuleWeekdays[i]);
+    const opts = {
       freq: Number(freq),
       dtstart: dayjs(startDate).startOf('day').toDate(),
       wkst: 0,
+      ...(selectedWeekdays.length > 0 ? { byweekday: selectedWeekdays } : {}),
+      ...(until && dayjs(until).isValid()
+        ? { until: dayjs(until).endOf('day').toDate() }
+        : {}),
     };
-    if (byweekday.length > 0) options.byweekday = byweekday;
-    if (until) options.until = dayjs(until).endOf('day').toDate();
-    // @ts-expect-error rrule Options 타입 경고 무시
-    const rule = new RRule(options);
+    const rule = new RRule(opts as RRule.Options);
     onChange(rule.toString());
   }, [freq, byweekday, until, startDate, onChange]);
 
   const handleFreqChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newFreq = e.target.value;
-    setFreq(newFreq);
-
-    if (newFreq === String(RRule.WEEKLY) && byweekday.length === 0) {
-      const startDayIndex = (dayjs(startDate).day() + 6) % 7;
-      setByweekday([startDayIndex]);
+    const v = e.target.value;
+    setFreq(v);
+    if (v === String(RRule.WEEKLY) && byweekday.length === 0 && dayjs(startDate).isValid()) {
+      const idx = (dayjs(startDate).day() + 6) % 7;
+      setByweekday([idx]);
     }
-    if (newFreq !== String(RRule.WEEKLY)) setByweekday([]);
+    if (v !== String(RRule.WEEKLY)) {
+      setByweekday([]);
+    }
   };
 
   const handleWeekdayToggle = (dayValue: number) => {
-    setByweekday(prev =>
+    setByweekday((prev) =>
       prev.includes(dayValue)
-        ? prev.filter(d => d !== dayValue)
-        : [...prev, dayValue].sort()
+        ? prev.filter((d) => d !== dayValue)
+        : [...prev, dayValue].sort((a, b) => a - b)
     );
   };
 
@@ -75,18 +126,21 @@ const RecurrenceEditor = ({ rruleString, onChange, startDate }: Props) => {
     <div className={styles.editorContainer}>
       <select className={styles.select} value={freq} onChange={handleFreqChange}>
         <option value="NONE">반복 안 함</option>
-        <option value={RRule.DAILY}>매일</option>
-        <option value={RRule.WEEKLY}>매주</option>
-        <option value={RRule.MONTHLY}>매월</option>
-        <option value={RRule.YEARLY}>매년</option>
+        <option value={String(RRule.DAILY)}>매일</option>
+        <option value={String(RRule.WEEKLY)}>매주</option>
+        <option value={String(RRule.MONTHLY)}>매월</option>
+        <option value={String(RRule.YEARLY)}>매년</option>
       </select>
+
       {freq === String(RRule.WEEKLY) && (
         <div className={styles.weekdaySelector}>
-          {weekdayMap.map(day => (
+          {weekdayMap.map((day) => (
             <button
               key={day.value}
               type="button"
-              className={`${styles.weekdayButton} ${byweekday.includes(day.value) ? styles.selected : ''}`}
+              className={`${styles.weekdayButton} ${
+                byweekday.includes(day.value) ? styles.selected : ''
+              }`}
               onClick={() => handleWeekdayToggle(day.value)}
             >
               {day.label}
@@ -94,15 +148,11 @@ const RecurrenceEditor = ({ rruleString, onChange, startDate }: Props) => {
           ))}
         </div>
       )}
+
       {freq !== 'NONE' && (
         <div className={styles.untilGroup}>
           <label className={styles.label}>종료일</label>
-          <input
-            type="date"
-            className={styles.dateInput}
-            value={until}
-            onChange={e => setUntil(e.target.value)}
-          />
+          <DatePicker value={until} onChange={setUntil} showTime={false} />
         </div>
       )}
     </div>

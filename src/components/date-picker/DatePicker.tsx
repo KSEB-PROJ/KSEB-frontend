@@ -1,24 +1,57 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import dayjs, { Dayjs } from 'dayjs';
 import clsx from 'clsx';
 import styles from './DatePicker.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
+import { faCalendarAlt, faClock } from '@fortawesome/free-solid-svg-icons';
 
 interface Props {
-    value: string | null;                 // ISO 8601 문자열
+    value: string | null;
     onChange: (iso: string | null) => void;
+    showTime?: boolean;
 }
 
-const DatePicker: React.FC<Props> = ({ value, onChange }) => {
+const DatePicker: React.FC<Props> = ({ value, onChange, showTime = false }) => {
     const [open, setOpen] = useState(false);
+    const wrapperRef = useRef<HTMLDivElement>(null);
     const anchorRef = useRef<HTMLButtonElement>(null);
     const calendarRef = useRef<HTMLDivElement>(null);
-    const [cursor, setCursor] = useState<Dayjs>(() =>
+    const [position, setPosition] = useState<'bottom' | 'top'>('bottom');
+
+    const [selectedDateTime, setSelectedDateTime] = useState<Dayjs>(() =>
         value ? dayjs(value) : dayjs()
     );
+    const [cursor, setCursor] = useState<Dayjs>(value ? dayjs(value) : dayjs());
 
-    /* 외부 클릭 시 달력 닫기 */
+    // useEffect의 의존성 경고를 해결하기 위해 함수형 업데이트를 사용합니다.
+    useEffect(() => {
+        const externalDate = value ? dayjs(value) : null;
+        setSelectedDateTime(currentInternalDate => {
+            if (externalDate && !externalDate.isSame(currentInternalDate)) {
+                setCursor(externalDate); // 커서도 함께 업데이트
+                return externalDate;
+            }
+            if (!externalDate && value === null) {
+                const now = dayjs();
+                setCursor(now);
+                return now;
+            }
+            return currentInternalDate; // 변경이 없으면 기존 상태 유지
+        });
+    }, [value]);
+    
+    useEffect(() => {
+        if (open && wrapperRef.current) {
+            const rect = wrapperRef.current.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            if (spaceBelow < 350) {
+                setPosition('top');
+            } else {
+                setPosition('bottom');
+            }
+        }
+    }, [open]);
+
     useEffect(() => {
         function handleClick(e: MouseEvent) {
             if (
@@ -33,8 +66,7 @@ const DatePicker: React.FC<Props> = ({ value, onChange }) => {
         return () => document.removeEventListener('mousedown', handleClick);
     }, [open]);
 
-    /* 현재 달력에 표시할 주 단위 배열 생성 */
-    const weeks = () => {
+    const weeks = useMemo(() => {
         const start = cursor.startOf('month').startOf('week');
         const end = cursor.endOf('month').endOf('week');
         const days: Dayjs[] = [];
@@ -46,24 +78,55 @@ const DatePicker: React.FC<Props> = ({ value, onChange }) => {
         return Array.from({ length: days.length / 7 }, (_, i) =>
             days.slice(i * 7, i * 7 + 7)
         );
+    }, [cursor]);
+
+    const timeOptions = useMemo(() => {
+        const options = [];
+        for (let i = 0; i < 24 * 2; i++) {
+            const hour = Math.floor(i / 2);
+            const minute = (i % 2) * 30;
+            options.push(dayjs().hour(hour).minute(minute).second(0));
+        }
+        return options;
+    }, []);
+
+    const handleDateSelect = (day: Dayjs) => {
+        const newDateTime = selectedDateTime.year(day.year()).month(day.month()).date(day.date());
+        setSelectedDateTime(newDateTime);
+        setCursor(newDateTime);
+        if (!showTime) {
+            onChange(newDateTime.toISOString());
+            setOpen(false);
+        }
+    };
+
+    const handleTimeSelect = (time: Dayjs) => {
+        const newDateTime = selectedDateTime.hour(time.hour()).minute(time.minute());
+        setSelectedDateTime(newDateTime);
+    }
+
+    const handleConfirm = () => {
+        onChange(selectedDateTime.toISOString());
+        setOpen(false);
     };
 
     return (
-        <div className={styles.wrapper}>
-            {/* 트리거 버튼 */}
+        <div className={styles.wrapper} ref={wrapperRef}>
             <button
                 ref={anchorRef}
                 onClick={() => setOpen((o) => !o)}
                 className={styles.trigger}
-                title="만료일 설정"
+                title="날짜 및 시간 설정"
             >
                 <FontAwesomeIcon icon={faCalendarAlt} />
+                {showTime && <FontAwesomeIcon icon={faClock} style={{fontSize: '0.8em', marginLeft: '4px'}} />}
             </button>
 
-            {/* 선택된 날짜 텍스트 / 클리어 */}
             {value && (
                 <>
-                    <span className={styles.text}>{dayjs(value).format('YYYY-MM-DD')}</span>
+                    <span className={styles.text}>
+                        {dayjs(value).format(showTime ? 'YYYY-MM-DD HH:mm' : 'YYYY-MM-DD')}
+                    </span>
                     <button
                         className={styles.clear}
                         onClick={() => onChange(null)}
@@ -74,19 +137,12 @@ const DatePicker: React.FC<Props> = ({ value, onChange }) => {
                 </>
             )}
 
-            {/* 달력 팝업 */}
             {open && (
-                <div ref={calendarRef} className={styles.calendar}>
+                <div ref={calendarRef} className={`${styles.calendar} ${position === 'top' ? styles.calendarPositionedTop : ''}`}>
                     <header className={styles.nav}>
-                        <button
-                            onClick={() => setCursor((c: Dayjs) => c.subtract(1, 'month'))}
-                        >
-                            ‹
-                        </button>
+                        <button onClick={() => setCursor((c) => c.subtract(1, 'month'))}>‹</button>
                         <span>{cursor.format('YYYY MMM')}</span>
-                        <button onClick={() => setCursor((c: Dayjs) => c.add(1, 'month'))}>
-                            ›
-                        </button>
+                        <button onClick={() => setCursor((c) => c.add(1, 'month'))}>›</button>
                     </header>
 
                     <div className={styles.weekHead}>
@@ -95,11 +151,11 @@ const DatePicker: React.FC<Props> = ({ value, onChange }) => {
                         ))}
                     </div>
 
-                    {weeks().map((w, i) => (
+                    {weeks.map((w, i) => (
                         <div key={i} className={styles.weekRow}>
                             {w.map((day: Dayjs) => {
                                 const isToday = day.isSame(dayjs(), 'day');
-                                const isChosen = value ? day.isSame(dayjs(value), 'day') : false;
+                                const isChosen = day.isSame(selectedDateTime, 'day');
                                 const isDimmed = !day.isSame(cursor, 'month');
                                 return (
                                     <button
@@ -109,10 +165,7 @@ const DatePicker: React.FC<Props> = ({ value, onChange }) => {
                                             [styles.chosen]: isChosen,
                                             [styles.dimmed]: isDimmed,
                                         })}
-                                        onClick={() => {
-                                            onChange(day.startOf('day').toISOString());
-                                            setOpen(false);
-                                        }}
+                                        onClick={() => handleDateSelect(day)}
                                     >
                                         {day.date()}
                                     </button>
@@ -120,6 +173,29 @@ const DatePicker: React.FC<Props> = ({ value, onChange }) => {
                             })}
                         </div>
                     ))}
+                    
+                    {showTime ? (
+                        <>
+                            <div className={styles.timePicker}>
+                                {timeOptions.map(time => (
+                                    <button
+                                        key={time.format('HH:mm')}
+                                        className={clsx(styles.timeOption, {
+                                            [styles.chosenTime]: time.hour() === selectedDateTime.hour() && time.minute() === selectedDateTime.minute(),
+                                        })}
+                                        onClick={() => handleTimeSelect(time)}
+                                    >
+                                        {time.format('HH:mm')}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className={styles.actions}>
+                                <button className={styles.confirmButton} onClick={handleConfirm}>확인</button>
+                            </div>
+                        </>
+                    ) : (
+                        <div style={{height: '1rem'}}></div>
+                    )}
                 </div>
             )}
         </div>

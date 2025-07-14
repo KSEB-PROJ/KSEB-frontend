@@ -58,30 +58,39 @@ const SchedulePage: React.FC = () => {
     // 반복 규칙 확장 + instance별 id 생성
     const processedEvents = useMemo(() => {
         const calendarEvents: EventInput[] = [];
+        const viewStart = dayjs(viewRange.start).startOf('day');
+        const viewEnd = dayjs(viewRange.end).endOf('day');
+
         events.forEach(event => {
             if (event.rrule) {
                 const rule = new RRule({
                     ...RRule.parseString(event.rrule),
                     dtstart: dayjs(event.start).toDate(),
                 });
-                rule.between(viewRange.start, viewRange.end).forEach(date => {
+
+                // RRule.between을 사용하여 현재 뷰의 시작과 끝 날짜 사이의 모든 반복을 가져옵니다.
+                rule.between(viewStart.toDate(), viewEnd.toDate()).forEach(date => {
                     const duration = dayjs(event.end).diff(dayjs(event.start));
+                    const instanceStart = dayjs(date);
+                    const instanceEnd = instanceStart.add(duration, 'ms');
+                    
                     calendarEvents.push({
                         ...event,
-                        id: getEventInstanceId(event, date),
+                        id: getEventInstanceId(event, instanceStart.toDate()),
                         originalId: event.id,
-                        start: date,
-                        end: dayjs(date).add(duration, 'ms').toDate(),
+                        start: instanceStart.toDate(),
+                        end: instanceEnd.toDate(),
                     });
                 });
             } else {
-                calendarEvents.push({
-                    ...event,
-                    id: getEventInstanceId(event, event.start),
-                    originalId: event.id,
-                    start: event.start,
-                    end: event.end,
-                });
+                // 반복되지 않는 이벤트는 그대로 추가합니다.
+                 if (dayjs(event.start).isBefore(viewEnd) && dayjs(event.end).isAfter(viewStart)) {
+                    calendarEvents.push({
+                        ...event,
+                        id: getEventInstanceId(event, event.start),
+                        originalId: event.id,
+                    });
+                }
             }
         });
         return calendarEvents;
@@ -198,9 +207,12 @@ const SchedulePage: React.FC = () => {
                             eventClick={handleEventClick}
                             dateClick={handleDateClick}
                             datesSet={(arg) => {
+                                // 뷰가 변경될 때마다 현재 날짜와 뷰의 범위를 업데이트합니다.
                                 setCurrentDate(arg.view.currentStart);
                                 setViewRange({ start: arg.view.activeStart, end: arg.view.activeEnd });
                             }}
+                            height="100%" // 부모 컨테이너 높이에 맞추도록 설정
+                            aspectRatio={1.8} // 캘린더의 가로세로 비율 유지
                         />
                     </div>
                 </div>

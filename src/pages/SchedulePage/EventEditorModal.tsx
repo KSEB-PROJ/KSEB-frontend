@@ -1,10 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import dayjs from 'dayjs';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
+import {
+  faClock,
+  faSync,
+  faMapMarkerAlt,
+  faAlignLeft,
+  faCalendarDay,
+} from '@fortawesome/free-solid-svg-icons';
 import type { ScheduleEvent } from './types';
 import styles from './EventEditorModal.module.css';
 import RecurrenceEditor from './RecurrenceEditor';
+import DatePicker from '../../components/date-picker/DatePicker';
 
 interface Props {
   event: ScheduleEvent | null;
@@ -13,143 +19,142 @@ interface Props {
   onDelete: (eventId: string) => void;
 }
 
-const EventEditorModal: React.FC<Props> = ({ event, onClose, onSave, onDelete }) => {
+const EventEditorModal: React.FC<Props> = ({
+  event,
+  onClose,
+  onSave,
+  onDelete,
+}) => {
   const [formData, setFormData] = useState<ScheduleEvent | null>(null);
+  const [isRecurrenceEnabled, setRecurrenceEnabled] = useState(false);
+
+  const modalKey = useMemo(() => {
+    return (event?.id || 'new') + '-' + Date.now();
+  }, [event]);
 
   useEffect(() => {
     setFormData(event);
+    setRecurrenceEnabled(!!event?.rrule);
   }, [event]);
 
+  const updateFormData = useCallback(
+    (field: keyof ScheduleEvent, value: ScheduleEvent[keyof ScheduleEvent]) => {
+      setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
+    },
+    []
+  );
+
+  const handleRecurrenceToggle = (enabled: boolean) => {
+    setRecurrenceEnabled(enabled);
+    if (!enabled) {
+      updateFormData('rrule', undefined);
+    }
+  };
+  
   if (!formData) return null;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    const isChecked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined;
-    setFormData(prev => {
-      if (!prev) return null;
-      if (name === 'allDay' && isChecked) {
-        return {
-          ...prev,
-          allDay: isChecked,
-          start: dayjs(prev.start).startOf('day').format('YYYY-MM-DD'),
-          end: dayjs(prev.end).endOf('day').format('YYYY-MM-DD')
-        };
-      }
-      return { ...prev, [name]: isChecked !== undefined ? isChecked : value };
-    });
-  };
-
-  const handleRecurrenceChange = (rrule: string | undefined) => {
-    setFormData(prev => prev ? { ...prev, rrule } : null);
-  };
-
   const handleSave = () => {
-    if (formData) {
-      const finalData = {
-        ...formData,
-        start: dayjs(formData.start).format(formData.allDay ? 'YYYY-MM-DD' : 'YYYY-MM-DDTHH:mm'),
-        end: dayjs(formData.end).format(formData.allDay ? 'YYYY-MM-DD' : 'YYYY-MM-DDTHH:mm'),
-      };
-      onSave(finalData);
+    if (formData && formData.title.trim()) {
+      onSave(formData);
+    } else {
+      alert('일정 제목을 입력해주세요.');
     }
   };
 
   const handleDelete = () => {
-    if (window.confirm('이 일정을 정말 삭제하시겠습니까?')) {
+    if (formData && window.confirm('이 일정을 정말 삭제하시겠습니까?')) {
       onDelete(formData.id);
     }
   };
 
   return (
     <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modalContainer} onClick={e => e.stopPropagation()}>
-        <header className={styles.header}>
-          <h2>{String(formData.id).startsWith('temp-') ? '새로운 일정' : '일정 수정'}</h2>
-          <button className={styles.closeButton} onClick={onClose}>
-            <FontAwesomeIcon icon={faTimes} />
-          </button>
-        </header>
-        <main className={styles.content}>
-          <div className={styles.inputGroup}>
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              placeholder="일정 제목"
-              className={styles.input}
-              style={{ fontSize: '1.2rem', fontWeight: 'bold' }}
-            />
-          </div>
-          <div className={styles.timeGroup}>
-            <div className={styles.inputGroup} style={{ flex: 1 }}>
-              <label className={styles.label}>시작</label>
-              <input
-                type={formData.allDay ? 'date' : 'datetime-local'}
-                name="start"
-                value={dayjs(formData.start).format(formData.allDay ? 'YYYY-MM-DD' : 'YYYY-MM-DDTHH:mm')}
-                onChange={handleChange}
-                className={styles.input}
-              />
+      <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
+        
+        <div className={styles.mainGrid}>
+            <div className={styles.contentColumn}>
+                <div className={styles.formModule}>
+                    <input
+                        type="text"
+                        value={formData.title}
+                        onChange={(e) => updateFormData('title', e.target.value)}
+                        placeholder="일정 제목"
+                        className={styles.titleInput}
+                        autoFocus
+                    />
+                </div>
+                 <div className={styles.formModule} style={{flexGrow: 1}}>
+                    <label className={styles.label}><FontAwesomeIcon icon={faAlignLeft}/> 설명</label>
+                    <textarea
+                        value={formData.description || ''}
+                        onChange={(e) => updateFormData('description', e.target.value)}
+                        className={styles.textarea}
+                        placeholder="설명 및 메모 추가..."
+                    />
+                </div>
             </div>
-            <div className={styles.inputGroup} style={{ flex: 1 }}>
-              <label className={styles.label}>종료</label>
-              <input
-                type={formData.allDay ? 'date' : 'datetime-local'}
-                name="end"
-                value={dayjs(formData.end).format(formData.allDay ? 'YYYY-MM-DD' : 'YYYY-MM-DDTHH:mm')}
-                onChange={handleChange}
-                className={styles.input}
-              />
+
+            <div className={styles.controlsColumn}>
+                <div className={styles.formModule}>
+                    <label className={styles.label}><FontAwesomeIcon icon={faClock}/> 시간</label>
+                     <DatePicker
+                        value={formData.start}
+                        onChange={(iso) => updateFormData('start', iso || '')}
+                        showTime={!formData.allDay}
+                    />
+                    {!formData.allDay && (
+                        <DatePicker
+                            value={formData.end}
+                            onChange={(iso) => updateFormData('end', iso || '')}
+                            showTime={true}
+                        />
+                    )}
+                     <div className={styles.switchRow}>
+                        <label className={styles.label}><FontAwesomeIcon icon={faCalendarDay}/> 하루 종일</label>
+                        <label className={styles.switch}>
+                            <input type="checkbox" checked={formData.allDay} onChange={e => updateFormData('allDay', e.target.checked)} />
+                            <span className={styles.slider}></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div className={styles.formModule}>
+                    <label className={styles.label}><FontAwesomeIcon icon={faMapMarkerAlt}/> 장소 또는 링크</label>
+                    <input
+                      type="text"
+                      value={formData.location || ''}
+                      onChange={(e) => updateFormData('location', e.target.value)}
+                      className={styles.input}
+                    />
+                </div>
+                
+                <div className={styles.formModule}>
+                     <div className={styles.switchRow}>
+                        <label className={styles.label}><FontAwesomeIcon icon={faSync}/> 반복</label>
+                        <label className={styles.switch}>
+                            <input type="checkbox" checked={isRecurrenceEnabled} onChange={e => handleRecurrenceToggle(e.target.checked)} />
+                            <span className={styles.slider}></span>
+                        </label>
+                    </div>
+                    {isRecurrenceEnabled && (
+                        <RecurrenceEditor
+                            rruleString={formData.rrule}
+                            onChange={(rrule) => updateFormData('rrule', rrule)}
+                            startDate={formData.start}
+                            modalKey={modalKey}
+                        />
+                    )}
+                </div>
             </div>
-          </div>
-          <label className={styles.checkboxGroup}>
-            <input
-              type="checkbox"
-              name="allDay"
-              checked={formData.allDay}
-              onChange={handleChange}
-              className={styles.checkboxInput}
-            />
-            <span className={styles.checkboxStyled}>
-              <FontAwesomeIcon icon={faCheck} />
-            </span>
-            <span>하루 종일</span>
-          </label>
-          <div className={styles.inputGroup}>
-            <label className={styles.label}>반복 설정</label>
-            <RecurrenceEditor
-              rruleString={formData.rrule}
-              onChange={handleRecurrenceChange}
-              startDate={formData.start}
-            />
-          </div>
-          <div className={styles.inputGroup}>
-            <label className={styles.label}>장소 또는 링크</label>
-            <input
-              type="text"
-              name="location"
-              value={formData.location || ''}
-              onChange={handleChange}
-              className={styles.input}
-            />
-          </div>
-          <div className={styles.inputGroup}>
-            <label className={styles.label}>설명</label>
-            <textarea
-              name="description"
-              value={formData.description || ''}
-              onChange={handleChange}
-              className={styles.textarea}
-            />
-          </div>
-        </main>
+        </div>
+
         <footer className={styles.footer}>
           {!String(formData.id).startsWith('temp-') && (
             <button onClick={handleDelete} className={styles.deleteButton}>
               삭제
             </button>
           )}
+          <div style={{ flexGrow: 1 }} />
           <div className={styles.actionButtons}>
             <button onClick={onClose} className={`${styles.button} ${styles.cancelButton}`}>
               취소
