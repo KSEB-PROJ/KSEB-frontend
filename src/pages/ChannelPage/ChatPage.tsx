@@ -168,7 +168,7 @@ const ChatPage: React.FC = () => {
 
     return (
         <div className={styles.chatContainer}>
-                        {/* 채팅 메시지 출력 영역 */}
+                {/* 채팅 메시지 출력 영역 */}
             <div className={styles.chatArea} ref={chatAreaRef}>
                 {messages.map((msg, idx) => (
                     <div className={styles.chatMessageRow} key={idx}>
@@ -178,6 +178,8 @@ const ChatPage: React.FC = () => {
                                 e.preventDefault();
                                 handleToggle(idx);
                                 }}>
+                                {/* 텍스트가 있으면 기존 말풍선 */}
+                                <div className={`${styles.chatMessage} ${styles.myMessage}`}>
                                 {msg.text ? (
                                     <>
                                         <div className={styles.iconLeft}>
@@ -185,8 +187,6 @@ const ChatPage: React.FC = () => {
                                             <FontAwesomeIcon icon={faEdit} className={styles.editIcon} />
                                             <FontAwesomeIcon icon={faTrashCan} className={styles.trashcanIcon} />
                                         </div>
-                                    {/* 텍스트가 있으면 기존 말풍선 */}
-                                    <div className={`${styles.chatMessage} ${styles.myMessage}`}>
                                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
                                         {/* 마크다운: # 제목, **굵게**, *기울임*, ~~취소선~~ */}
                                     {/*파일첨부*/}
@@ -197,8 +197,6 @@ const ChatPage: React.FC = () => {
                                         ))}
                                         </div>
                                     )}
-                                    </div>
-                                    <span className={styles.timeLeft}>{msg.time}</span>
                                 </>
                                 ) : (
                                     /* 텍스트가 없으면 말풍선 없이 파일 미리보기만 */
@@ -209,10 +207,11 @@ const ChatPage: React.FC = () => {
                                                 <FilePreviewItem key={fileIdx} file={file} />
                                             ))}
                                     </div>
-                                    <span className={styles.timeLeft}>{msg.time}</span>
-                                    </>
+                                </>
                                 ) 
                             )}
+                            </div>
+                            <span className={styles.timeLeft}>{msg.time}</span>
                         </div>
                     ) : (
                             <div className={`${styles.chatMessageRow} ${styles.otherMessageRow}`}  onContextMenu={e => {
@@ -226,12 +225,12 @@ const ChatPage: React.FC = () => {
                                     />
                                     <div className={styles.username}>{msg.username}</div>
                                 </div>
+                                <div className={`${styles.chatMessage} ${styles.otherMessage}`}>
                                 {msg.text ? (
                                     <>
                                         <div className={styles.iconRight}>
                                             <FontAwesomeIcon icon={faThumbTack} className={styles.pinIcon} />
                                         </div>
-                                    <div className={`${styles.chatMessage} ${styles.otherMessage}`}>
                                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
                                         {msg.files && msg.files.length > 0 && (
                                             <div className={styles.fileInChatList}>
@@ -240,7 +239,6 @@ const ChatPage: React.FC = () => {
                                                 ))}
                                             </div>
                                         )}
-                                        </div>
                                     </>
                                     ) : (
                                         msg.files && (
@@ -250,7 +248,8 @@ const ChatPage: React.FC = () => {
                                                 ))}
                                             </div>
                                         ))}
-                                    <span className={styles.timeRight}>{msg.time}</span>
+                                    </div>
+                                <span className={styles.timeRight}>{msg.time}</span>
                             </div>
                         )}
                     </div>

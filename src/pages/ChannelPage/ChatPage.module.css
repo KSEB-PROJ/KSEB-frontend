@@ -105,7 +105,7 @@
     top: 1px;
     align-self: flex-end;
 }
-.myMessageRow:hover .iconLeft, .otherMessageRow:hover .iconRight{
+.myMessage:hover .iconLeft, .otherMessage:hover .iconRight{
     display: flex;
 }
 .myMessageRow {
@@ -151,7 +151,7 @@
     font-size: 11px;
     color: #bcbcbc;
     margin-left: 0;
-    margin-right: 8px;
+    margin-right: 6px;
     margin-top:-8px;
     align-self: flex-end;
     text-align: right;
