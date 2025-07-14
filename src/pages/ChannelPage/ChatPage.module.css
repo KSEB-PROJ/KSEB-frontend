@@ -121,6 +121,7 @@
     border-radius: 18px;
     margin-top: 15px;
     position: relative;
+    top: -5px;
 }
 .chatMessageRow {
     display: flex;
