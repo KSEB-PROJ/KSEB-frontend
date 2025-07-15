@@ -147,6 +147,16 @@
 .otherMessageRow {
     justify-content: flex-start;
 }
+ .EditInput{
+    min-height: 32px;
+    border-radius: 10px;
+    border: 1px solid rgb(var(--group-color));
+    background: #bcbcbc;
+    color: rgb(var(--group-color));
+    outline: none;
+    box-sizing: border-box;
+    font-family: inherit;
+} 
 .chatMessage {
     display: block;
     max-width: 60%;

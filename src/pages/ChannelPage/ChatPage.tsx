@@ -100,6 +100,22 @@ const ChatPage: React.FC = () => {
     const [input, setInput] = useState("");
     const [shouldScroll, setShouldScroll] = useState(false);
     const chatAreaRef = useRef<HTMLDivElement | null>(null);
+    const [editIndex, setEditIndex] = useState<number | null>(null); // 수정 중인 메시지
+    const [editValue, setEditValue] = useState(""); 
+    const handleEditStart = (idx: number, text?: string) => {
+        setEditIndex(idx);
+        setEditValue(text || "");
+    };
+    const handleEditSave = () => {
+        if (editIndex === null) return;
+        setMessages(prev =>
+            prev.map((msg, idx) =>
+                idx === editIndex ? { ...msg, text: editValue } : msg
+            )
+        );
+        setEditIndex(null);
+        setEditValue("");
+    };
     const [messages, setMessages] = useState<ChatMessage[]>([
         {
             sender: "other",
@@ -188,13 +204,32 @@ const ChatPage: React.FC = () => {
                                                     e.preventDefault();
                                                     handleToggle(idx);
                                                     }}  title={msg.pinned ? " " : " "}/>
-                                            <FontAwesomeIcon icon={faPencil} className={styles.pencilIcon} />
+                                            <FontAwesomeIcon icon={faPencil} className={styles.pencilIcon} onClick={() => handleEditStart(idx, msg.text)}/>
                                             <FontAwesomeIcon icon={faTrashCan} className={styles.trashcanIcon} 
                                                 onClick={()=> {
                                                     if(window.confirm("메세지를 삭제하시겠습니까?"))
                                                         handleRemoveMsg(idx);}}/>
                                         </div>
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
+                                        {/* 인라인 수정 */}
+                                        {editIndex === idx ? (
+                                            <input
+                                            type="text"
+                                            value={editValue}
+                                            onChange={e => setEditValue(e.target.value)}
+                                            onKeyDown={e => {
+                                                if (e.key === "Enter") {
+                                                setMessages(prev => prev.map((m, i) =>
+                                                    i === idx ? { ...m, text: editValue } : m
+                                                    ));
+                                                setEditIndex(null);
+                                                setEditValue(""); }
+                                                if (e.key === "Escape") {
+                                                setEditIndex(null);
+                                                setEditValue(""); }
+                                            }}
+                                            autoFocus className={styles.EditInput}/>
+                                        ) : (
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown> )}
                                         {/* 마크다운: # 제목, **굵게**, *기울임*, ~~취소선~~ */}
                                     </div>
                                     {/*파일첨부*/}
