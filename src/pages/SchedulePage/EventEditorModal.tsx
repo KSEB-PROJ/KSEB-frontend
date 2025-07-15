@@ -1,26 +1,23 @@
+// kdae/src - front/pages/SchedulePage/EventEditorModal.tsx
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faClock, faSync, faMapMarkerAlt, faAlignLeft, faCalendarDay, faTimes,
-  faSignature, faPlus, faTrash, faTasks,
+  faSignature, faPlus, faTrash, faTasks, faLock, faUsers, faCheckCircle, faTimesCircle, faQuestionCircle
 } from '@fortawesome/free-solid-svg-icons';
-import type { ScheduleEvent, EventTask } from './types';
+import type { ScheduleEvent, EventTask, EventParticipant } from './types';
 import styles from './EventEditorModal.module.css';
 import RecurrenceEditor from './RecurrenceEditor';
 import DatePicker from '../../components/date-picker/DatePicker';
 
-interface Props {
-  event: ScheduleEvent | null;
-  onClose: () => void;
-  onSave: (event: ScheduleEvent) => void;
-  onDelete: (eventId: string) => void;
-}
-
+// 할 일 아이템 컴포넌트
 const TaskItem: React.FC<{
   task: EventTask;
   onUpdate: (field: keyof EventTask, value: EventTask[keyof EventTask]) => void;
   onDelete: () => void;
-}> = ({ task, onUpdate, onDelete }) => {
+  isEditable: boolean;
+}> = ({ task, onUpdate, onDelete, isEditable }) => {
   const statuses: EventTask['status'][] = ['TODO', 'DOING', 'DONE'];
 
   return (
@@ -32,6 +29,7 @@ const TaskItem: React.FC<{
             data-status={status}
             className={`${styles.statusPill} ${task.status === status ? styles.active : ''}`}
             onClick={() => onUpdate('status', status)}
+            disabled={!isEditable}
           >
             {status === 'TODO' && '할 일'}
             {status === 'DOING' && '진행중'}
@@ -45,217 +43,230 @@ const TaskItem: React.FC<{
         onChange={(e) => onUpdate('title', e.target.value)}
         className={styles.taskTitleInput}
         placeholder="할 일 내용 입력..."
+        disabled={!isEditable}
       />
       <div className={styles.taskDueDate}>
-        <DatePicker value={task.dueDate} onChange={(date) => onUpdate('dueDate', date)} showTime />
+        <DatePicker value={task.dueDate} onChange={(date) => onUpdate('dueDate', date)} showTime isEditable={isEditable} />
       </div>
-      <button onClick={onDelete} className={styles.deleteTaskButton} title="삭제">
+      <button onClick={onDelete} className={styles.deleteTaskButton} title="삭제" disabled={!isEditable}>
         <FontAwesomeIcon icon={faTrash} />
       </button>
     </li>
   );
 };
 
+// 메인 모달 컴포넌트
+const EventEditorModal: React.FC<{
+    event: ScheduleEvent | null;
+    onClose: () => void;
+    onSave: (event: ScheduleEvent) => void;
+    onDelete: (eventId: string) => void;
+}> = ({ event, onClose, onSave, onDelete }) => {
+    const [formData, setFormData] = useState<ScheduleEvent | null>(null);
+    const [isRecurrenceEnabled, setRecurrenceEnabled] = useState(false);
+    const [isClosing, setIsClosing] = useState(false);
 
-const EventEditorModal: React.FC<Props> = ({ event, onClose, onSave, onDelete }) => {
-  const [formData, setFormData] = useState<ScheduleEvent | null>(null);
-  const [isRecurrenceEnabled, setRecurrenceEnabled] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
+    const isEditable = useMemo(() => formData?.isEditable ?? false, [formData]);
+    const modalKey = useMemo(() => (event?.id || 'new') + '-' + Date.now(), [event]);
 
-  const modalKey = useMemo(() => (event?.id || 'new') + '-' + Date.now(), [event]);
+    useEffect(() => {
+        setFormData(event);
+        setRecurrenceEnabled(!!event?.rrule);
+    }, [event]);
 
-  useEffect(() => {
-    setFormData(event ? { ...event, tasks: event.tasks || [] } : null);
-    setRecurrenceEnabled(!!event?.rrule);
-  }, [event]);
+    const handleClose = useCallback(() => {
+        setIsClosing(true);
+        setTimeout(onClose, 300);
+    }, [onClose]);
 
-  const updateFormData = useCallback((field: keyof ScheduleEvent, value: ScheduleEvent[keyof ScheduleEvent]) => {
-    setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
-  }, []);
+    const updateFormData = useCallback((field: keyof ScheduleEvent, value: ScheduleEvent[keyof ScheduleEvent]) => {
+        if (!isEditable) return;
+        setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
+    }, [isEditable]);
 
-  const handleAddTask = () => {
-    if (!formData) return;
-    const newTask: EventTask = {
-      id: Date.now(),
-      eventId: formData.id,
-      title: '',
-      status: 'TODO',
-      dueDate: null,
+    const handleSave = () => {
+        if (!isEditable || !formData) return;
+        if (formData.title.trim()) {
+            onSave(formData);
+        } else {
+            alert('일정 제목을 입력해주세요.');
+        }
     };
-    updateFormData('tasks', [...(formData.tasks || []), newTask]);
-  };
 
-  const handleUpdateTask = (taskId: number, field: keyof EventTask, value: EventTask[keyof EventTask]) => {
-    if (!formData || !formData.tasks) return;
-    const updatedTasks = formData.tasks.map(task =>
-      task.id === taskId ? { ...task, [field]: value } : task
+    const handleDelete = () => {
+        if (!isEditable || !formData) return;
+        const originalId = formData.id.startsWith('event-') ? formData.id.split('-').slice(0, 3).join('-') : formData.id;
+        onDelete(originalId);
+    };
+    
+    const handleAddTask = () => {
+        if (!formData || !isEditable) return;
+        const newTask: EventTask = { id: Date.now(), eventId: formData.id, title: '', status: 'TODO', dueDate: null };
+        updateFormData('tasks', [...(formData.tasks || []), newTask]);
+    };
+
+    const handleUpdateTask = (taskId: number, field: keyof EventTask, value: EventTask[keyof EventTask]) => {
+        if (!formData || !isEditable) return;
+        const updatedTasks = formData.tasks?.map(t => t.id === taskId ? { ...t, [field]: value } : t);
+        updateFormData('tasks', updatedTasks);
+    };
+
+    const handleDeleteTask = (taskId: number) => {
+        if (!formData || !isEditable) return;
+        const filteredTasks = formData.tasks?.filter(t => t.id !== taskId);
+        updateFormData('tasks', filteredTasks);
+    };
+
+    const ParticipantStatusIcon = ({ status }: { status: EventParticipant['status']}) => {
+        switch (status) {
+            case 'ACCEPTED': return <FontAwesomeIcon icon={faCheckCircle} className={styles.statusAccepted} title="참석" />;
+            case 'DECLINED': return <FontAwesomeIcon icon={faTimesCircle} className={styles.statusDeclined} title="거절" />;
+            case 'TENTATIVE': return <FontAwesomeIcon icon={faQuestionCircle} className={styles.statusTentative} title="미정" />;
+            default: return null;
+        }
+    };
+    
+    if (!formData) return null;
+
+    return (
+        <div className={`${styles.overlay} ${isClosing ? styles.closing : ''}`} onClick={handleClose}>
+            <div className={`${styles.modalContainer} ${isClosing ? styles.closing : ''}`} onClick={(e) => e.stopPropagation()}>
+
+                <header className={styles.header}>
+                    <h2>{String(formData.id).startsWith('temp-') ? '새 일정 추가' : '일정 정보'}</h2>
+                    {!isEditable && <div className={styles.readOnlyBadge}><FontAwesomeIcon icon={faLock} /> 읽기 전용</div>}
+                    <button className={styles.closeButton} onClick={handleClose}><FontAwesomeIcon icon={faTimes} /></button>
+                </header>
+
+                <main className={styles.content}>
+                    <div className={styles.inputGroup}>
+                        <input id="title" type="text" value={formData.title} onChange={(e) => updateFormData('title', e.target.value)} placeholder=" " autoFocus disabled={!isEditable} />
+                        <label htmlFor="title"><FontAwesomeIcon icon={faSignature} /> 일정 제목</label>
+                    </div>
+                    <div className={styles.inputGroup}>
+                        <input id="location" type="text" value={formData.location || ''} onChange={(e) => updateFormData('location', e.target.value)} placeholder=" " disabled={!isEditable} />
+                        <label htmlFor='location'><FontAwesomeIcon icon={faMapMarkerAlt} /> 장소 또는 링크</label>
+                    </div>
+
+                    {formData.ownerType === 'GROUP' && (
+                        <>
+                            <div className={styles.sectionDivider} />
+                            <div className={styles.participantSection}>
+                                <div className={styles.textareaLabel}>
+                                    <FontAwesomeIcon icon={faUsers} />
+                                    <span>참여자 ({formData.participants?.length || 0})</span>
+                                </div>
+                                <ul className={styles.participantList}>
+                                    {formData.participants?.map(p => (
+                                        <li key={p.userId}>
+                                            <ParticipantStatusIcon status={p.status} />
+                                            <span>{p.userName}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </>
+                    )}
+
+                    <div className={styles.sectionDivider} />
+                    
+                    <div className={styles.controlSection}>
+                        <div className={styles.controlRow}>
+                          <div className={styles.controlLabel}><FontAwesomeIcon icon={faClock} />시간</div>
+                          <div className={styles.controlContent}>
+                            <div className={styles.datePickerGroup}>
+                              <DatePicker value={formData.start} onChange={(iso) => updateFormData('start', iso || '')} showTime={!formData.allDay} isEditable={isEditable}/>
+                              {!formData.allDay && formData.end && <span className={styles.timeSeparator}>~</span>}
+                              {!formData.allDay && formData.end && <DatePicker value={formData.end} onChange={(iso) => updateFormData('end', iso || '')} showTime={true} isEditable={isEditable}/>}
+                            </div>
+                          </div>
+                        </div>
+                        <div className={styles.controlRow}>
+                          <div className={styles.controlLabel}><FontAwesomeIcon icon={faCalendarDay} />하루 종일</div>
+                          <div className={styles.controlContent}>
+                            <div className={styles.switchControl}>
+                              <label className={styles.switch}>
+                                <input type="checkbox" checked={!!formData.allDay} onChange={e => updateFormData('allDay', e.target.checked)} disabled={!isEditable}/>
+                                <span className={styles.slider}></span>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                    </div>
+
+                    <div className={styles.sectionDivider} />
+
+                    <div className={styles.controlSection}>
+                        <div className={styles.controlRow}>
+                            <div className={styles.controlLabel}><FontAwesomeIcon icon={faSync} />반복</div>
+                            <div className={styles.controlContent}>
+                                <div className={styles.switchControl}>
+                                <label className={styles.switch}>
+                                    <input type="checkbox" checked={isRecurrenceEnabled} onChange={e => isEditable && setRecurrenceEnabled(e.target.checked)} disabled={!isEditable}/>
+                                    <span className={styles.slider}></span>
+                                </label>
+                                </div>
+                            </div>
+                        </div>
+                        {isRecurrenceEnabled && (
+                            <div className={styles.recurrenceEditorWrapper}>
+                                <RecurrenceEditor rruleString={formData.rrule} onChange={(rrule) => updateFormData('rrule', rrule)} startDate={formData.start} modalKey={modalKey} isEditable={isEditable}/>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className={styles.sectionDivider} />
+
+                    <div className={styles.todoSection}>
+                        <div className={styles.textareaLabel}>
+                            <FontAwesomeIcon icon={faTasks} />
+                            <span>To-Do List</span>
+                        </div>
+                        <ul className={styles.todoList}>
+                        {(formData.tasks || []).map(task => (
+                            <TaskItem 
+                                key={task.id} 
+                                task={task} 
+                                // [수정] 화살표 함수로 감싸서 handleUpdateTask에 task.id를 전달합니다.
+                                onUpdate={(field, value) => handleUpdateTask(task.id, field, value)} 
+                                onDelete={() => handleDeleteTask(task.id)} 
+                                isEditable={isEditable}
+                            />
+                        ))}
+                        </ul>
+                        {isEditable && 
+                            <button onClick={handleAddTask} className={styles.addTaskButton}>
+                            <FontAwesomeIcon icon={faPlus} /> 할 일 추가
+                            </button>
+                        }
+                    </div>
+
+                    <div className={styles.sectionDivider} />
+
+                    <div className={styles.textareaGroup}>
+                        <label htmlFor='description' className={styles.textareaLabel}>
+                            <FontAwesomeIcon icon={faAlignLeft} />
+                            <span>설명</span>
+                        </label>
+                        <textarea id="description" value={formData.description || ''} onChange={(e) => updateFormData('description', e.target.value)} className={styles.textarea} placeholder="설명 및 메모 추가..." disabled={!isEditable}/>
+                    </div>
+                </main>
+                
+                <footer className={styles.footer}>
+                     {(isEditable && !String(formData.id).startsWith('temp-')) ? (
+                        <button onClick={handleDelete} className={styles.deleteButton}>삭제</button>
+                     ) : <div></div>}
+                    <div style={{ flexGrow: 1 }} />
+                    <div className={styles.actionButtons}>
+                        <button onClick={handleClose} className={`${styles.button} ${styles.cancelButton}`}>
+                            {isEditable ? '취소' : '닫기'}
+                        </button>
+                        {isEditable && <button onClick={handleSave} className={`${styles.button} ${styles.saveButton}`}>저장</button>}
+                    </div>
+                </footer>
+            </div>
+        </div>
     );
-    updateFormData('tasks', updatedTasks);
-  };
-
-  const handleDeleteTask = (taskId: number) => {
-    if (!formData || !formData.tasks) return;
-    const filteredTasks = formData.tasks.filter(task => task.id !== taskId);
-    updateFormData('tasks', filteredTasks);
-  };
-
-  const handleRecurrenceToggle = (enabled: boolean) => {
-    setRecurrenceEnabled(enabled);
-    if (!enabled) updateFormData('rrule', undefined);
-  };
-
-  const handleClose = useCallback(() => {
-    setIsClosing(true);
-    setTimeout(onClose, 300);
-  }, [onClose]);
-
-  const handleSave = () => {
-    if (formData && formData.title.trim()) {
-      onSave(formData);
-      handleClose();
-    } else {
-      alert('일정 제목을 입력해주세요.');
-    }
-  };
-
-  const handleDelete = () => {
-    const eventIdToDelete = formData?.originalId || formData?.id;
-    if (eventIdToDelete && window.confirm('이 일정을 정말 삭제하시겠습니까?')) {
-      onDelete(eventIdToDelete);
-      handleClose();
-    }
-  };
-
-  if (!formData) return null;
-  const modalContainerClass = `${styles.modalContainer} ${isClosing ? styles.closing : ''}`;
-
-  return (
-    <div className={`${styles.overlay} ${isClosing ? styles.closing : ''}`} onClick={handleClose}>
-      <div className={modalContainerClass} onClick={(e) => e.stopPropagation()}>
-
-        <header className={styles.header}>
-          <h2>{String(formData.id).startsWith('temp-') ? '새 일정 추가' : '일정 편집'}</h2>
-          <button className={styles.closeButton} onClick={handleClose}><FontAwesomeIcon icon={faTimes} /></button>
-        </header>
-
-        <main className={styles.content}>
-          <div className={styles.inputGroup}>
-            <input id="title" type="text" value={formData.title} onChange={(e) => updateFormData('title', e.target.value)} placeholder=" " autoFocus />
-            <label htmlFor="title"><FontAwesomeIcon icon={faSignature} /> 일정 제목</label>
-          </div>
-          <div className={styles.inputGroup}>
-            <input id="location" type="text" value={formData.location || ''} onChange={(e) => updateFormData('location', e.target.value)} placeholder=" " />
-            <label htmlFor='location'><FontAwesomeIcon icon={faMapMarkerAlt} /> 장소 또는 링크</label>
-          </div>
-
-          <div className={styles.sectionDivider} />
-
-          <div className={styles.controlSection}>
-            <div className={styles.controlRow}>
-              <div className={styles.controlLabel}><FontAwesomeIcon icon={faClock} />시간</div>
-              <div className={styles.controlContent}>
-                <div className={styles.datePickerGroup}>
-                  <DatePicker
-                    value={formData.start}
-                    onChange={(iso) => updateFormData('start', iso || '')}
-                    showTime={!formData.allDay}
-                  />
-                  {!formData.allDay && <span className={styles.timeSeparator}>~</span>}
-                  {!formData.allDay && (
-                    <DatePicker
-                      value={formData.end}
-                      onChange={(iso) => updateFormData('end', iso || '')}
-                      showTime={true}
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className={styles.controlRow}>
-              <div className={styles.controlLabel}><FontAwesomeIcon icon={faCalendarDay} />하루 종일</div>
-              <div className={styles.controlContent}>
-                <div className={styles.switchControl}>
-                  <label className={styles.switch}>
-                    <input type="checkbox" checked={!!formData.allDay} onChange={e => updateFormData('allDay', e.target.checked)} />
-                    <span className={styles.slider}></span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.sectionDivider} />
-
-          <div className={styles.controlSection}>
-            <div className={styles.controlRow}>
-              <div className={styles.controlLabel}><FontAwesomeIcon icon={faSync} />반복</div>
-              <div className={styles.controlContent}>
-                <div className={styles.switchControl}>
-                  <label className={styles.switch}>
-                    <input type="checkbox" checked={isRecurrenceEnabled} onChange={e => handleRecurrenceToggle(e.target.checked)} />
-                    <span className={styles.slider}></span>
-                  </label>
-                </div>
-              </div>
-            </div>
-            {isRecurrenceEnabled && (
-              <div className={styles.recurrenceEditorWrapper}>
-                <RecurrenceEditor
-                  rruleString={formData.rrule}
-                  onChange={(rrule) => updateFormData('rrule', rrule)}
-                  startDate={formData.start}
-                  modalKey={modalKey}
-                />
-              </div>
-            )}
-          </div>
-
-          <div className={styles.sectionDivider} />
-
-          <div className={styles.todoSection}>
-            <div className={styles.textareaLabel}>
-              <FontAwesomeIcon icon={faTasks} />
-              <span>To-Do List</span>
-            </div>
-            <ul className={styles.todoList}>
-              {(formData.tasks || []).map(task => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  onUpdate={(field, value) => handleUpdateTask(task.id, field, value)}
-                  onDelete={() => handleDeleteTask(task.id)}
-                />
-              ))}
-            </ul>
-            <button onClick={handleAddTask} className={styles.addTaskButton}>
-              <FontAwesomeIcon icon={faPlus} /> 할 일 추가
-            </button>
-          </div>
-
-          <div className={styles.sectionDivider} />
-
-          <div className={styles.textareaGroup}>
-            <label htmlFor='description' className={styles.textareaLabel}>
-              <FontAwesomeIcon icon={faAlignLeft} />
-              <span>설명</span>
-            </label>
-            <textarea id="description" value={formData.description || ''} onChange={(e) => updateFormData('description', e.target.value)} className={styles.textarea} placeholder="설명 및 메모 추가..." />
-          </div>
-        </main>
-
-        <footer className={styles.footer}>
-          {!String(formData.id).startsWith('temp-') && (
-            <button onClick={handleDelete} className={styles.deleteButton}>삭제</button>
-          )}
-          <div style={{ flexGrow: 1 }} />
-          <div className={styles.actionButtons}>
-            <button onClick={handleClose} className={`${styles.button} ${styles.cancelButton}`}>취소</button>
-            <button onClick={handleSave} className={`${styles.button} ${styles.saveButton}`}>저장</button>
-          </div>
-        </footer>
-      </div>
-    </div>
-  );
 };
 
 export default EventEditorModal;

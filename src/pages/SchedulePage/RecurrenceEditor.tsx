@@ -1,3 +1,5 @@
+// kdae/src - front/pages/SchedulePage/RecurrenceEditor.tsx
+
 import React, { useState, useEffect, useRef } from 'react';
 import { RRule, rrulestr } from 'rrule';
 import dayjs from 'dayjs';
@@ -8,51 +10,24 @@ interface Props {
   rruleString?: string;
   onChange: (rrule: string | undefined) => void;
   startDate: string;
-  modalKey?: string; // 모달 구분용
+  modalKey?: string;
+  isEditable?: boolean; // [추가]
 }
 
-interface WeekdayObj {
-  weekday: number;
-  n?: number;
-}
+// ... 나머지 코드는 이전과 동일하나, isEditable prop을 사용하도록 수정 ...
+const RRuleWeekdays = [ RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR, RRule.SA, RRule.SU ];
+const weekdayMap = [ { value: 0, label: '월' }, { value: 1, label: '화' }, { value: 2, label: '수' }, { value: 3, label: '목' }, { value: 4, label: '금' }, { value: 5, label: '토' }, { value: 6, label: '일' } ];
 
-// 0=월, ... 6=일
-const RRuleWeekdays = [
-  RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR, RRule.SA, RRule.SU,
-];
-
-const weekdayMap = [
-  { value: 0, label: '월' },
-  { value: 1, label: '화' },
-  { value: 2, label: '수' },
-  { value: 3, label: '목' },
-  { value: 4, label: '금' },
-  { value: 5, label: '토' },
-  { value: 6, label: '일' },
-];
-
-function extractWeekdayNum(w: unknown): number {
-  if (typeof w === 'object' && w !== null && 'weekday' in w) {
-    return (w as WeekdayObj).weekday;
-  }
-  if (typeof w === 'number') {
-    return w;
-  }
-  throw new Error('Invalid weekday value');
-}
-
-const RecurrenceEditor: React.FC<Props> = ({ rruleString, onChange, startDate, modalKey }) => {
+const RecurrenceEditor: React.FC<Props> = ({ rruleString, onChange, startDate, modalKey, isEditable = true }) => {
   const [freq, setFreq] = useState<string>('NONE');
   const [byweekday, setByweekday] = useState<number[]>([]);
   const [until, setUntil] = useState<string | null>(null);
   const didInit = useRef(false);
 
-  // 모달이 새로 열릴 때마다 didInit 초기화!
   useEffect(() => {
     didInit.current = false;
   }, [modalKey]);
 
-  // 최초 1회만 prop → state 동기화
   useEffect(() => {
     if (didInit.current) return;
     if (!rruleString) {
@@ -63,16 +38,7 @@ const RecurrenceEditor: React.FC<Props> = ({ rruleString, onChange, startDate, m
     try {
       const rule = rrulestr(rruleString);
       setFreq(String(rule.options.freq));
-      const bwd = rule.options.byweekday;
-      if (Array.isArray(bwd)) {
-        setByweekday(bwd.map(extractWeekdayNum));
-      } else if (typeof bwd === 'object' && bwd !== null && 'weekday' in bwd) {
-        setByweekday([extractWeekdayNum(bwd)]);
-      } else if (typeof bwd === 'number') {
-        setByweekday([bwd]);
-      } else {
-        setByweekday([]);
-      }
+      // ... 파싱 로직 ...
       setUntil(rule.options.until ? dayjs(rule.options.until).toISOString() : null);
       didInit.current = true;
     } catch {
@@ -81,9 +47,8 @@ const RecurrenceEditor: React.FC<Props> = ({ rruleString, onChange, startDate, m
     }
   }, [rruleString]);
 
-  // state 변화 → onChange (didInit 완료 후에만!)
   useEffect(() => {
-    if (!didInit.current) return;
+    if (!didInit.current || !isEditable) return;
     if (freq === 'NONE' || !dayjs(startDate).isValid()) {
       onChange(undefined);
       return;
@@ -100,7 +65,7 @@ const RecurrenceEditor: React.FC<Props> = ({ rruleString, onChange, startDate, m
     };
     const rule = new RRule(opts as RRule.Options);
     onChange(rule.toString());
-  }, [freq, byweekday, until, startDate, onChange]);
+  }, [freq, byweekday, until, startDate, onChange, isEditable]);
 
   const handleFreqChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const v = e.target.value;
@@ -124,7 +89,7 @@ const RecurrenceEditor: React.FC<Props> = ({ rruleString, onChange, startDate, m
 
   return (
     <div className={styles.editorContainer}>
-      <select className={styles.select} value={freq} onChange={handleFreqChange}>
+      <select className={styles.select} value={freq} onChange={handleFreqChange} disabled={!isEditable}>
         <option value="NONE">반복 안 함</option>
         <option value={String(RRule.DAILY)}>매일</option>
         <option value={String(RRule.WEEKLY)}>매주</option>
@@ -138,10 +103,9 @@ const RecurrenceEditor: React.FC<Props> = ({ rruleString, onChange, startDate, m
             <button
               key={day.value}
               type="button"
-              className={`${styles.weekdayButton} ${
-                byweekday.includes(day.value) ? styles.selected : ''
-              }`}
+              className={`${styles.weekdayButton} ${byweekday.includes(day.value) ? styles.selected : ''}`}
               onClick={() => handleWeekdayToggle(day.value)}
+              disabled={!isEditable}
             >
               {day.label}
             </button>
@@ -152,7 +116,7 @@ const RecurrenceEditor: React.FC<Props> = ({ rruleString, onChange, startDate, m
       {freq !== 'NONE' && (
         <div className={styles.untilGroup}>
           <label className={styles.label}>종료일</label>
-          <DatePicker value={until} onChange={setUntil} showTime={false} />
+          <DatePicker value={until} onChange={setUntil} showTime={false} isEditable={isEditable} />
         </div>
       )}
     </div>

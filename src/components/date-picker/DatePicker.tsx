@@ -1,3 +1,5 @@
+// kdae/src - front/components/date-picker/DatePicker.tsx
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -10,9 +12,10 @@ interface Props {
     value: string | null;
     onChange: (iso: string | null) => void;
     showTime?: boolean;
+    isEditable?: boolean;
 }
 
-const DatePicker: React.FC<Props> = ({ value, onChange, showTime = false }) => {
+const DatePicker: React.FC<Props> = ({ value, onChange, showTime = false, isEditable = true }) => {
     const [open, setOpen] = useState(false);
     const anchorRef = useRef<HTMLButtonElement>(null);
     const calendarRef = useRef<HTMLDivElement>(null);
@@ -43,9 +46,8 @@ const DatePicker: React.FC<Props> = ({ value, onChange, showTime = false }) => {
         if (open && anchorRef.current) {
             const rect = anchorRef.current.getBoundingClientRect();
             const spaceBelow = window.innerHeight - rect.bottom;
-            const calendarHeight = showTime ? 420 : 350; // 시간 선택 시 높이 고려
+            const calendarHeight = showTime ? 420 : 350;
             const calendarWidth = 280;
-
             let top, left = rect.left;
 
             if (spaceBelow < calendarHeight && rect.top > calendarHeight) {
@@ -58,11 +60,7 @@ const DatePicker: React.FC<Props> = ({ value, onChange, showTime = false }) => {
                 left = window.innerWidth - calendarWidth - 5;
             }
 
-            setCalendarStyle({
-                position: 'fixed',
-                top: `${top}px`,
-                left: `${left}px`,
-            });
+            setCalendarStyle({ position: 'fixed', top: `${top}px`, left: `${left}px` });
         }
     }, [open, showTime]);
 
@@ -76,8 +74,12 @@ const DatePicker: React.FC<Props> = ({ value, onChange, showTime = false }) => {
                 setOpen(false);
             }
         }
-        if (open) document.addEventListener('mousedown', handleClick);
-        return () => document.removeEventListener('mousedown', handleClick);
+        if (open) {
+            document.addEventListener('mousedown', handleClick);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClick);
+        };
     }, [open]);
 
     const weeks = useMemo(() => {
@@ -125,7 +127,7 @@ const DatePicker: React.FC<Props> = ({ value, onChange, showTime = false }) => {
     };
     
     const CalendarPopup = (
-        <div ref={calendarRef} className={styles.calendar} style={calendarStyle}>
+        <div ref={calendarRef} className={styles.calendar} style={calendarStyle} onClick={(e) => e.stopPropagation()}>
             <header className={styles.nav}>
                 <button onClick={() => setCursor((c) => c.subtract(1, 'month'))}>‹</button>
                 <span>{cursor.format('YYYY MMM')}</span>
@@ -178,9 +180,10 @@ const DatePicker: React.FC<Props> = ({ value, onChange, showTime = false }) => {
         <div className={styles.wrapper}>
             <button
                 ref={anchorRef}
-                onClick={() => setOpen((o) => !o)}
+                onClick={() => isEditable && setOpen((o) => !o)}
                 className={styles.trigger}
                 title="날짜 및 시간 설정"
+                disabled={!isEditable}
             >
                 <FontAwesomeIcon icon={faCalendarAlt} />
                 {showTime && <FontAwesomeIcon icon={faClock} style={{fontSize: '0.8em', marginLeft: '4px'}} />}
@@ -190,10 +193,10 @@ const DatePicker: React.FC<Props> = ({ value, onChange, showTime = false }) => {
                     <span className={styles.text}>
                         {dayjs(value).format(showTime ? 'YYYY-MM-DD HH:mm' : 'YYYY-MM-DD')}
                     </span>
-                    <button className={styles.clear} onClick={() => onChange(null)} title="삭제">×</button>
+                    <button className={styles.clear} onClick={() => isEditable && onChange(null)} title="삭제" disabled={!isEditable}>×</button>
                 </>
             )}
-            {open && createPortal(CalendarPopup, document.body)}
+            {open && isEditable ? createPortal(CalendarPopup, document.body) : null}
         </div>
     );
 };
