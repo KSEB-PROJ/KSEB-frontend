@@ -1,7 +1,7 @@
 import React, { useRef, useState,useEffect } from 'react';
 import styles from './ChatPage.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrashCan, faThumbTack,faPaperPlane, faXmark, faPaperclip,faFilePdf, faFileWord, faFileExcel, faFileImage, faFileVideo, faFileAudio, faFileAlt } from '@fortawesome/free-solid-svg-icons';
+import { faPencil, faTrashCan, faThumbTack,faPaperPlane, faXmark, faPaperclip,faFilePdf, faFileWord, faFileExcel, faFileImage, faFileVideo, faFileAudio, faFileAlt } from '@fortawesome/free-solid-svg-icons';
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 type ChatMessage = {
@@ -165,6 +165,10 @@ const ChatPage: React.FC = () => {
     const handleRemoveFile = (index: number) => {
         setFiles((prevFiles) => prevFiles.filter((_, idx) => idx !== index));
     };
+    //파일 삭제
+    const handleRemoveMsg = (index: number) => {
+        setMessages(prev => prev.filter((_, idx) => idx !== index));
+    };
 
     return (
         <div className={styles.chatContainer}>
@@ -184,8 +188,11 @@ const ChatPage: React.FC = () => {
                                                     e.preventDefault();
                                                     handleToggle(idx);
                                                     }}  title={msg.pinned ? " " : " "}/>
-                                            <FontAwesomeIcon icon={faEdit} className={styles.editIcon} />
-                                            <FontAwesomeIcon icon={faTrashCan} className={styles.trashcanIcon} />
+                                            <FontAwesomeIcon icon={faPencil} className={styles.pencilIcon} />
+                                            <FontAwesomeIcon icon={faTrashCan} className={styles.trashcanIcon} 
+                                                onClick={()=> {
+                                                    if(window.confirm("메세지를 삭제하시겠습니까?"))
+                                                        handleRemoveMsg(idx);}}/>
                                         </div>
                                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
                                         {/* 마크다운: # 제목, **굵게**, *기울임*, ~~취소선~~ */}
