@@ -173,17 +173,17 @@ const ChatPage: React.FC = () => {
                 {messages.map((msg, idx) => (
                     <div className={styles.chatMessageRow} key={idx}>
                         {msg.sender === "me" ? (
-                            <div className={`${styles.chatMessageRow} ${styles.myMessageRow}`} 
-                            onContextMenu={e => {
-                                e.preventDefault();
-                                handleToggle(idx);
-                                }}>
+                            <div className={`${styles.chatMessageRow} ${styles.myMessageRow}`} >
                                 {/* 텍스트가 있으면 기존 말풍선 */}
                                 <div className={`${styles.chatMessage} ${styles.myMessage}`}>
                                 {msg.text ? (
                                     <>
                                         <div className={styles.iconLeft}>
-                                            <FontAwesomeIcon icon={faThumbTack} className={styles.pinIcon} />
+                                            <FontAwesomeIcon icon={faThumbTack} className={`${styles.pinIcon} ${msg.pinned ? styles.pinned : ''}`} 
+                                                onClick={e => {
+                                                    e.preventDefault();
+                                                    handleToggle(idx);
+                                                    }}  title={msg.pinned ? " " : " "}/>
                                             <FontAwesomeIcon icon={faEdit} className={styles.editIcon} />
                                             <FontAwesomeIcon icon={faTrashCan} className={styles.trashcanIcon} />
                                         </div>
@@ -229,7 +229,11 @@ const ChatPage: React.FC = () => {
                                 {msg.text ? (
                                     <>
                                         <div className={styles.iconRight}>
-                                            <FontAwesomeIcon icon={faThumbTack} className={styles.pinIcon} />
+                                            <FontAwesomeIcon icon={faThumbTack} className={`${styles.pinIcon} ${msg.pinned ? styles.pinned : ''}`} 
+                                                onClick={e => {
+                                                    e.preventDefault();
+                                                    handleToggle(idx);
+                                                    }}  title={msg.pinned ? " " : " "}/>
                                         </div>
                                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
                                         {msg.files && msg.files.length > 0 && (

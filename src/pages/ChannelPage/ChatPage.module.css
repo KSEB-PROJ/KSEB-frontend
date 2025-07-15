@@ -81,12 +81,34 @@
     scrollbar-width: thin;
     padding-right: 1rem; /* 스크롤바 공간 */
 }
-.pinIcon, .trashcanIcon, .editIcon {
-    color: rgb(var(--group-color));
-    font-size: 12px;
+.pinIcon{
+    color: rgb(#bcbcbc);
+    font-size: 14px;
+    opacity: 0;
+}
+.pinIcon:hover{
+    animation: downloadPop 0.7s cubic-bezier(.25,.46,.45,.94);
+    filter: drop-shadow( 0 0 2px rgb(var(--group-color)))
+            drop-shadow( 0 0 2px rgb(var(--group-color)))
+            drop-shadow( 0 0 2px rgb(var(--group-color)));
+    opacity: 1;
+}
+.trashcanIcon{
+    color: #bcbcbc;
+    font-size: 14px;
+    opacity: 0;
+}
+.editIcon{
+    color: #bcbcbc;
+    font-size: 14px;
+    opacity: 0;
+}
+.pinned {
+    color: #ffbc00;
+    filter: drop-shadow(0 0 3px #ffdb7d);
+    opacity: 1 !important;
 }
 .iconLeft{
-    display: none;
     position: absolute;
     gap: 6px;
     z-index: 10;
@@ -94,19 +116,27 @@
     margin-right: 8px;
     top: 1px;
     left: 3px;
-    align-self: flex-end;
+    align-self: flex-start;
+    display: flex;
+
 }
 .iconRight{
-    display: none;
     position: absolute;
     gap: 6px;
     z-index: 10;
     left: 8px;
     top: 1px;
     align-self: flex-end;
+    display: flex;
+
 }
 .myMessage:hover .iconLeft, .otherMessage:hover .iconRight{
     display: flex;
+    opacity: 1;
+}
+.myMessage:hover .pinIcon, .otherMessage:hover .pinIcon,
+.myMessage:hover .trashcanIcon, .myMessage:hover .editIcon{
+    opacity: 1;
 }
 .myMessageRow {
     justify-content: flex-end;
