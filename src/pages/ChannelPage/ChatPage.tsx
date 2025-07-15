@@ -86,7 +86,7 @@ const handleDoubleClick = () => {
 // 아이콘+파일명(가로 직사각형으로)
   return (
      <div className={`${styles.fileBox} ${downloading ? styles.downloading : ""}` }
-     onDoubleClick={handleDoubleClick} title="더블클릭시 다운로드 모션" >
+     onDoubleClick={handleDoubleClick} >
     <FontAwesomeIcon icon={getFileIcon(file)} size="lg" className={`${styles.fileIcon} ${getFileIconClass(file)}`}/>
     <span className={styles.fileName}>{file.name}</span>
   </div>
@@ -178,10 +178,10 @@ const ChatPage: React.FC = () => {
                     <div className={styles.chatMessageRow} key={idx}>
                         {msg.sender === "me" ? (
                             <div className={`${styles.chatMessageRow} ${styles.myMessageRow}`} >
-                                {/* 텍스트가 있으면 기존 말풍선 */}
-                                <div className={`${styles.chatMessage} ${styles.myMessage}`}>
+                                {/*  텍스트가 있으면 기존 말풍선  */}
                                 {msg.text ? (
                                     <>
+                                    <div className={`${styles.chatMessage} ${styles.myMessage}`}>
                                         <div className={styles.iconLeft}>
                                             <FontAwesomeIcon icon={faThumbTack} className={`${styles.pinIcon} ${msg.pinned ? styles.pinned : ''}`} 
                                                 onClick={e => {
@@ -196,13 +196,22 @@ const ChatPage: React.FC = () => {
                                         </div>
                                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
                                         {/* 마크다운: # 제목, **굵게**, *기울임*, ~~취소선~~ */}
+                                    </div>
                                     {/*파일첨부*/}
                                     {msg.files && msg.files.length > 0 && (
+                                        <>
                                         <div className={styles.fileInChatList}>
                                         {sortFiles(msg.files).map((file, fileIdx) => (
                                             <FilePreviewItem key={fileIdx} file={file} />
                                         ))}
                                         </div>
+                                        <div className={styles.iconLeft}>
+                                            <FontAwesomeIcon icon={faTrashCan} className={styles.trashcanIcon} 
+                                                onClick={()=> {
+                                                    if(window.confirm("메세지를 삭제하시겠습니까?"))
+                                                        handleRemoveMsg(idx);}}/>
+                                        </div>
+                                        </>
                                     )}
                                 </>
                                 ) : (
@@ -213,11 +222,17 @@ const ChatPage: React.FC = () => {
                                             {sortFiles(msg.files).map((file, fileIdx) => (
                                                 <FilePreviewItem key={fileIdx} file={file} />
                                             ))}
-                                    </div>
-                                </>
-                                ) 
-                            )}
-                            </div>
+                                            </div>
+                                            <div className={styles.iconLeft}>
+                                            <FontAwesomeIcon icon={faTrashCan} className={styles.trashcanIcon} 
+                                                onClick={()=> {
+                                                    if(window.confirm("메세지를 삭제하시겠습니까?"))
+                                                        handleRemoveMsg(idx);}}/>
+                                            </div>
+                                                </>
+                                            )
+                                        )
+                                    }
                             <span className={styles.timeLeft}>{msg.time}</span>
                         </div>
                     ) : (

@@ -137,7 +137,8 @@
     opacity: 1;
 }
 .myMessage:hover .pinIcon, .otherMessage:hover .pinIcon,
-.myMessage:hover .trashcanIcon, .myMessage:hover .pencilIcon{
+.myMessage:hover .trashcanIcon, .myMessage:hover .pencilIcon,
+.fileBox:hover .trashcanIcon, .image:hover .trashcanIcon{
     opacity: 1;
 }
 .myMessageRow {
@@ -267,6 +268,7 @@
     margin: 4px 0;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     display: block;
+    order: 2;
 }
 .downloading {
   animation: downloadPop 0.7s cubic-bezier(.25,.46,.45,.94);
@@ -278,6 +280,7 @@
     margin:0px;
     margin-top: 3px;
     gap: 3px;
+    order: 2;
 }
 .fileBox {
     display: flex;
