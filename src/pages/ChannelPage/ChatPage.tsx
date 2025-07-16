@@ -106,16 +106,6 @@ const ChatPage: React.FC = () => {
         setEditIndex(idx);
         setEditValue(text || "");
     };
-    const handleEditSave = () => {
-        if (editIndex === null) return;
-        setMessages(prev =>
-            prev.map((msg, idx) =>
-                idx === editIndex ? { ...msg, text: editValue } : msg
-            )
-        );
-        setEditIndex(null);
-        setEditValue("");
-    };
     const [messages, setMessages] = useState<ChatMessage[]>([
         {
             sender: "other",
@@ -146,7 +136,8 @@ const ChatPage: React.FC = () => {
     );};
     //전송
     const handleSend = () => {
-        if (input.trim() === "" && files.length === 0) return; // 빈칸 방지
+        const cleanInput = input.trimEnd()
+        if (cleanInput === "" && files.length === 0) return; // 빈칸 방지
         const now = new Date();
         const hour = String(now.getHours()).padStart(2, "0");
         const min = String(now.getMinutes()).padStart(2, "0");
@@ -164,9 +155,14 @@ const ChatPage: React.FC = () => {
         }
         }, [messages, shouldScroll]);
     //엔터키로 전송
-    const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === "Enter") handleSend();
-    };
+    const handleInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === "Enter") {
+        if (e.shiftKey) {
+            return;
+        } else {
+            e.preventDefault();
+            handleSend();
+        }}};
     //파일 첨부 클릭
     const handleClipClick = () => {
         fileInputRef.current?.click();
@@ -337,9 +333,9 @@ const ChatPage: React.FC = () => {
                     <button className={styles.attachButton} onClick={handleClipClick}>
                         <FontAwesomeIcon icon={faPaperclip} />
                     </button>
-                    <input type="text" placeholder="메시지를 입력하세요..." className={styles.chatInput} value={input}
+                    <textarea value={input} placeholder="메시지를 입력하세요..." className={styles.chatInput}
                         onChange={e => setInput(e.target.value)}
-                        onKeyDown={handleInputKeyDown}/>
+                        onKeyDown={handleInputKeyDown} />
                     <button className={styles.sendButton} onClick={handleSend}>
                         <FontAwesomeIcon icon={faPaperPlane} className={styles.sendIcon} />
                     </button>

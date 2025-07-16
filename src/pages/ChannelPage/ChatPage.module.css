@@ -159,13 +159,14 @@
 } 
 .chatMessage {
     display: block;
-    max-width: 60%;
+    max-width: 80%;
     padding: 9px 10px;
     border-radius: 18px;
     margin-top: 15px;
     position: relative;
     top: -5px;
     line-height: 1.5;
+    word-break: break-all; 
 }
 .chatMessageRow {
     display: flex;
@@ -223,6 +224,7 @@
     transition: background-color 0.4s ease;
     order: 2;
     position: relative;
+    word-break: break-all; 
 }
 .username{
     font-size: 11px;
@@ -253,6 +255,7 @@
     position: relative;
     order: 2;
     bottom: 15px;
+    word-break: break-all; 
 }
 
 .chatWrapper {
