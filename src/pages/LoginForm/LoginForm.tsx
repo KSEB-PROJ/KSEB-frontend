@@ -1,34 +1,41 @@
-// src/pages/LoginForm.tsx
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // 페이지 이동(네비게이션)을 위한 훅 import
+import toast from 'react-hot-toast';
 import styles from './LoginForm.module.css';   // CSS 모듈 import (컴포넌트 전용 스타일 적용)
 import { Link } from 'react-router-dom';
-
-// ※ 'boxicons' 아이콘 사용을 위해서는 public/index.html <head>에 CDN 링크 필요!
-// 예: <link rel='stylesheet' href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css'>
+import { login } from '../../api/auth';
+import { AxiosError } from 'axios';
 
 const LoginForm: React.FC = () => {
     // 사용자 입력 상태값 선언 (입력창 제어)
-    const [username, setUsername] = useState('');       // 사용자명
-    const [password, setPassword] = useState('');       // 비밀번호
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false); // 비밀번호 표시 여부(토글)
     const navigate = useNavigate(); // 리액트 라우터의 페이지 이동 함수
 
     /*
      * 로그인 폼 제출 이벤트 핸들러
      * - 기본 제출 동작 방지
-     * - 아이디/비번이 정해진 값과 일치하면 '로그인 성공' 후 /main 페이지로 이동
-     * - 아니면 경고창
+     * - API 서버에 로그인 요청을 보내고, 결과에 따라 페이지 이동 또는 에러 메시지 표시
      */
-    const handleLogin = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault(); // 페이지 새로고침 방지
-        if (username === "1" && password === '1') {
-            alert('Successfully Verified'); // 성공 알림
-            navigate('/app'); // 메인페이지(랜딩/대시보드 등)로 이동
-        } else {
-            alert('Enter Your Details');    // 실패 알림
-        }
+
+        // toast.promise를 사용하여 API 요청 상태에 따라 자동으로 알림을 보여줍니다.
+        await toast.promise(
+            login({ email, password }),
+            {
+                loading: '로그인 중...',
+                success: () => {
+                    navigate('/app'); // 성공 시 페이지 이동
+                    return <b>로그인 성공! 환영합니다.</b>;
+                },
+                error: (err: AxiosError<{ message?: string }>) => {
+                    // 백엔드에서 온 에러 메시지를 우선적으로 사용
+                    return err.response?.data?.message || '로그인에 실패했습니다.';
+                },
+            }
+        );
     };
 
     /**
@@ -49,23 +56,23 @@ const LoginForm: React.FC = () => {
                 </div>
                 {/* 실제 로그인 입력/제출 폼 */}
                 <form onSubmit={handleLogin}>
-                    {/* 사용자명 입력 영역 */}
+                    {/* 사용자명(이메일) 입력 영역 */}
                     <div className={styles.inputBox}>
-                        {/* 텍스트 입력 필드 (사용자명) */}
+                        {/* 텍스트 입력 필드 (이메일) */}
                         <input
-                            type="text"
-                            id="user"
+                            type="email"
+                            id="email"
                             className={styles.inputField}
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             required
                         />
                         {/* 입력란 라벨 (floating label 효과, 스타일로 제어) */}
-                        <label htmlFor="user" className={styles.label}>
-                            Username
+                        <label htmlFor="email" className={styles.label}>
+                            Email Address
                         </label>
                         {/* 사용자 아이콘 (boxicons 아이콘 사용) */}
-                        <i className={`bx bx-user ${styles.icon}`}></i>
+                        <i className={`bx bx-envelope ${styles.icon}`}></i>
                     </div>
 
                     {/* 비밀번호 입력 영역 */}

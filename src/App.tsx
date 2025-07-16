@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import AppLayout from './pages/AppLayout/AppLayout';
 import MainPage from './pages/MainPage/MainPage';
 import LoginPage from './pages/LoginForm/LoginForm';
@@ -7,11 +8,35 @@ import RegisterPage from './pages/RegisterForm/RegisterForm';
 import SchedulePage from './pages/SchedulePage/SchedulePage';
 import FeedbackPage from './pages/FeedbackPage/FeedbackPage';
 import ProfilePage from './pages/ProfilePage/ProfilePage';
-import ChannelLayout from './pages/ChannelPage/ChannelLayout'; // 👈 추가
+import ChannelLayout from './pages/ChannelPage/ChannelLayout';
 
 const App: React.FC = () => {
   return (
     <BrowserRouter>
+          {/* 전체에 토스트 알림을 띄우기 위해 최상단에 추가 */}
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          // 기본 스타일 설정
+          style: {
+            background: '#333',
+            color: '#fff',
+          },
+          // 성공 알림 스타일
+          success: {
+            duration: 3000,
+            theme: {
+              primary: 'green',
+              secondary: 'black',
+            },
+          },
+          // 에러 알림 스타일
+          error: {
+            duration: 4000,
+          },
+        }}
+      />
       <Routes>
         {/* 로그인/회원가입/랜딩 페이지 */}
         <Route path="/" element={<MainPage />} />
