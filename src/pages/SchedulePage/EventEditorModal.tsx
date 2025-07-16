@@ -1,15 +1,23 @@
-// kdae/src - front/pages/SchedulePage/EventEditorModal.tsx
+// src/pages/SchedulePage/EventEditorModal.tsx
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faClock, faSync, faMapMarkerAlt, faAlignLeft, faCalendarDay, faTimes,
-  faSignature, faPlus, faTrash, faTasks, faLock, faUsers, faCheckCircle, faTimesCircle, faQuestionCircle
+  faSignature, faPlus, faTrash, faTasks, faLock, faUsers, faCheckCircle, 
+  faTimesCircle, faQuestionCircle, faPalette, faLayerGroup, faCheck
 } from '@fortawesome/free-solid-svg-icons';
 import type { ScheduleEvent, EventTask, EventParticipant } from './types';
 import styles from './EventEditorModal.module.css';
 import RecurrenceEditor from './RecurrenceEditor';
 import DatePicker from '../../components/date-picker/DatePicker';
+
+// --- [새로 추가] 색상 팔레트 옵션 ---
+const colorPalette = [
+    '#8400ff', '#14d6ae', '#ec4899', '#3b82f6', 
+    '#f97316', '#22c55e', '#eab308', '#06b6d4', 
+    '#ef4444', '#6366f1', '#a855f7', '#10b981'
+];
 
 // 할 일 아이템 컴포넌트
 const TaskItem: React.FC<{
@@ -70,7 +78,12 @@ const EventEditorModal: React.FC<{
     const modalKey = useMemo(() => (event?.id || 'new') + '-' + Date.now(), [event]);
 
     useEffect(() => {
-        setFormData(event);
+        // [수정] 모달이 열릴 때 기본 색상 설정
+        if (event) {
+            setFormData({ ...event, color: event.color || colorPalette[0] });
+        } else {
+            setFormData(null);
+        }
         setRecurrenceEnabled(!!event?.rrule);
     }, [event]);
 
@@ -130,11 +143,22 @@ const EventEditorModal: React.FC<{
 
     return (
         <div className={`${styles.overlay} ${isClosing ? styles.closing : ''}`} onClick={handleClose}>
-            <div className={`${styles.modalContainer} ${isClosing ? styles.closing : ''}`} onClick={(e) => e.stopPropagation()}>
+            <div 
+                className={`${styles.modalContainer} ${isClosing ? styles.closing : ''}`} 
+                onClick={(e) => e.stopPropagation()}
+                style={{ '--event-theme-color': formData.color } as React.CSSProperties}
+            >
 
                 <header className={styles.header}>
                     <h2>{String(formData.id).startsWith('temp-') ? '새 일정 추가' : '일정 정보'}</h2>
-                    {!isEditable && <div className={styles.readOnlyBadge}><FontAwesomeIcon icon={faLock} /> 읽기 전용</div>}
+                    {/* --- [수정] 읽기전용/그룹 정보 배지 --- */}
+                    {!isEditable && !formData.groupName && <div className={styles.readOnlyBadge}><FontAwesomeIcon icon={faLock} /> 읽기 전용</div>}
+                    {formData.ownerType === 'GROUP' && formData.groupName && (
+                        <div className={styles.groupInfoBadge} style={{'--group-color': formData.color?.replace('#', '')} as React.CSSProperties}>
+                            <FontAwesomeIcon icon={faLayerGroup} />
+                            <span>{formData.groupName}</span>
+                        </div>
+                    )}
                     <button className={styles.closeButton} onClick={handleClose}><FontAwesomeIcon icon={faTimes} /></button>
                 </header>
 
@@ -214,6 +238,31 @@ const EventEditorModal: React.FC<{
                             </div>
                         )}
                     </div>
+                    
+                    {/* --- [새로 추가] 색상 선택 섹션 --- */}
+                    <div className={styles.sectionDivider} />
+                    <div className={styles.controlSection}>
+                        <div className={styles.controlRow}>
+                            <div className={styles.controlLabel}><FontAwesomeIcon icon={faPalette} />테마 색상</div>
+                            <div className={styles.controlContent}>
+                                <div className={styles.colorPalette}>
+                                    {colorPalette.map(color => (
+                                        <button
+                                            key={color}
+                                            type="button"
+                                            className={`${styles.colorSwatch} ${formData.color === color ? styles.active : ''}`}
+                                            style={{ backgroundColor: color }}
+                                            onClick={() => updateFormData('color', color)}
+                                            disabled={!isEditable}
+                                        >
+                                          {formData.color === color && <FontAwesomeIcon icon={faCheck} />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
 
                     <div className={styles.sectionDivider} />
 
@@ -227,7 +276,6 @@ const EventEditorModal: React.FC<{
                             <TaskItem 
                                 key={task.id} 
                                 task={task} 
-                                // [수정] 화살표 함수로 감싸서 handleUpdateTask에 task.id를 전달합니다.
                                 onUpdate={(field, value) => handleUpdateTask(task.id, field, value)} 
                                 onDelete={() => handleDeleteTask(task.id)} 
                                 isEditable={isEditable}

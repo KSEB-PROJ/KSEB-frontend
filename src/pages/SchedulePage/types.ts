@@ -1,4 +1,4 @@
-// kdae/src - front/pages/SchedulePage/types.ts
+// src/pages/SchedulePage/types.ts
 
 /**
  * @typedef EventParticipant

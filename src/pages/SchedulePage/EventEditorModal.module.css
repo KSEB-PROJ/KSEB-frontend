@@ -30,6 +30,9 @@
 }
 
 .modalContainer {
+  /* [수정] 이벤트 테마 색상 변수 추가 */
+  --event-theme-color: rgb(var(--group-color)); 
+
   width: 100%;
   max-width: 680px;
   background: #252528;
@@ -76,12 +79,11 @@
   transform: rotate(90deg);
 }
 
-.readOnlyBadge {
+/* --- [수정] 그룹 정보 및 읽기전용 배지 --- */
+.readOnlyBadge, .groupInfoBadge {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    background: #4a4a4e;
-    color: #ccc;
     padding: 0.3rem 0.8rem;
     border-radius: 12px;
     font-size: 0.8rem;
@@ -90,6 +92,16 @@
     align-items: center;
     gap: 0.4rem;
 }
+.readOnlyBadge {
+    background: #4a4a4e;
+    color: #ccc;
+}
+.groupInfoBadge {
+    background-color: rgba(var(--group-color), 0.2);
+    color: rgb(var(--group-color));
+    border: 1px solid rgba(var(--group-color), 0.4);
+}
+
 
 .content {
   padding: 1.5rem 2rem 2rem;
@@ -125,7 +137,8 @@
   bottom: 0;
   width: 0;
   height: 2px;
-  background: rgb(var(--group-color));
+  /* [수정] 포커스 색상을 이벤트 테마 색상으로 변경 */
+  background: var(--event-theme-color); 
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transform: translateX(-50%);
 }
@@ -147,7 +160,8 @@
 .inputGroup input:not(:placeholder-shown)+label {
   top: -1.2rem;
   font-size: 0.8rem;
-  color: rgb(var(--group-color));
+  /* [수정] 포커스 색상을 이벤트 테마 색상으로 변경 */
+  color: var(--event-theme-color);
 }
 
 .textareaGroup {
@@ -184,7 +198,7 @@
     cursor: not-allowed;
 }
 .textarea:focus {
-  border-color: rgb(var(--group-color));
+  border-color: var(--event-theme-color);
   box-shadow: 0 0 0 3px rgba(var(--group-color), 0.2);
 }
 
@@ -268,8 +282,8 @@
     background-color: #333;
 }
 .switch input:checked+.slider {
-  background-color: rgb(var(--group-color));
-  box-shadow: 0 0 10px rgba(var(--group-color), 0.5);
+  background-color: var(--event-theme-color);
+  box-shadow: 0 0 10px var(--event-theme-color);
 }
 .switch input:checked+.slider:before {
   transform: translateX(20px);
@@ -413,6 +427,38 @@
   border-style: solid;
 }
 
+/* --- [새로 추가] 색상 팔레트 --- */
+.colorPalette {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    max-width: 180px;
+}
+.colorSwatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 0.8rem;
+}
+.colorSwatch:hover {
+    transform: scale(1.1);
+}
+.colorSwatch.active {
+    border-color: #fff;
+    box-shadow: 0 0 0 2px var(--event-theme-color);
+}
+.colorSwatch:disabled {
+    cursor: not-allowed;
+    filter: grayscale(0.8);
+}
+
 .footer {
   padding: 1rem 1.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -449,8 +495,8 @@
 }
 .saveButton {
   color: #fff;
-  background: rgb(var(--group-color));
-  box-shadow: 0 4px 15px -5px rgba(var(--group-color), 0.4);
+  background: var(--event-theme-color);
+  box-shadow: 0 4px 15px -5px var(--event-theme-color);
 }
 .saveButton:hover {
   filter: brightness(1.15);
