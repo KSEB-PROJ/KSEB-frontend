@@ -74,6 +74,7 @@
 }
 
 .chatArea {
+    overflow-x: hidden;
     flex-direction: column;
     display: flex;
     flex-grow: 1;

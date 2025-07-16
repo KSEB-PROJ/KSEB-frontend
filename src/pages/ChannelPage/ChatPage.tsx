@@ -1,5 +1,6 @@
 import React, { useRef, useState,useEffect } from 'react';
 import styles from './ChatPage.module.css';
+import remarkBreaks from "remark-breaks";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPencil, faTrashCan, faThumbTack,faPaperPlane, faXmark, faPaperclip,faFilePdf, faFileWord, faFileExcel, faFileImage, faFileVideo, faFileAudio, faFileAlt } from '@fortawesome/free-solid-svg-icons';
 import ReactMarkdown from "react-markdown";
@@ -225,7 +226,7 @@ const ChatPage: React.FC = () => {
                                             }}
                                             autoFocus className={styles.EditInput}/>
                                         ) : (
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown> )}
+                                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{msg.text || ""}</ReactMarkdown> )}
                                         {/* 마크다운: # 제목, **굵게**, *기울임*, ~~취소선~~ */}
                                     </div>
                                     {/*파일첨부*/}
@@ -288,7 +289,7 @@ const ChatPage: React.FC = () => {
                                                     handleToggle(idx);
                                                     }}  title={msg.pinned ? " " : " "}/>
                                         </div>
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text || ""}</ReactMarkdown>
                                         {msg.files && msg.files.length > 0 && (
                                             <div className={styles.fileInChatList}>
                                                 {sortFiles(msg.files).map((file, fileIdx) => (
