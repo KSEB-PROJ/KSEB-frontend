@@ -90,9 +90,9 @@
     --fc-today-bg-color: rgba(var(--group-color-rgb, 88, 80, 230), 0.08);
 }
 
-/* 👈 [수정] 캘린더의 날짜 칸(셀) 최소 높이를 줄여서 스크롤 압박을 줄임 */
 .calendarWrapper :global(.fc .fc-daygrid-day-frame) {
-    min-height: 120px; 
+    min-height: 120px;
+    transition: min-height 0.4s ease-in-out;
 }
 
 
@@ -216,10 +216,11 @@
     color: rgb(var(--group-color-rgb, 88, 80, 230));
 }
 
-/* --- [수정] 새로운 이벤트 렌더링 스타일 --- */
+/* --- 이벤트 렌더링 V2 --- */
 .calendarEvent {
     cursor: pointer;
-    padding: 1px 4px;
+    padding: 2px 4px;
+    height: 100%;
 }
 
 .allDayEventContent {
@@ -227,37 +228,44 @@
     align-items: center;
     gap: 6px;
     font-size: 0.8rem;
-    padding: 2px 0;
+    font-weight: 500;
+    padding: 3px 6px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #d4d4d8;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.allDayEventContent:hover {
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 .eventDot {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     flex-shrink: 0;
 }
 
 .timedEventContent {
-    background-color: #27272A;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
     border-radius: 4px;
     padding: 4px 8px;
+    height: 100%;
     overflow: hidden;
     border-left: 3px solid;
     transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
 .timedEventContent:hover {
-    transform: scale(1.03);
-    z-index: 10;
-    background-color: #3f3f46;
+    transform: translateY(-1px) scale(1.02);
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 .eventTitle {
-    font-weight: 500;
+    font-weight: 600;
     font-size: 0.8rem;
     color: #f4f4f5;
     white-space: nowrap;
@@ -271,7 +279,17 @@
 }
 
 .groupEvent .timedEventContent {
-    border-left-style: dashed;
+    background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0)),
+        repeating-linear-gradient(-45deg,
+            transparent,
+            transparent 4px,
+            rgba(0, 0, 0, 0.1) 4px,
+            rgba(0, 0, 0, 0.1) 8px);
+}
+
+.groupEvent .allDayEventContent {
+    background-color: rgba(255, 255, 255, 0.03);
 }
 
 .groupEvent .eventDot {
@@ -279,109 +297,36 @@
     border: 2px solid;
 }
 
+
 :global(.fc-daygrid-day-events) {
     padding-bottom: 2px;
 }
 
-:global(.fc-daygrid-more-link) {
-    text-align: right;
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: #a1a1aa;
-    padding: 4px 8px;
-    margin-top: 2px;
-    border-radius: 6px;
-    transition: background-color 0.2s, color 0.2s;
+/* --- 날짜 칸 확장 스타일 --- */
+.dayExpanded {
+    z-index: 10;
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
+    background-color: #2a2a2e !important;
 }
 
-:global(.fc-daygrid-more-link:hover) {
-    background-color: #3f3f46;
-    color: #fff;
-}
-
-/* --- Custom More Popover --- */
-@keyframes popover-in {
-    from {
-        opacity: 0;
-        transform: scale(0.95) translateY(-5px);
-    }
-
-    to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
-}
-
-.morePopoverWrapper {
-    position: fixed;
-    inset: 0;
-    z-index: 1999;
-}
-
-.morePopover {
-    animation: popover-in 0.2s ease-out;
-    z-index: 2000;
-    width: 280px;
-    background: rgba(40, 40, 45, 0.8);
-    backdrop-filter: blur(12px);
-    border: 1px solid #52525b;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    transform-origin: top left;
-    position: fixed;
-}
-
-.popoverHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid #3f3f46;
-}
-
-.popoverHeader h4 {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 500;
-}
-
-.closePopover {
-    background: none;
-    border: none;
-    color: #a1a1aa;
-    font-size: 1rem;
-    cursor: pointer;
-    padding: 0.25rem;
-}
-
-.morePopoverList {
-    list-style: none;
-    padding: 0.5rem;
-    margin: 0;
-    max-height: 200px;
+.dayExpanded :global(.fc-daygrid-day-frame) {
+    min-height: 250px;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
-.morePopoverItem {
-    margin-bottom: 0.25rem;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-    cursor: grab;
+.dayExpanded :global(.fc-daygrid-day-events) {
+    flex-grow: 1;
+    flex-wrap: wrap;
+    align-content: flex-start;
 }
 
-.morePopoverItem:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+.dayExpanded :global(.fc-daygrid-more-link) {
+    display: none;
 }
 
-.morePopoverItem .timedEventContent {
-    height: auto;
-}
 
-.morePopoverItem .eventTime {
-    margin-top: 2px;
-}
-
-/* --- Right Column Styles (Unchanged) --- */
+/* --- Right Column Styles --- */
 .scrollableContent {
     overflow-y: auto;
     padding: 1rem 0.25rem 0 0.25rem;

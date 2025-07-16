@@ -5,11 +5,13 @@ import FullCalendar from '@fullcalendar/react';
 import type { EventClickArg, EventInput, EventContentArg, MoreLinkArg, EventApi } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin, { type DateClickArg, type DropArg } from '@fullcalendar/interaction';
+import interactionPlugin, { type DateClickArg } from '@fullcalendar/interaction';
 import { RRule } from 'rrule';
 import dayjs from 'dayjs';
+import isBetween from 'dayjs/plugin/isBetween';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faCheck, faLayerGroup, faUser, faCalendarDays, faChevronLeft, faChevronRight, faTimes } from '@fortawesome/free-solid-svg-icons';
+// 'faTimes' 아이콘 제거
+import { faPlus, faCheck, faLayerGroup, faUser, faCalendarDays, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import 'dayjs/locale/ko';
 
 import styles from './SchedulePage.module.css';
@@ -17,6 +19,7 @@ import type { ScheduleEvent, EventTask, EventParticipant } from './types';
 import EventEditorModal from './EventEditorModal';
 import UniversityTimetable from './UniversityTimetable';
 
+dayjs.extend(isBetween);
 dayjs.locale('ko');
 
 // --- Mock Data ---
@@ -35,11 +38,11 @@ const mockEvents: ScheduleEvent[] = [
     { id: 'event-user-2', title: '알고리즘 스터디', start: dayjs().add(3, 'day').format('YYYY-MM-DD'), allDay: true, ownerType: 'USER', ownerId: CURRENT_USER_ID, color: '#17a88f', createdBy: CURRENT_USER_ID },
     { id: 'event-group-1', title: '캡스톤 디자인 정기 회의', start: '2025-07-18T14:00:00', end: '2025-07-18T16:00:00', allDay: false, location: '공학관 611호', ownerType: 'GROUP', ownerId: 1, groupName: 'Bloom Us 개발팀', color: '#8400ff', rrule: 'FREQ=WEEKLY;BYDAY=FR;UNTIL=20250829T235959Z', participants: mockParticipants, createdBy: 456 },
     { id: 'event-group-2', title: 'Bloom Us 팀 회고', start: dayjs().add(1, 'week').format('YYYY-MM-DD'), allDay: true, ownerType: 'GROUP', ownerId: 2, groupName: '캡스톤 디자인', color: '#e5096f', participants: mockParticipants, createdBy: CURRENT_USER_ID },
-    // For overflow test
     { id: 'event-timed-3', title: 'UI/UX 리뷰', start: dayjs().add(1, 'day').hour(14).toISOString(), end: dayjs().add(1, 'day').hour(15).toISOString(), allDay: false, ownerType: 'GROUP', ownerId: 1, groupName: 'Bloom Us 개발팀', color: '#f97316', createdBy: 456 },
     { id: 'event-timed-4', title: '백엔드 API 설계', start: dayjs().add(1, 'day').hour(16).toISOString(), end: dayjs().add(1, 'day').hour(17).toISOString(), allDay: false, ownerType: 'GROUP', ownerId: 1, groupName: 'Bloom Us 개발팀', color: '#ef4444', createdBy: 456 },
     { id: 'event-user-3', title: '추가 테스트 이벤트 1', start: dayjs().add(3, 'day').format('YYYY-MM-DD'), allDay: true, ownerType: 'USER', ownerId: CURRENT_USER_ID, color: '#f97316', createdBy: CURRENT_USER_ID },
     { id: 'event-user-4', title: '추가 테스트 이벤트 2', start: dayjs().add(3, 'day').format('YYYY-MM-DD'), allDay: true, ownerType: 'USER', ownerId: CURRENT_USER_ID, color: '#ef4444', createdBy: CURRENT_USER_ID },
+    { id: 'event-user-5', title: '추가 테스트 이벤트 3', start: dayjs().add(3, 'day').format('YYYY-MM-DD'), allDay: true, ownerType: 'USER', ownerId: CURRENT_USER_ID, color: '#22c55e', createdBy: CURRENT_USER_ID },
 ];
 
 const mockTasks: EventTask[] = [
@@ -55,19 +58,11 @@ const getEventInstanceId = (event: ScheduleEvent, date: Date | string): string =
     return `${event.id}-${dayjs(date).format('YYYYMMDD')}`;
 };
 
-interface MorePopoverData {
-    anchorEl: HTMLElement;
-    date: Date;
-    events: EventApi[];
-}
-
 const SchedulePage: React.FC = () => {
     const calendarRef = useRef<FullCalendar>(null);
     const [currentTitle, setCurrentTitle] = useState('');
     const [viewType, setViewType] = useState('dayGridMonth');
-    const [morePopover, setMorePopover] = useState<MorePopoverData | null>(null);
-    const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({});
-
+    const [expandedDate, setExpandedDate] = useState<string | null>(null);
     const [events, setEvents] = useState<ScheduleEvent[]>(mockEvents);
     const [tasks, setTasks] = useState<EventTask[]>(mockTasks);
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -112,7 +107,6 @@ const SchedulePage: React.FC = () => {
         return calendarEvents;
     }, [events, viewRange]);
 
-    // 👈 [수정] 새로운 디자인을 적용하는 렌더링 함수
     const renderEventContent = (eventInfo: EventContentArg) => {
         const props = eventInfo.event.extendedProps as ScheduleEvent;
         const color = props.color || '#888';
@@ -120,8 +114,8 @@ const SchedulePage: React.FC = () => {
         if (eventInfo.event.allDay) {
             return (
                 <div className={styles.allDayEventContent}>
-                    <span 
-                        className={`${styles.eventDot} ${props.ownerType === 'GROUP' ? styles.groupEvent : ''}`} 
+                    <span
+                        className={`${styles.eventDot}`}
                         style={{ backgroundColor: color, borderColor: color }}
                     ></span>
                     {eventInfo.event.title}
@@ -129,14 +123,17 @@ const SchedulePage: React.FC = () => {
             );
         } else {
             return (
-                <div 
-                    className={`${styles.timedEventContent} ${props.ownerType === 'GROUP' ? styles.groupEvent : ''}`} 
-                    style={{ borderLeftColor: color }}
-                >
+                <div className={styles.timedEventContent} style={{ borderLeftColor: color }}>
                     <div className={styles.eventTitle}>{eventInfo.event.title}</div>
+                    <div className={styles.eventTime}>{dayjs(eventInfo.event.start).format('HH:mm')}</div>
                 </div>
             );
         }
+    };
+
+    const handleMoreLinkClick = (arg: MoreLinkArg) => {
+        const dateStr = dayjs(arg.date).format('YYYY-MM-DD');
+        setExpandedDate(prev => (prev === dateStr ? null : dateStr));
     };
 
     const handleDateClick = (arg: DateClickArg) => {
@@ -156,7 +153,7 @@ const SchedulePage: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const openEditorForEvent = useCallback((event: EventApi) => {
+    const openEditorForEvent = useCallback((event: EventApi | EventInput) => {
         const props = event.extendedProps as ScheduleEvent;
         const originalEventId = props.id.startsWith('event-') ? props.id.split('-').slice(0, 3).join('-') : props.id;
         const originalEvent = events.find(e => e.id === originalEventId);
@@ -166,14 +163,14 @@ const SchedulePage: React.FC = () => {
             return;
         }
 
-        const instanceId = event.id;
+        const instanceId = event.id as string;
         const isEditable = originalEvent.ownerType === 'USER' || (originalEvent.ownerType === 'GROUP' && originalEvent.createdBy === CURRENT_USER_ID);
 
         setEditingEvent({
             ...originalEvent,
-            id: instanceId, 
-            start: dayjs(event.start).toISOString(), 
-            end: event.end ? dayjs(event.end).toISOString() : dayjs(event.start).add(1, 'hour').toISOString(), 
+            id: instanceId,
+            start: dayjs(event.start as string).toISOString(),
+            end: event.end ? dayjs(event.end as string).toISOString() : dayjs(event.start as string).add(1, 'hour').toISOString(),
             tasks: tasks.filter(t => t.eventId === instanceId || t.eventId === originalEventId),
             isEditable,
         });
@@ -183,11 +180,6 @@ const SchedulePage: React.FC = () => {
 
     const handleEventClick = useCallback((arg: EventClickArg) => {
         openEditorForEvent(arg.event);
-    }, [openEditorForEvent]);
-
-    const handlePopoverEventClick = useCallback((event: EventApi) => {
-        openEditorForEvent(event);
-        setMorePopover(null); 
     }, [openEditorForEvent]);
 
 
@@ -221,17 +213,6 @@ const SchedulePage: React.FC = () => {
         if (selectedEventId?.startsWith(originalId)) {
             setSelectedEventId(null);
         }
-    };
-
-    const handleMoreLinkClick = (arg: MoreLinkArg): 'prevent' => {
-        const hiddenEvents = arg.allDay ? arg.allSegs.map(seg => seg.event) : arg.hiddenSegs.map(seg => seg.event);
-
-        setMorePopover({
-            anchorEl: arg.jsEvent.target as HTMLElement,
-            date: arg.date,
-            events: hiddenEvents
-        });
-        return 'prevent';
     };
 
     const todaysEvents = useMemo(() =>
@@ -300,71 +281,6 @@ const SchedulePage: React.FC = () => {
         }
     }, []);
 
-    useEffect(() => {
-        const closePopover = () => setMorePopover(null);
-
-        if (morePopover) {
-            const anchorRect = morePopover.anchorEl.getBoundingClientRect();
-            const popoverHeight = 250;
-            const popoverWidth = 280;
-
-            let top = anchorRect.bottom + 5;
-            let left = anchorRect.left;
-
-            if (top + popoverHeight > window.innerHeight) {
-                top = anchorRect.top - popoverHeight - 5;
-            }
-            if (left + popoverWidth > window.innerWidth) {
-                left = anchorRect.right - popoverWidth;
-            }
-
-            setPopoverStyle({
-                top: `${top}px`,
-                left: `${left}px`,
-                transformOrigin: top < anchorRect.top ? 'bottom left' : 'top left',
-            });
-            window.addEventListener('click', closePopover, { once: true, capture: true });
-        }
-
-        return () => window.removeEventListener('click', closePopover, true);
-    }, [morePopover]);
-
-    const handleDragStart = (e: React.DragEvent<HTMLLIElement>, event: EventApi) => {
-        e.dataTransfer.setData('application/json', JSON.stringify(event.toPlainObject()));
-    };
-
-    const handleEventDropOnCalendar = (info: DropArg) => {
-        const eventDataString = (info.jsEvent as DragEvent).dataTransfer?.getData('application/json');
-        if (!eventDataString) return;
-
-        try {
-            const droppedEventObject = JSON.parse(eventDataString);
-            const originalEventId = droppedEventObject.extendedProps.id.startsWith('event-')
-                ? droppedEventObject.extendedProps.id.split('-').slice(0, 3).join('-')
-                : droppedEventObject.extendedProps.id;
-
-            const originalEvent = events.find(e => e.id === originalEventId);
-
-            if (originalEvent) {
-                const newStart = dayjs(info.date);
-                const duration = dayjs(originalEvent.end).diff(dayjs(originalEvent.start));
-
-                const updatedEvent: ScheduleEvent = {
-                    ...originalEvent,
-                    start: newStart.toISOString(),
-                    end: newStart.add(duration, 'ms').toISOString()
-                };
-
-                setEvents(prev => prev.map(e => e.id === originalEvent.id ? updatedEvent : e));
-            }
-        } catch (error) {
-            console.error("Failed to parse dropped event data:", error);
-        } finally {
-            setMorePopover(null); 
-        }
-    };
-
-
     return (
         <>
             <div className={styles.pageContainer}>
@@ -388,20 +304,27 @@ const SchedulePage: React.FC = () => {
                                 plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                                 initialView={viewType}
                                 headerToolbar={false}
-                                dayMaxEvents={true}
+                                dayMaxEvents={2}
                                 moreLinkClick={handleMoreLinkClick}
-                                moreLinkContent={(args) => `+ ${args.num} more`}
                                 events={processedEvents}
                                 editable={true}
-                                droppable={true}
-                                drop={handleEventDropOnCalendar}
                                 selectable={true}
                                 eventClick={handleEventClick}
                                 dateClick={handleDateClick}
+                                dayCellClassNames={(arg) => {
+                                    if (dayjs(arg.date).format('YYYY-MM-DD') === expandedDate) {
+                                        return [styles.dayExpanded];
+                                    }
+                                    return [];
+                                }}
                                 datesSet={(arg) => {
                                     setCurrentDate(arg.view.currentStart);
                                     setViewRange({ start: arg.view.activeStart, end: arg.view.activeEnd });
                                     setCurrentTitle(arg.view.title);
+                                    setViewType(arg.view.type);
+                                    if (expandedDate && !dayjs(expandedDate).isBetween(arg.view.activeStart, arg.view.activeEnd, null, '[]')) {
+                                        setExpandedDate(null);
+                                    }
                                 }}
                                 locale={'ko'}
                                 eventContent={renderEventContent}
@@ -475,30 +398,6 @@ const SchedulePage: React.FC = () => {
                     </div>
                 </div>
             </div>
-
-            {morePopover && (
-                <div className={styles.morePopoverWrapper} onClick={() => setMorePopover(null)}>
-                    <div className={styles.morePopover} style={popoverStyle} onClick={(e) => e.stopPropagation()}>
-                        <div className={styles.popoverHeader}>
-                            <h4>{dayjs(morePopover.date).format('MM월 DD일 dddd')}</h4>
-                            <button onClick={() => setMorePopover(null)} className={styles.closePopover}><FontAwesomeIcon icon={faTimes} /></button>
-                        </div>
-                        <ul className={styles.morePopoverList}>
-                            {morePopover.events.map(event => (
-                                <li
-                                    key={event.id}
-                                    className={styles.morePopoverItem}
-                                    onClick={() => handlePopoverEventClick(event)} 
-                                    draggable
-                                    onDragStart={(e) => handleDragStart(e, event)} 
-                                >
-                                    {renderEventContent({ event } as EventContentArg)}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </div>
-            )}
 
             {isModalOpen && <EventEditorModal event={editingEvent} onClose={() => setIsModalOpen(false)} onSave={handleSaveEvent} onDelete={handleDeleteEvent} />}
         </>
