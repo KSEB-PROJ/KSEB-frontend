@@ -101,6 +101,7 @@ const ChatPage: React.FC = () => {
     const [input, setInput] = useState("");
     const [shouldScroll, setShouldScroll] = useState(false);
     const chatAreaRef = useRef<HTMLDivElement | null>(null);
+    const editInputRef = useRef<HTMLTextAreaElement | null>(null);
     const [editIndex, setEditIndex] = useState<number | null>(null); // 수정 중인 메시지
     const [editValue, setEditValue] = useState(""); 
     const handleEditStart = (idx: number, text?: string) => {
@@ -155,6 +156,13 @@ const ChatPage: React.FC = () => {
             setShouldScroll(false);
         }
         }, [messages, shouldScroll]);
+    useEffect(() => {
+        if (editInputRef.current) {
+            const len = editInputRef.current.value.length;
+            editInputRef.current.focus();
+            editInputRef.current.setSelectionRange(len, len);
+        }
+        }, [editIndex]);
     //엔터키로 전송
     const handleInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === "Enter") {
@@ -209,20 +217,21 @@ const ChatPage: React.FC = () => {
                                         </div>
                                         {/* 인라인 수정 */}
                                         {editIndex === idx ? (
-                                            <input
-                                            type="text"
+                                        <textarea
+                                            ref={editInputRef}
                                             value={editValue}
                                             onChange={e => setEditValue(e.target.value)}
                                             onKeyDown={e => {
-                                                if (e.key === "Enter") {
-                                                setMessages(prev => prev.map((m, i) =>
-                                                    i === idx ? { ...m, text: editValue } : m
+                                                if (e.key === "Enter" && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    setMessages(prev => prev.map((m, i) =>
+                                                        i === idx ? { ...m, text: editValue } : m
                                                     ));
-                                                setEditIndex(null);
-                                                setEditValue(""); }
+                                                    setEditIndex(null);
+                                                    setEditValue(""); }
                                                 if (e.key === "Escape") {
-                                                setEditIndex(null);
-                                                setEditValue(""); }
+                                                    setEditIndex(null);
+                                                    setEditValue(""); }
                                             }}
                                             autoFocus className={styles.EditInput}/>
                                         ) : (
