@@ -7,28 +7,28 @@ import { login } from '../../api/auth';
 import { AxiosError } from 'axios';
 
 const LoginForm: React.FC = () => {
-    // 사용자 입력 상태값 선언 (입력창 제어)
+    // 입력값을 저장할 곳. 내가 입력하는 값이 바로 이 변수에 저장됨.
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false); // 비밀번호 표시 여부(토글)
     const navigate = useNavigate(); // 리액트 라우터의 페이지 이동 함수
 
     /*
-     * 로그인 폼 제출 이벤트 핸들러
+     * 로그인 폼 제출 이벤트 핸들러 (버튼 클릭하면 백엔드에 진짜 로그인 요청 보내는 부분)
      * - 기본 제출 동작 방지
      * - API 서버에 로그인 요청을 보내고, 결과에 따라 페이지 이동 또는 에러 메시지 표시
      */
     const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault(); // 페이지 새로고침 방지
 
-        // toast.promise를 사용하여 API 요청 상태에 따라 자동으로 알림을 보여줍니다.
+        // toast.promise를 사용하여 API 요청 상태에 따라 자동으로 알림을 보여줌.
         await toast.promise(
-            login({ email, password }),
+            login({ email, password }), // API 함수에 입력값 전달
             {
                 loading: '로그인 중...',
                 success: () => {
                     navigate('/app'); // 성공 시 페이지 이동
-                    return <b>로그인 성공! 환영합니다.</b>;
+                    return <b>로그인 성공! 환영합니다.</b>; // 성공 알림 메시지
                 },
                 error: (err: AxiosError<{ message?: string }>) => {
                     // 백엔드에서 온 에러 메시지를 우선적으로 사용
@@ -55,6 +55,7 @@ const LoginForm: React.FC = () => {
                     <span>Login</span>
                 </div>
                 {/* 실제 로그인 입력/제출 폼 */}
+                {/* onSubmit={handleLogin} → 위에서 만든 함수 실행 */}
                 <form onSubmit={handleLogin}>
                     {/* 사용자명(이메일) 입력 영역 */}
                     <div className={styles.inputBox}>
@@ -64,7 +65,7 @@ const LoginForm: React.FC = () => {
                             id="email"
                             className={styles.inputField}
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => setEmail(e.target.value)} // 바뀔 때마다 값 저장
                             required
                         />
                         {/* 입력란 라벨 (floating label 효과, 스타일로 제어) */}

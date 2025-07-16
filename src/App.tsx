@@ -13,27 +13,28 @@ import ChannelLayout from './pages/ChannelPage/ChannelLayout';
 const App: React.FC = () => {
   return (
     <BrowserRouter>
-          {/* 전체에 토스트 알림을 띄우기 위해 최상단에 추가 */}
+      {/* 전체에 토스트 알림을 띄우기 위해 최상단에 추가 */}
       <Toaster
         position="top-center"
         reverseOrder={false}
         toastOptions={{
-          // 기본 스타일 설정
           style: {
             background: '#333',
             color: '#fff',
           },
-          // 성공 알림 스타일
           success: {
             duration: 3000,
-            theme: {
-              primary: 'green',
-              secondary: 'black',
+            iconTheme: {
+              primary: '#4ade80',
+              secondary: '#222',
             },
           },
-          // 에러 알림 스타일
           error: {
             duration: 4000,
+            iconTheme: {
+              primary: '#ff4d4f',
+              secondary: '#222',
+            },
           },
         }}
       />

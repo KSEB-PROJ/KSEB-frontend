@@ -1,10 +1,16 @@
 //axios로 연결
 import axios from 'axios';
+// 데이터 타입
 import type { UserLoginRequest, UserRegisterRequest } from '../types';
 
+/**
+ * API 클라이언트 설정
+ * - baseURL: 모든 요청에 기본적으로 사용될 서버 주소.
+ * - withCredentials: 요청 시 쿠키 같은 인증 정보를 함께 보내주는 설정입니다.
+ */
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8080/api',
-  withCredentials: true,
+    baseURL: import.meta.env.VITE_API_BASE_URL,
+    withCredentials: true,
 });
 
 /**
@@ -13,7 +19,8 @@ const apiClient = axios.create({
  * @returns Promise - API 요청 결과
  */
 export const login = (loginData: UserLoginRequest) => {
-  return apiClient.post('/auth/login', loginData);
+    // apiClient를 사용해 '/auth/login' 경로로 POST 방식의 api 전송
+    return apiClient.post('/auth/login', loginData);
 };
 
 /**
@@ -22,5 +29,5 @@ export const login = (loginData: UserLoginRequest) => {
  * @returns Promise - API 요청 결과
  */
 export const register = (registerData: UserRegisterRequest) => {
-  return apiClient.post('/auth/register', registerData);
+    return apiClient.post('/auth/register', registerData);
 };
