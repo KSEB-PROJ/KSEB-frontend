@@ -1,0 +1,143 @@
+/* ChannelLayout.tsx 전체 컨테이너 */
+.channelContainer {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    box-sizing: border-box;
+    background-color: #121212; /* 앱 전체 배경색과 통일 */
+}
+
+/* 채널 헤더 (채널명, 설명) */
+.channelHeader {
+    padding: 2rem 2rem 1.5rem 2rem;
+    border-bottom: 1px solid #333;
+    margin-bottom: 1.5rem;
+}
+
+/* 공지사항 페이지 전용 헤더 스타일 */
+.noticeHeader {
+    border-bottom: 1px solid #2a2e37; /* <<< 구분선 추가 */
+    padding-bottom: 2rem;             /* <<< 구분선 아래 간격 추가 */
+    margin-bottom: 1rem;              /* <<< 콘텐츠와의 간격 조정 */
+}
+
+
+.channelHeader h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    color: #fff;
+}
+
+/* 그룹 색상을 헤더 # 태그 앞에 적용 */
+.channelHeader h1::before {
+    content: "# ";
+    color: rgb(var(--group-color));
+    transition: color 0.4s ease;
+}
+
+.channelHeader p {
+    font-size: 1rem;
+    color: #a0a0a0;
+    margin: 0;
+}
+
+.channelBody {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+/* NoticePage.tsx 스타일 */
+.noticeItem {
+    background-color: #1c1c1c;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid rgb(var(--group-color));
+    transition: border-color 0.4s ease;
+}
+
+.noticeItem h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+}
+
+.noticeMeta {
+    font-size: 0.8rem;
+    color: #888;
+    margin-bottom: 1rem;
+}
+
+/* CalendarPage.tsx, ChatPage.tsx 공통 콘텐츠 영역 */
+.channelContent {
+    color: #e0e0e0;
+}
+
+
+/* ChatPage.tsx 스타일 */
+.chatContainer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.chatArea {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 1rem; /* 스크롤바 공간 */
+}
+
+.chatMessage {
+    max-width: 60%;
+    padding: 10px 15px;
+    border-radius: 18px;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+.myMessage {
+    /* 내 메시지 배경 색상을 그룹 색상으로 변경 */
+    background-color: rgb(var(--group-color));
+    color: #fff;
+    margin-left: auto;
+    border-bottom-right-radius: 4px;
+    transition: background-color 0.4s ease;
+}
+
+.otherMessage {
+    background-color: #3a3a3a;
+    color: #e0e0e0;
+    margin-right: auto;
+    border-bottom-left-radius: 4px;
+}
+
+.chatInputWrapper {
+    display: flex;
+    padding: 1rem 0;
+    border-top: 1px solid #333;
+    background-color: #121212; /* 배경색 통일 */
+}
+
+.chatInput {
+    flex-grow: 1;
+    background-color: #2c2c2c;
+    border: 1px solid #444;
+    border-radius: 20px;
+    padding: 10px 15px;
+    color: #fff;
+    outline: none;
+    margin-right: 10px;
+}
+
+.sendButton {
+    /* 전송 버튼 배경 색상을 그룹 색상으로 변경 */
+    background-color: rgb(var(--group-color));
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.4s ease;
+}

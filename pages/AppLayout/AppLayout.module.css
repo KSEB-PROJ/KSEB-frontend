@@ -1,0 +1,28 @@
+.appContainer {
+    display: flex;
+    background-color: #121212;
+    color: #E0E0E0;
+    position: relative; /* 자식 요소의 position: fixed 기준점 */
+    overflow-x: hidden; /* 가로 스크롤 방지 */
+}
+
+.mainContent {
+    flex-grow: 1;
+    /* 사이드바가 닫혔을 때의 왼쪽 여백 (기본값) */
+    padding-left: 80px; 
+    transition: padding-left 0.3s ease, padding-right 0.3s ease; /* 오른쪽 패딩 전환 효과 추가 */
+    height: 100vh;
+    overflow-y: auto;
+}
+
+/* 사이드바가 열렸을 때 적용될 클래스 */
+.mainContent.contentShifted {
+    /* 확장된 사이드바 넓이만큼 왼쪽 여백. */
+    padding-left: 280px;
+}
+
+/* 챗봇 사이드바가 열렸을 때 메인 콘텐츠를 축소 */
+.mainContent.contentShrink {
+    padding-right: 640px;
+}
+
