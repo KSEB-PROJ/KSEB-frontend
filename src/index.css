@@ -4,9 +4,43 @@
 body {
   margin: 0;
   padding: 0;
-  background-color: #121212; /* 전체 배경을 어둡게 설정 */
+  background-color: #121212;
   color: #E0E0E0;
   font-family: 'Noto Sans KR', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* --- Firefox 용 --- */
+  scrollbar-width: thin;
+  scrollbar-color: #444 transparent;
 }
+
+/* --- Webkit 브라우저(Chrome, Safari 등)용 --- */
+
+/* 스크롤바 전체 */
+::-webkit-scrollbar {
+  width: 3px !important;  /* 너비 강제 적용 */
+  height: 3px !important; /* 높이 강제 적용 */
+}
+
+/* 스크롤바 트랙(배경) */
+::-webkit-scrollbar-track {
+  background: transparent !important; /* 배경 투명 강제 적용 */
+}
+
+/* 스크롤바 막대 */
+::-webkit-scrollbar-thumb {
+  background-color: #2e2e2e !important; /* 막대 색상 강제 적용 */
+  border-radius: 6px !important;       /* 둥근 모서리 강제 적용 */
+}
+
+/* 스크롤바 막대 호버 시 */
+::-webkit-scrollbar-thumb:hover {
+  background-color: #444 !important; /* 호버 색상 강제 적용 */
+}
+
+/* 스크롤바 화살표 버튼 */
+::-webkit-scrollbar-button {
+  display: none !important; /* 버튼 숨기기 강제 적용 */
+}
+/* 왜 안돼 포기 진짜 정신 나갈거같네 ㅁ낭ㅁ나ㅣ임나임ㄴ이ㅏㄴ미안*/

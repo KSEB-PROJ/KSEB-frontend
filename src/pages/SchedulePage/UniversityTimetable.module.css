@@ -1,0 +1,484 @@
+/* --- Animations --- */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes popIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+@keyframes slideOutLeft {
+    to {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+}
+@keyframes slideOutRight {
+    to {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+}
+@keyframes fadeInV2 { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOutV2 { from { opacity: 1; } to { opacity: 0; } }
+@keyframes popInV2 {
+    from { opacity: 0; transform: translateY(20px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes popOutV2 {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(20px) scale(0.97); }
+}
+@keyframes step-in {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+
+/* --- Container: The "Architecture of Time" --- */
+.timetableContainer {
+    flex-shrink: 0;
+    padding: 1.25rem;
+    position: relative;
+    overflow: hidden;
+    background: #1a1a1e;
+}
+.timetableHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 0.25rem 1rem 0.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.semesterNavigator {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.semesterTitle {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #fff;
+    width: 200px;
+    text-align: center;
+}
+.navButton {
+    background: none;
+    border: 1px solid #444;
+    color: #999;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: all 0.2s ease;
+}
+.navButton:hover {
+    background-color: #333;
+    color: #fff;
+    border-color: #666;
+}
+.addButton {
+    background: none;
+    border: none;
+    color: #999;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+}
+.addButton:hover {
+    color: #fff;
+    background-color: rgba(var(--group-color), 0.2);
+    transform: scale(1.1);
+}
+
+/* --- Grid with hover-based guiding lines --- */
+.timetableGrid {
+    display: grid;
+    grid-template-columns: 40px repeat(5, 1fr);
+    grid-template-rows: 25px repeat(13, 40px);
+    position: relative;
+    padding-top: 1rem;
+}
+
+.timetableGrid::before {
+    content: '';
+    position: absolute;
+    top: calc(25px + 1rem); 
+    left: 40px;
+    width: calc(100% - 40px);
+    height: calc(100% - 25px - 1rem);
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+        repeating-linear-gradient(to right, transparent, transparent calc(100% / 5 - 1px), #2a2a2e calc(100% / 5 - 1px), #2a2a2e calc(100% / 5)),
+        repeating-linear-gradient(to bottom, #2a2a2e, #2a2a2e 1px, transparent 1px, transparent 40px);
+}
+
+.slideIn { animation: slideIn 0.2s ease-out forwards; }
+.slideOutLeft { animation: slideOutLeft 0.2s ease-in forwards; }
+.slideOutRight { animation: slideOutRight 0.2s ease-in forwards; }
+
+.gridHeader,
+.gridTime {
+    font-size: 0.7rem;
+    color: #888;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+}
+.gridTime {
+    align-items: flex-start;
+}
+
+.gridCell {
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.gridCell:hover {
+    background-color: rgba(var(--group-color), 0.1);
+}
+
+/* --- Course Block --- */
+.courseBlock {
+    --course-color-rgb: var(--group-color);
+    position: absolute;
+    background: linear-gradient(145deg, rgba(var(--course-color-rgb), 0.5), rgba(var(--course-color-rgb), 0.3));
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border-radius: 6px;
+    padding: 0.6rem;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    border: 1px solid rgba(var(--course-color-rgb), 0.5);
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+    z-index: 3;
+    cursor: pointer;
+}
+.courseBlock:hover {
+    transform: translateY(-4px) scale(1.03);
+    z-index: 10;
+    box-shadow: 0 0 20px rgba(var(--course-color-rgb), 0.3);
+}
+.courseName {
+    font-weight: bold;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.courseSubInfo {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 0.25rem;
+    opacity: 0;
+    max-height: 0;
+    transition: all 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+}
+.courseBlock:hover .courseSubInfo {
+    opacity: 1;
+    max-height: 3em;
+}
+.courseSubInfo > span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ===============================================================
+   [최종 수정] 새로운 모달 (V2) 스타일 
+   =============================================================== */
+.modalOverlayV2 {
+    position: fixed;
+    inset: 0;
+    background: rgba(18, 18, 18, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 1300;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    animation: fadeInV2 0.4s ease;
+}
+.modalOverlayV2.closing {
+    animation: fadeOutV2 0.3s ease forwards;
+}
+
+.modalContainerV2 {
+    width: 100%;
+    max-width: 480px;
+    background: #252528;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    animation: popInV2 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+    display: flex;
+    flex-direction: column;
+}
+.modalContainerV2.closing {
+    animation: popOutV2 0.3s ease forwards;
+}
+
+.modalHeaderV2 {
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    background: #202023;
+}
+.progressInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    flex-grow: 1;
+}
+.stepTitle {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #ccc;
+}
+.progressWrapper {
+    width: 95%;
+    height: 6px;
+    background: #3a3a3e;
+    border-radius: 3px;
+    overflow: hidden;
+}
+.progressBar {
+    width: 0%;
+    height: 100%;
+    background: rgb(var(--group-color));
+    border-radius: 3px;
+    transition: width 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+.closeButtonV2 {
+    background: none; border: none; color: #777; font-size: 1.2rem;
+    cursor: pointer; transition: all .2s;
+    padding: 0.5rem;
+    line-height: 1;
+}
+.closeButtonV2:hover { color: #fff; transform: rotate(90deg); }
+
+.modalContentV2 {
+    padding: 0 2.5rem 2rem;
+    display: grid;
+    min-height: 280px;
+}
+.modalStep {
+    grid-area: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    animation: step-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+    visibility: hidden;
+}
+.modalStep.activeStep {
+    visibility: visible;
+}
+.stepHeader {
+    text-align: center;
+    margin-bottom: 2rem;
+    margin-top: 1.5rem;
+}
+.stepHeader svg {
+    font-size: 1.8rem;
+    color: rgb(var(--group-color));
+    margin-bottom: 0.75rem;
+}
+.stepHeader h3 { margin: 0 0 0.5rem; font-size: 1.3rem; color: #fff; }
+.stepHeader p { margin: 0; color: #999; font-size: 0.9rem; }
+
+.inputGroupV2 {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+.inputGroupV2 input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid #555;
+    padding: 0.75rem 0.25rem;
+    color: #fff;
+    font-size: 1.1rem;
+    outline: none;
+    transition: border-color 0.3s;
+}
+.inputGroupV2 label {
+    position: absolute;
+    top: 0.75rem; left: 0.25rem;
+    color: #888;
+    pointer-events: none;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.inputGroupV2 input:focus, .inputGroupV2 input:not(:placeholder-shown) {
+    border-bottom-color: rgb(var(--group-color));
+}
+.inputGroupV2 input:focus + label,
+.inputGroupV2 input:not(:placeholder-shown) + label {
+    top: -1.2rem;
+    font-size: 0.8rem;
+    color: #999999
+}
+
+.daySelector {
+    display: flex; justify-content: center; gap: 0.75rem; margin-bottom: 1.5rem;
+}
+.daySelector button {
+    background: #333; color: #aaa;
+    border: 1px solid #444; border-radius: 20px;
+    padding: 0.5rem 1.25rem;
+    cursor: pointer; transition: all .2s;
+    font-weight: 500;
+}
+.daySelector button:hover { background: #444; color: #fff; }
+.daySelector button.active {
+    background: rgb(var(--group-color));
+    color: #fff;
+    border-color: rgb(var(--group-color));
+    box-shadow: 0 0 10px rgba(var(--group-color), 0.3);
+}
+
+.timeSelector { display: flex; align-items: center; gap: 0.5rem; justify-content: center; }
+.timeSeparator { color: #666; font-size: 1.2rem; }
+.timePicker .timeInput {
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    background: #333; border: 1px solid #444; border-radius: 8px;
+    padding: 0.75rem 1rem; width: 120px;
+    cursor: pointer; color: #eee;
+}
+.timePicker .timeInput:hover { background-color: #444; }
+
+/* [수정] 컬러 팔레트 그리드 레이아웃 */
+.colorPaletteV2 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+}
+.colorPaletteV2 button {
+    --swatch-color: #fff;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 102px;
+    border: 3px solid transparent;
+    background-color: var(--swatch-color);
+    cursor: pointer;
+    transition: all .2s;
+    position: relative;
+    display: grid; place-items: center;
+    font-size: 1.5rem; color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+.colorPaletteV2 button:hover { transform: scale(1.05); }
+.colorPaletteV2 button.active {
+    border-color: #fff;
+    box-shadow: 0 0 15px rgba(255,255,255,0.4), 0 0 20px var(--swatch-color);
+}
+.colorPaletteV2 button.active > svg {
+    opacity: 1;
+    transform: scale(1);
+}
+.colorPaletteV2 button > svg {
+    opacity: 0;
+    transform: scale(0);
+    transition: all .2s;
+}
+
+/* [수정] 푸터 및 버튼 스타일 */
+.modalFooterV2 {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #202023;
+}
+.deleteButtonV2, .stepButton {
+    background: none; border: none; font-size: 0.95rem; font-weight: 500; cursor: pointer;
+    transition: all .2s;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.deleteButtonV2 { color: #f43f5e; }
+.deleteButtonV2:hover { background: #f43f5e20; color: #fb7185; }
+
+.stepActions {
+    display: flex;
+    gap: 0.75rem;
+}
+.stepButton { color: #aaa; background-color: #3a3a3e; }
+.stepButton:hover { background-color: #4a4a4e; color: #fff; }
+
+.stepButton span { transition: transform 0.2s; display: inline-block; }
+.stepButton svg { transition: transform 0.2s; }
+.stepButton:hover span { transform: translateX(-2px); }
+.stepButton:hover svg { transform: translateX(2px); }
+
+.stepButton.nextButton, .stepButton.saveButtonV2 {
+    color: #fff;
+    background: linear-gradient(to right, #4f46e5, #7c3aed);
+    box-shadow: 0 4px 15px -5px #6d28d9aa;
+}
+.stepButton.nextButton:hover, .stepButton.saveButtonV2:hover { filter: brightness(1.15); }
+
+
+/* ----- TimePicker (기존과 동일) ----- */
+.timePicker { position: relative; }
+.timePickerPopup {
+    position: absolute; top: calc(100% + 8px); left: 50%;
+    transform: translateX(-50%); width: 250px; max-height: 200px;
+    overflow-y: auto; background: #3a3a3e; border: 1px solid #666;
+    border-radius: 8px; z-index: 1400; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    padding: 0.5rem; display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 0.25rem;
+}
+.timeOption {
+    padding: 0.6rem 0.5rem; cursor: pointer; transition: background-color 0.2s;
+    font-size: 0.9rem; text-align: center; border-radius: 6px; color: #eee;
+}
+.timeOption:hover { background-color: rgba(var(--group-color), 0.3); }
+.timeOption.selected { background-color: rgb(var(--group-color)); color: #fff; font-weight: bold; }

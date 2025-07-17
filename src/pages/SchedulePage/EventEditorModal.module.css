@@ -1,0 +1,503 @@
+/* kdae/src - front/pages/SchedulePage/EventEditorModal.module.css */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes popOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(20px) scale(0.97); }
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 18, 18, 0.6);
+  backdrop-filter: blur(12px);
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  animation: fadeIn 0.4s ease;
+}
+.overlay.closing {
+  animation: fadeOut 0.3s ease forwards;
+}
+
+.modalContainer {
+  /* [수정] 이벤트 테마 색상 변수 추가 */
+  --event-theme-color: rgb(var(--group-color)); 
+
+  width: 100%;
+  max-width: 680px;
+  background: #252528;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  animation: popIn 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+.modalContainer.closing {
+  animation: popOut 0.3s ease forwards;
+}
+
+.header {
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: #202023;
+  flex-shrink: 0;
+  position: relative;
+}
+.header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.closeButton {
+  background: none;
+  border: none;
+  color: #777;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all .2s;
+  padding: 0.5rem;
+  line-height: 1;
+  z-index: 10;
+}
+.closeButton:hover {
+  color: #fff;
+  transform: rotate(90deg);
+}
+
+/* --- [수정] 그룹 정보 및 읽기전용 배지 --- */
+.readOnlyBadge, .groupInfoBadge {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.3rem 0.8rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.readOnlyBadge {
+    background: #4a4a4e;
+    color: #ccc;
+}
+.groupInfoBadge {
+    background-color: rgba(var(--group-color), 0.2);
+    color: rgb(var(--group-color));
+    border: 1px solid rgba(var(--group-color), 0.4);
+}
+
+
+.content {
+  padding: 1.5rem 2rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.inputGroup {
+  position: relative;
+}
+.inputGroup input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid #555;
+  padding: 0.75rem 0.25rem;
+  color: #fff;
+  font-size: 1.1rem;
+  outline: none;
+  transition: border-color 0.3s;
+}
+.inputGroup input:disabled {
+    color: #777;
+    cursor: not-allowed;
+}
+.inputGroup::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 0;
+  height: 2px;
+  /* [수정] 포커스 색상을 이벤트 테마 색상으로 변경 */
+  background: var(--event-theme-color); 
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateX(-50%);
+}
+.inputGroup:focus-within::after {
+  width: 100%;
+}
+.inputGroup label {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.25rem;
+  color: #888;
+  pointer-events: none;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.inputGroup:focus-within label,
+.inputGroup input:not(:placeholder-shown)+label {
+  top: -1.2rem;
+  font-size: 0.8rem;
+  /* [수정] 포커스 색상을 이벤트 테마 색상으로 변경 */
+  color: var(--event-theme-color);
+}
+
+.textareaGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.textareaLabel {
+  color: #888;
+  font-size: 0.8rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.textarea {
+  width: 100%;
+  background: #1e1e21;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  min-height: 100px;
+  resize: vertical;
+  font-size: 1rem;
+  color: #e0e0e0;
+  outline: none;
+  transition: all 0.2s;
+}
+.textarea:disabled {
+    background: #2a2a2e;
+    color: #777;
+    cursor: not-allowed;
+}
+.textarea:focus {
+  border-color: var(--event-theme-color);
+  box-shadow: 0 0 0 3px rgba(var(--group-color), 0.2);
+}
+
+.sectionDivider {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.controlSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background-color: rgba(0, 0, 0, 0.15);
+  padding: 1rem;
+  border-radius: 12px;
+}
+.controlRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  min-height: 40px;
+}
+.controlLabel {
+  flex-shrink: 0;
+  color: #a0a0a0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.controlContent {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+.datePickerGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+.timeSeparator {
+  color: #888;
+  white-space: nowrap;
+  margin: 0 0.5rem;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #444;
+  transition: .3s;
+  border-radius: 24px;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 50%;
+}
+.switch input:disabled + .slider {
+    cursor: not-allowed;
+    background-color: #333;
+}
+.switch input:checked+.slider {
+  background-color: var(--event-theme-color);
+  box-shadow: 0 0 10px var(--event-theme-color);
+}
+.switch input:checked+.slider:before {
+  transform: translateX(20px);
+}
+
+.recurrenceEditorWrapper {
+  width: 100%;
+  margin-top: 1rem;
+  animation: slideDown 0.4s ease-out forwards;
+}
+
+.todoSection, .participantSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.todoList, .participantList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 0.75rem;
+}
+.todoList { flex-direction: column; }
+.participantList { flex-wrap: wrap; }
+
+.participantList li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #1e1e21;
+    padding: 0.4rem 0.8rem;
+    border-radius: 16px;
+    font-size: 0.9rem;
+    color: #ddd;
+    border: 1px solid #444;
+}
+
+.participantList li svg { font-size: 0.9em; }
+.statusAccepted { color: #22c55e; }
+.statusDeclined { color: #ef4444; }
+.statusTentative { color: #f97316; }
+
+.taskItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: #1e1e21;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px solid #333;
+  transition: border-color 0.2s;
+}
+.taskItem:focus-within {
+  border-color: rgba(var(--group-color), 0.5);
+}
+.statusPillGroup {
+  display: flex;
+  align-items: center;
+  background-color: #2a2a2e;
+  padding: 4px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+.statusPill {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.25rem 0.8rem;
+  border: none;
+  background: transparent;
+  color: #777;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+.statusPill:disabled { cursor: not-allowed; }
+.statusPill.active {
+  color: #fff;
+  box-shadow: 0 2px 8px -2px var(--status-color-shadow, #000);
+}
+
+:root {
+    --status-color-todo: #555;
+    --status-color-doing: #3b82f6;
+    --status-color-done: #22c55e; 
+}
+
+.statusPill[data-status="TODO"].active {
+  background-color: var(--status-color-todo);
+  --status-color-shadow: #333;
+}
+.statusPill[data-status="DOING"].active {
+  background-color: var(--status-color-doing);
+  --status-color-shadow: var(--status-color-doing);
+}
+.statusPill[data-status="DONE"].active {
+  background-color: var(--status-color-done);
+  --status-color-shadow: var(--status-color-done);
+}
+
+.taskTitleInput {
+  flex-grow: 1;
+  background: transparent;
+  border: none;
+  color: #e0e0e0;
+  font-size: 0.95rem;
+  outline: none;
+  padding: 0.5rem 0;
+  min-width: 0;
+}
+.taskTitleInput:disabled {
+    color: #777;
+    cursor: not-allowed;
+}
+.taskTitleInput::placeholder { color: #555; }
+.taskDueDate { flex-shrink: 0; }
+.deleteTaskButton {
+  background: none; border: none; color: #555;
+  cursor: pointer; font-size: 0.9rem; transition: color 0.2s;
+  padding: 0.5rem; border-radius: 50%; width: 32px; height: 32px;
+  flex-shrink: 0;
+}
+.deleteTaskButton:hover:not(:disabled) {
+  color: #f43f5e;
+  background-color: rgba(244, 63, 94, 0.1);
+}
+.deleteTaskButton:disabled { cursor: not-allowed; }
+
+.addTaskButton {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px dashed #444; color: #888;
+  padding: 0.75rem 1rem; border-radius: 8px;
+  cursor: pointer; transition: all 0.2s; font-weight: 500;
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+}
+.addTaskButton:hover {
+  background-color: rgba(var(--group-color), 0.15);
+  color: rgb(var(--group-color));
+  border-color: rgba(var(--group-color), 0.5);
+  border-style: solid;
+}
+
+/* --- [새로 추가] 색상 팔레트 --- */
+.colorPalette {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    max-width: 180px;
+}
+.colorSwatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 0.8rem;
+}
+.colorSwatch:hover {
+    transform: scale(1.1);
+}
+.colorSwatch.active {
+    border-color: #fff;
+    box-shadow: 0 0 0 2px var(--event-theme-color);
+}
+.colorSwatch:disabled {
+    cursor: not-allowed;
+    filter: grayscale(0.8);
+}
+
+.footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #202023;
+  flex-shrink: 0;
+}
+.deleteButton {
+  background: none; border: none; font-size: 0.95rem; font-weight: 500;
+  cursor: pointer; transition: all .2s; padding: 0.6rem 1rem; border-radius: 8px;
+  color: #f43f5e;
+}
+.deleteButton:hover {
+  background: #f43f5e20;
+  color: #fb7185;
+}
+.actionButtons {
+  display: flex;
+  gap: 0.75rem;
+}
+.button {
+  padding: .7rem 1.4rem; border: none; border-radius: 8px; font-size: .95rem;
+  font-weight: 600; cursor: pointer; transition: all .2s;
+}
+.cancelButton {
+  background: #3a3a3e;
+  color: #aaa;
+}
+.cancelButton:hover {
+  background: #4a4a4e;
+  color: #fff;
+}
+.saveButton {
+  color: #fff;
+  background: var(--event-theme-color);
+  box-shadow: 0 4px 15px -5px var(--event-theme-color);
+}
+.saveButton:hover {
+  filter: brightness(1.15);
+}
