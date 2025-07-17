@@ -1,5 +1,3 @@
-// src/pages/SchedulePage/SchedulePage.tsx
-
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import type { EventClickArg, EventInput, EventContentArg, MoreLinkArg, EventApi } from '@fullcalendar/core';
@@ -10,7 +8,6 @@ import { RRule } from 'rrule';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// 'faTimes' 아이콘 제거
 import { faPlus, faCheck, faLayerGroup, faUser, faCalendarDays, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import 'dayjs/locale/ko';
 
@@ -60,12 +57,13 @@ const getEventInstanceId = (event: ScheduleEvent, date: Date | string): string =
 
 const SchedulePage: React.FC = () => {
     const calendarRef = useRef<FullCalendar>(null);
+    const clickTimeout = useRef<number | null>(null);
     const [currentTitle, setCurrentTitle] = useState('');
     const [viewType, setViewType] = useState('dayGridMonth');
     const [expandedDate, setExpandedDate] = useState<string | null>(null);
     const [events, setEvents] = useState<ScheduleEvent[]>(mockEvents);
     const [tasks, setTasks] = useState<EventTask[]>(mockTasks);
-    const [currentDate, setCurrentDate] = useState(new Date());
+    const [agendaDate, setAgendaDate] = useState(new Date());
     const [viewRange, setViewRange] = useState({ start: new Date(), end: new Date() });
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -81,7 +79,7 @@ const SchedulePage: React.FC = () => {
             const eventStyleOptions = {
                 ...event,
                 display: 'block',
-                classNames: [styles.calendarEvent, event.ownerType === 'GROUP' ? styles.groupEvent : styles.userEvent],
+                classNames: [styles.calendarEvent],
                 backgroundColor: 'transparent',
                 borderColor: 'transparent',
                 textColor: '#E0E0E0',
@@ -110,22 +108,26 @@ const SchedulePage: React.FC = () => {
     const renderEventContent = (eventInfo: EventContentArg) => {
         const props = eventInfo.event.extendedProps as ScheduleEvent;
         const color = props.color || '#888';
+        const ownerIcon = props.ownerType === 'USER' ? faUser : faLayerGroup;
 
         if (eventInfo.event.allDay) {
             return (
-                <div className={styles.allDayEventContent}>
-                    <span
-                        className={`${styles.eventDot}`}
-                        style={{ backgroundColor: color, borderColor: color }}
-                    ></span>
-                    {eventInfo.event.title}
+                <div
+                    className={`${styles.eventContent} ${styles.allDayStyle}`}
+                    style={{ '--event-bg-color': `${color}33` } as React.CSSProperties}
+                >
+                    <FontAwesomeIcon icon={ownerIcon} className={styles.eventIcon} style={{ color }} />
+                    <span className={styles.eventTitle}>{eventInfo.event.title}</span>
                 </div>
             );
-        } else {
+        }
+        else {
             return (
-                <div className={styles.timedEventContent} style={{ borderLeftColor: color }}>
-                    <div className={styles.eventTitle}>{eventInfo.event.title}</div>
-                    <div className={styles.eventTime}>{dayjs(eventInfo.event.start).format('HH:mm')}</div>
+                <div className={`${styles.eventContent} ${styles.timedStyle}`}>
+                    <div className={styles.iconWrapper} style={{ backgroundColor: color }}>
+                        <FontAwesomeIcon icon={ownerIcon} className={styles.eventIcon} />
+                    </div>
+                    <span className={styles.eventTitle}>{eventInfo.event.title}</span>
                 </div>
             );
         }
@@ -135,22 +137,33 @@ const SchedulePage: React.FC = () => {
         const dateStr = dayjs(arg.date).format('YYYY-MM-DD');
         setExpandedDate(prev => (prev === dateStr ? null : dateStr));
     };
-
+    
     const handleDateClick = (arg: DateClickArg) => {
-        setEditingEvent({
-            id: `temp-${Date.now()}`,
-            title: '',
-            start: arg.dateStr,
-            end: arg.allDay ? dayjs(arg.dateStr).add(1, 'day').format('YYYY-MM-DD') : dayjs(arg.dateStr).add(1, 'hour').toISOString(),
-            allDay: arg.allDay,
-            ownerType: 'USER',
-            ownerId: CURRENT_USER_ID,
-            tasks: [],
-            participants: [{ userId: CURRENT_USER_ID, userName: CURRENT_USER_NAME, status: 'ACCEPTED' }],
-            isEditable: true,
-            createdBy: CURRENT_USER_ID
-        });
-        setIsModalOpen(true);
+        if (clickTimeout.current) {
+            clearTimeout(clickTimeout.current);
+            clickTimeout.current = null;
+            // Double-click: open create modal
+            setEditingEvent({
+                id: `temp-${Date.now()}`,
+                title: '',
+                start: arg.dateStr,
+                end: arg.allDay ? dayjs(arg.dateStr).add(1, 'day').format('YYYY-MM-DD') : dayjs(arg.dateStr).add(1, 'hour').toISOString(),
+                allDay: arg.allDay,
+                ownerType: 'USER',
+                ownerId: CURRENT_USER_ID,
+                tasks: [],
+                participants: [{ userId: CURRENT_USER_ID, userName: CURRENT_USER_NAME, status: 'ACCEPTED' }],
+                isEditable: true,
+                createdBy: CURRENT_USER_ID
+            });
+            setIsModalOpen(true);
+        } else {
+            // Single-click: update agenda
+            clickTimeout.current = window.setTimeout(() => {
+                setAgendaDate(arg.date);
+                clickTimeout.current = null;
+            }, 250);
+        }
     };
 
     const openEditorForEvent = useCallback((event: EventApi | EventInput) => {
@@ -181,7 +194,6 @@ const SchedulePage: React.FC = () => {
     const handleEventClick = useCallback((arg: EventClickArg) => {
         openEditorForEvent(arg.event);
     }, [openEditorForEvent]);
-
 
     const handleSaveEvent = (eventData: ScheduleEvent) => {
         if (!eventData.isEditable) {
@@ -217,13 +229,13 @@ const SchedulePage: React.FC = () => {
 
     const todaysEvents = useMemo(() =>
         processedEvents
-            .filter(e => dayjs(e.start as string).isSame(currentDate, 'day'))
+            .filter(e => dayjs(e.start as string).isSame(agendaDate, 'day'))
             .sort((a, b) => {
                 if ((a.allDay ?? false) && !(b.allDay ?? false)) return -1;
                 if (!(a.allDay ?? false) && (b.allDay ?? false)) return 1;
                 return dayjs(a.start as string).valueOf() - dayjs(b.start as string).valueOf()
             }),
-        [processedEvents, currentDate]
+        [processedEvents, agendaDate]
     );
 
     const selectedEvent = useMemo(() =>
@@ -268,6 +280,9 @@ const SchedulePage: React.FC = () => {
 
     const handleNav = (action: 'prev' | 'next' | 'today') => {
         calendarRef.current?.getApi()[action]();
+        if (action === 'today') {
+            setAgendaDate(new Date());
+        }
     };
 
     const changeView = (newView: 'dayGridMonth' | 'timeGridWeek') => {
@@ -318,9 +333,8 @@ const SchedulePage: React.FC = () => {
                                     return [];
                                 }}
                                 datesSet={(arg) => {
-                                    setCurrentDate(arg.view.currentStart);
-                                    setViewRange({ start: arg.view.activeStart, end: arg.view.activeEnd });
                                     setCurrentTitle(arg.view.title);
+                                    setViewRange({ start: arg.view.activeStart, end: arg.view.activeEnd });
                                     setViewType(arg.view.type);
                                     if (expandedDate && !dayjs(expandedDate).isBetween(arg.view.activeStart, arg.view.activeEnd, null, '[]')) {
                                         setExpandedDate(null);
@@ -337,7 +351,7 @@ const SchedulePage: React.FC = () => {
                     <div className={`${styles.panel} ${styles.agendaContainer}`}>
                         <div className={styles.panelHeader}>
                             <h3><FontAwesomeIcon icon={faCalendarDays} /> Today's Agenda</h3>
-                            <span className={styles.date}>{dayjs(currentDate).format('MM월 DD일 dddd')}</span>
+                            <span className={styles.date}>{dayjs(agendaDate).format('MM월 DD일 dddd')}</span>
                         </div>
                         <div className={styles.scrollableContent}>
                             {todaysEvents.length > 0 ? (

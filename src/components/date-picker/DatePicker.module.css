@@ -14,38 +14,63 @@
 
 /* --- 버튼·텍스트 --- */
 
-.trigger,
-.clear {
+.trigger {
     all: unset;
-    height: 30px;
-    padding: 0 8px;
-    border-radius: 15px;
+    box-sizing: border-box;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 8px;
     font-size: 0.9rem;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: #888;
-    background: transparent;
-    border: 1px solid transparent;
-    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    color: #a0a0a0;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s, color 0.2s, border-color 0.2s;
 }
 
-.trigger:hover,
-.clear:hover {
-    background: rgba(var(--group-color), 0.25);
+.trigger:hover:not(:disabled) {
+    background: rgba(var(--group-color-rgb), 0.2);
     color: #fff;
+    border-color: rgba(var(--group-color-rgb), 0.5);
 }
 
-.trigger {
-    border: 1px solid #444;
+.trigger:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
 }
 
 .text {
-    font-size: 0.85rem;
-    color: #888;
-    font-weight: 600;
+    font-size: 0.9rem;
+    color: #e0e0e0;
+    font-weight: 500;
     white-space: nowrap; /* 날짜 텍스트 줄바꿈 방지 */
+}
+
+.clear {
+    all: unset;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    color: #666;
+    background: rgba(255,255,255,0.05);
+    transition: all 0.2s;
+}
+
+.clear:hover:not(:disabled) {
+    background: #ef4444;
+    color: #fff;
+    transform: scale(1.1);
+}
+
+.clear:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
 }
 
 /* --- 팝업 달력 --- */
@@ -53,9 +78,9 @@
 .calendar {
     width: 280px;
     border-radius: 12px;
-    background: #1a1a1a;
-    border: 1px solid rgba(var(--group-color), 0.3);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    background: #2a2a2e;
+    border: 1px solid rgba(var(--group-color-rgb), 0.3);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
     z-index: 1300; /* 모달(1200)보다 위에 오도록 설정 */
     opacity: 0;
     transform: translateY(10px); /* 애니메이션 시작 위치 */
@@ -84,7 +109,7 @@
 }
 
 .nav button:hover {
-    background: rgba(var(--group-color), 0.25);
+    background: rgba(var(--group-color-rgb), 0.25);
     color: #fff;
 }
 
@@ -99,7 +124,7 @@
 .weekHead span {
     font-size: 0.75rem;
     text-align: center;
-    color: #666;
+    color: #777;
     margin-bottom: 0.25rem;
     padding: 0.25rem 0;
 }
@@ -113,11 +138,13 @@
     cursor: pointer;
     font-size: 0.9rem;
     border-radius: 50%;
-    transition: background 0.2s, color 0.2s;
+    transition: background 0.2s, color 0.2s, outline-color 0.2s;
+    outline: 2px solid transparent;
+    outline-offset: -3px;
 }
 
 .day:hover {
-    background: rgba(var(--group-color), 0.15);
+    background: rgba(var(--group-color-rgb), 0.15);
 }
 
 .dimmed {
@@ -125,12 +152,11 @@
 }
 
 .today {
-    outline: 2px dashed rgba(var(--group-color), 0.6);
-    outline-offset: -3px;
+    outline-color: rgba(var(--group-color-rgb), 0.6);
 }
 
 .chosen {
-    background: rgb(var(--group-color));
+    background: rgb(var(--group-color-rgb));
     color: #fff;
     font-weight: bold;
 }
@@ -158,11 +184,11 @@
 }
 
 .timeOption:hover {
-    background: rgba(var(--group-color), 0.15);
+    background: rgba(var(--group-color-rgb), 0.15);
 }
 
 .chosenTime {
-    background: rgba(var(--group-color), 0.4);
+    background: rgba(var(--group-color-rgb), 0.4);
     color: #fff;
     font-weight: bold;
 }
@@ -178,7 +204,7 @@
 .confirmButton {
     all: unset;
     cursor: pointer;
-    background: rgb(var(--group-color));
+    background: rgb(var(--group-color-rgb));
     color: #fff;
     padding: 0.5rem 1rem;
     border-radius: 8px;

@@ -1,4 +1,3 @@
-/* kdae/src - front/pages/SchedulePage/SchedulePage.module.css */
 @import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Inter:wght@400;500;600&display=swap');
 
 /* --- Page Layout --- */
@@ -216,85 +215,65 @@
     color: rgb(var(--group-color-rgb, 88, 80, 230));
 }
 
-/* --- 이벤트 렌더링 V2 --- */
+/* --- [수정] 이벤트 렌더링 V3 --- */
 .calendarEvent {
     cursor: pointer;
     padding: 2px 4px;
     height: 100%;
 }
 
-.allDayEventContent {
+/* 공통 이벤트 콘텐츠 스타일 */
+.eventContent {
     display: flex;
     align-items: center;
     gap: 6px;
+    height: 100%;
+    padding: 3px 6px;
+    border-radius: 4px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     font-size: 0.8rem;
     font-weight: 500;
-    padding: 3px 6px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
+    transition: filter 0.2s ease;
+}
+.eventContent:hover {
+    filter: brightness(1.2);
 }
 
-.allDayEventContent:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+/* 종일(All-day) 일정 스타일 */
+.allDayStyle {
+    background-color: var(--event-bg-color); /* 투명도 적용된 배경 */
+    color: #fff;
 }
 
-.eventDot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
+/* 시간 지정 일정 스타일 */
+.timedStyle {
+    color: #e0e0e0;
+}
+
+/* 공통 아이콘 스타일 */
+.eventIcon {
+    font-size: 0.7rem;
     flex-shrink: 0;
 }
 
-.timedEventContent {
-    background: linear-gradient(to right, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-    padding: 4px 8px;
-    height: 100%;
-    overflow: hidden;
-    border-left: 3px solid;
-    transition: transform 0.2s ease, background-color 0.2s ease;
+/* 시간 지정 일정의 아이콘 배경(원) */
+.iconWrapper {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    color: #fff;
 }
 
-.timedEventContent:hover {
-    transform: translateY(-1px) scale(1.02);
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
+/* 이벤트 제목 스타일 */
 .eventTitle {
-    font-weight: 600;
-    font-size: 0.8rem;
-    color: #f4f4f5;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-.eventTime {
-    font-size: 0.75rem;
-    color: #a1a1aa;
-}
-
-.groupEvent .timedEventContent {
-    background-image:
-        linear-gradient(to right, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0)),
-        repeating-linear-gradient(-45deg,
-            transparent,
-            transparent 4px,
-            rgba(0, 0, 0, 0.1) 4px,
-            rgba(0, 0, 0, 0.1) 8px);
-}
-
-.groupEvent .allDayEventContent {
-    background-color: rgba(255, 255, 255, 0.03);
-}
-
-.groupEvent .eventDot {
-    background-color: transparent !important;
-    border: 2px solid;
 }
 
 

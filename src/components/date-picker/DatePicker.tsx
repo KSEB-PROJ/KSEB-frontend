@@ -1,5 +1,3 @@
-// kdae/src - front/components/date-picker/DatePicker.tsx
-
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import dayjs, { type Dayjs } from 'dayjs';
