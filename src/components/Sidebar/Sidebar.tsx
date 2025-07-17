@@ -13,8 +13,8 @@
  *
  */
 
-import React, { useState, useEffect, useRef } from 'react';
-import { NavLink, useLocation, Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { NavLink, useLocation, Link, useNavigate } from 'react-router-dom';
 import styles from './Sidebar.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -28,7 +28,13 @@ import type { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import CreateChannelModal from '../CreateChannelModal/CreateChannelModal';
-import CreateGroupModal from '../CreateGroupModal/CreateGroupModal'; // 그룹 생성 모달 import
+import CreateGroupModal from '../CreateGroupModal/CreateGroupModal';
+import { getMyGroups } from '../../api/groups';
+import type { Group, GroupListDto } from '../../types/group';
+import { logout } from '../../api/auth';
+import { getChannelsByGroup, createChannel } from '../../api/channels';
+import type { ChannelListDto } from '../../types/channel';
+
 
 // 메뉴 아이템 타입 정의
 type MenuItemLink = {
@@ -46,15 +52,11 @@ const mainMenuItems: MenuItem[] = [
     { id: 'chatbot', icon: faRobot, text: '챗봇' },
 ];
 
-// 데이터 구조 정의
-interface Channel {
-    id: string; name: string; type: 'notice' | 'calendar' | 'chat'; isDraggable: boolean;
-}
-interface Group {
-    id: number; name: string; color: string; colorValue: string; initials: string;
+interface Channel extends ChannelListDto {
+    isDraggable: boolean;
+    type: 'notice' | 'calendar' | 'chat';
 }
 
-// SortableChannel 컴포넌트
 interface SortableChannelProps {
     channel: Channel; isOpen: boolean; elementRef: (el: HTMLLIElement | null) => void;
 }
@@ -83,47 +85,15 @@ const SortableChannel = ({ channel, isOpen, elementRef }: SortableChannelProps) 
     );
 };
 
-// 데이터
-const initialGroups: Group[] = [
-    { id: 1, name: 'Bloom Us 개발팀', color: 'purple', colorValue: '132, 0, 255', initials: 'B' },
-    { id: 2, name: '캡스톤 디자인', color: 'teal', colorValue: '20, 214, 174', initials: '캡' },
-    { id: 3, name: '사이드 프로젝트', color: 'pink', colorValue: '236, 72, 153', initials: 'S' },
-    { id: 4, name: '스터디 그룹', color: 'blue', colorValue: '59, 130, 246', initials: 'SG' },
-];
-
-
-const initialChannels: { [key: number]: Channel[] } = {
-    1: [
-        { id: 'notice-1', name: '공지사항', type: 'notice', isDraggable: false },
-        { id: 'calendar-1', name: '개발 일정', type: 'calendar', isDraggable: false },
-        { id: 'chat-1', name: '일반', type: 'chat', isDraggable: true },
-        { id: 'chat-2', name: '프론트엔드', type: 'chat', isDraggable: true },
-    ],
-    2: [
-        { id: 'notice-2', name: '필독 공지', type: 'notice', isDraggable: false },
-        { id: 'calendar-2', name: '회의 일정', type: 'calendar', isDraggable: false },
-        { id: 'chat-3', name: '회의록', type: 'chat', isDraggable: true },
-    ],
-    3: [
-        { id: 'notice-3', name: '아이디어', type: 'notice', isDraggable: false },
-        { id: 'chat-4', name: '디자인', type: 'chat', isDraggable: true },
-    ],
-    4: [
-        { id: 'notice-4', name: '알고리즘', type: 'notice', isDraggable: false },
-        { id: 'chat-5', name: '질의응답', type: 'chat', isDraggable: true },
-    ],
-};
-
-// Sidebar 컴포넌트 Props
 interface SidebarProps {
     isOpen: boolean; onToggle: () => void; onChatbotToggle: () => void; isChatbotOpen: boolean;
 }
 
-// Sidebar 본체
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, isChatbotOpen }) => {
     const location = useLocation();
-    const [groups, setGroups] = useState<Group[]>(initialGroups);
-    const [selectedGroup, setSelectedGroup] = useState<Group | null>(groups.length > 0 ? groups[0] : null);
+    const navigate = useNavigate();
+    const [groups, setGroups] = useState<Group[]>([]);
+    const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
     const [groupChannels, setGroupChannels] = useState<Channel[]>([]);
     const [isGroupOverlayOpen, setGroupOverlayOpen] = useState(false);
     const [isChannelModalOpen, setIsChannelModalOpen] = useState(false);
@@ -132,30 +102,91 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
     const [mainIndicatorStyle, setMainIndicatorStyle] = useState({ top: 0, height: 0, opacity: 0 });
     const [channelIndicatorStyle, setChannelIndicatorStyle] = useState({ top: 0, opacity: 0 });
     const [hoveredId, setHoveredId] = useState<number | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isChannelLoading, setIsChannelLoading] = useState(false);
 
     const mainmenuRefs = useRef<(HTMLLIElement | null)[]>([]);
     const channelRefs = useRef<(HTMLLIElement | null)[]>([]);
     const profileMenuRef = useRef<HTMLDivElement>(null);
     const timelineRef = useRef<HTMLDivElement>(null);
 
-    // 그룹 오버레이가 열릴 때 현재 선택된 그룹에 호버 상태 설정
+    const fetchGroups = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const response = await getMyGroups();
+            const formattedGroups: Group[] = response.data.map((dto: GroupListDto) => ({
+                id: dto.id,
+                name: dto.name,
+                code: dto.code,
+                themeColor: dto.themeColor || '132, 0, 255',
+                color: 'purple',
+                colorValue: dto.themeColor || '132, 0, 255',
+                initials: dto.name.charAt(0).toUpperCase(),
+                members: [],
+                memberCount: 0,
+            }));
+
+            setGroups(formattedGroups);
+
+            setSelectedGroup(currentSelected => {
+                const currentGroupExists = formattedGroups.some(g => g.id === currentSelected?.id);
+                if (currentGroupExists) {
+                    return formattedGroups.find(g => g.id === currentSelected!.id)!;
+                }
+                return formattedGroups.length > 0 ? formattedGroups[0] : null;
+            });
+
+        } catch (err) {
+            toast.error("그룹 목록을 불러오는 데 실패했습니다.");
+            console.error("fetchGroups error:", err);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    const handleGroupUpdate = useCallback(() => {
+        fetchGroups();
+    }, [fetchGroups]);
+
     useEffect(() => {
-        if(isGroupOverlayOpen && selectedGroup) {
+        fetchGroups();
+    }, [fetchGroups]);
+
+    useEffect(() => {
+        if (isGroupOverlayOpen && selectedGroup) {
             setHoveredId(selectedGroup.id);
         }
     }, [isGroupOverlayOpen, selectedGroup]);
 
-    // 그룹 변경 시 동작
     useEffect(() => {
         if (selectedGroup) {
-            setGroupChannels(initialChannels[selectedGroup.id] || []);
             document.documentElement.style.setProperty('--group-color', selectedGroup.colorValue);
-        } else if (groups.length > 0) {
-            setSelectedGroup(groups[0]);
+            const fetchChannels = async () => {
+                setIsChannelLoading(true);
+                try {
+                    const response = await getChannelsByGroup(selectedGroup.id);
+                    const formattedChannels: Channel[] = response.data.map(dto => ({
+                        ...dto,
+                        isDraggable: dto.channelTypeCode === 'CHAT' && !dto.isSystem,
+                        type: dto.channelTypeCode.toLowerCase() as 'notice' | 'calendar' | 'chat',
+                    }));
+                    setGroupChannels(formattedChannels);
+                } catch (err) {
+                    toast.error("채널 목록을 불러오는 데 실패했습니다.");
+                    console.error("Failed to fetch channels:", err);
+                    setGroupChannels([]);
+                } finally {
+                    setIsChannelLoading(false);
+                }
+            };
+            fetchChannels();
+        } else {
+            setGroupChannels([]);
+            document.documentElement.style.setProperty('--group-color', '132, 0, 255');
         }
-    }, [selectedGroup, groups]);
+    }, [selectedGroup]);
 
-    // 인디케이터 위치 업데이트
+
     useEffect(() => {
         const mainIndex = mainMenuItems.findIndex(item => item.path === location.pathname);
         const mainActiveEl = mainIndex > -1 ? mainmenuRefs.current[mainIndex] : null;
@@ -175,7 +206,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
         }
     }, [location.pathname, isOpen, groupChannels]);
 
-    // 외부 클릭 시 프로필 메뉴 닫기
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
@@ -186,6 +216,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    const handleLogout = async () => {
+        await toast.promise(
+            logout(),
+            {
+                loading: '로그아웃 중...',
+                success: () => {
+                    navigate('/login');
+                    return <b>안전하게 로그아웃되었습니다.</b>;
+                },
+                error: '로그아웃에 실패했습니다. 다시 시도해주세요.',
+            }
+        );
+    };
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
@@ -196,28 +239,30 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
         }
     };
 
-    const handleCreateChannel = (channelName: string) => {
+    const handleCreateChannel = async (channelName: string) => {
         if (!selectedGroup) return;
-        const newChannel: Channel = { id: `chat-${Date.now()}`, name: channelName, type: 'chat', isDraggable: true };
-        const updatedChannels = [...groupChannels, newChannel];
-        setGroupChannels(updatedChannels);
-        initialChannels[selectedGroup.id] = updatedChannels;
-        setIsChannelModalOpen(false);
+
+        await toast.promise(
+            createChannel(selectedGroup.id, { name: channelName, channelTypeId: 1 }),
+            {
+                loading: '채널 생성 중...',
+                success: (res) => {
+                    setIsChannelModalOpen(false);
+                    const newChannelDto = res.data;
+                    const formattedChannel: Channel = {
+                        ...newChannelDto,
+                        isDraggable: newChannelDto.channelTypeCode === 'CHAT' && !newChannelDto.isSystem,
+                        type: newChannelDto.channelTypeCode.toLowerCase() as 'notice' | 'calendar' | 'chat',
+                    };
+                    setGroupChannels(prev => [...prev, formattedChannel]);
+                    return <b>채널이 성공적으로 생성되었습니다!</b>;
+                },
+                error: '채널 생성에 실패했습니다. 다시 시도해주세요.',
+            }
+        );
     };
 
-    const handleCreateGroup = (groupData: { name: string; color: string; colorValue: string; }) => {
-        const newGroup: Group = {
-            id: Date.now(),
-            name: groupData.name,
-            color: groupData.color,
-            colorValue: groupData.colorValue,
-            initials: groupData.name.charAt(0).toUpperCase()
-        };
-        setGroups(prevGroups => [...prevGroups, newGroup]);
-        setSelectedGroup(newGroup);
-    };
-
-    const handleSelectGroup = (group: Group) => {
+    const handleSelectGroup = async (group: Group) => {
         if (selectedGroup?.id !== group.id) {
             setSelectedGroup(group);
         }
@@ -231,22 +276,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
     };
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-    
+
     return (
         <>
             {isChannelModalOpen && <CreateChannelModal onClose={() => setIsChannelModalOpen(false)} onCreate={handleCreateChannel} />}
-            {isGroupModalOpen && selectedGroup && (
+            {isGroupModalOpen && (
                 <CreateGroupModal
                     onClose={() => setIsGroupModalOpen(false)}
-                    onCreateGroup={handleCreateGroup}
-                    initialColorName={selectedGroup.color}
+                    onGroupUpdate={handleGroupUpdate}
+                    initialColorName={selectedGroup?.color || 'purple'}
                 />
             )}
 
             <nav className={`${styles.menu} ${isOpen ? styles.open : ''}`}>
                 <div className={styles.actionBar}>
-                    {selectedGroup && (
+                    {isLoading ? (
+                        <div className={styles.groupDisplay}>
+                            <h3 className={`${styles.menuText} ${isOpen ? styles.openText : ''}`}>로딩중...</h3>
+                        </div>
+                    ) : selectedGroup ? (
                         <>
+                            {/* [오류 수정] 복잡한 인라인 스타일 대신 CSS 클래스를 사용하도록 변경 */}
                             <div className={styles.groupCrest} onClick={() => setGroupOverlayOpen(true)}>
                                 <div className={styles.crestInner}>{selectedGroup.initials}</div>
                             </div>
@@ -254,38 +304,51 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
                                 <h3 className={`${styles.menuText} ${isOpen ? styles.openText : ''}`}>{selectedGroup.name}</h3>
                             </div>
                         </>
+                    ) : (
+                        <div className={styles.groupDisplay} onClick={() => setIsGroupModalOpen(true)} style={{ cursor: 'pointer' }}>
+                            <h3 className={`${styles.menuText} ${isOpen ? styles.openText : ''}`}>그룹 참가하기</h3>
+                        </div>
+                    )}
+                    {isOpen && !isLoading && !selectedGroup && (
+                        <button
+                            onClick={() => setIsGroupModalOpen(true)}
+                            className={styles.addChannelBtn}
+                            title="새 그룹 생성 또는 참여"
+                        >
+                            <FontAwesomeIcon icon={faPlus} />
+                        </button>
                     )}
                 </div>
 
                 <div className={`${styles.groupOverlay} ${isGroupOverlayOpen ? styles.open : ''}`} onClick={() => setGroupOverlayOpen(false)}>
-                     <div className={styles.timelineContainer} onClick={(e) => e.stopPropagation()}>
+                    <div className={styles.timelineContainer} onClick={(e) => e.stopPropagation()}>
                         <div className={styles.timelineConnector} />
                         <div className={styles.timeline} ref={timelineRef} onMouseLeave={() => setHoveredId(selectedGroup?.id ?? null)}>
                             {groups.map(group => {
                                 const isSelected = selectedGroup?.id === group.id;
                                 const isHovered = hoveredId === group.id;
-                                const inviteCode = `BLOOM-${String(group.id).padStart(4, '0')}`;
+                                const inviteCode = group.code;
                                 return (
-                                    <div 
-                                        key={group.id} 
+                                    <div
+                                        key={group.id}
                                         className={`${styles.groupItem} ${isSelected ? styles.groupItemSelected : ''} ${isHovered ? styles.groupItemHovered : ''}`}
                                         onMouseEnter={() => setHoveredId(group.id)}
                                         onClick={() => handleSelectGroup(group)}
                                     >
-                                        <div className={styles.itemDot} style={{'--item-color': group.colorValue} as React.CSSProperties} />
+                                        <div className={styles.itemDot} style={{ '--item-color': group.colorValue } as React.CSSProperties} />
                                         <div className={styles.itemContent}>
                                             <div className={styles.itemHeader}>
                                                 <span className={styles.itemName}>{group.name}</span>
-                                                {isSelected && <span className={styles.selectedBadge}>Current</span>}
+                                                {isSelected && <span className={styles.selectedBadge} style={{ '--item-color': group.colorValue } as React.CSSProperties}>Current</span>}
                                             </div>
                                             <div className={styles.itemDetails}>
                                                 <div className={styles.detailText}>
-                                                    <p>멤버: N명</p>
+                                                    <p>멤버: {group.memberCount > 0 ? `${group.memberCount}명` : 'N명'}</p>
                                                     <p>최근 활동: ...</p>
                                                 </div>
                                                 <div className={styles.inviteCode}>
                                                     <span>{inviteCode}</span>
-                                                    <button onClick={e => {e.stopPropagation(); copyCodeToClipboard(inviteCode)}}>
+                                                    <button onClick={e => { e.stopPropagation(); copyCodeToClipboard(inviteCode) }}>
                                                         <FontAwesomeIcon icon={faCopy} />
                                                     </button>
                                                 </div>
@@ -294,21 +357,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
                                     </div>
                                 );
                             })}
-                            <div 
+                            <div
                                 className={`${styles.groupItem} ${styles.addGroupItem}`}
-                                onMouseEnter={() => setHoveredId(0)} // Use 0 or another unique key for the add button
+                                onMouseEnter={() => setHoveredId(0)}
                                 onClick={() => { setGroupOverlayOpen(false); setIsGroupModalOpen(true); }}
-                             >
+                            >
                                 <div className={styles.itemDot} />
                                 <div className={styles.itemContent}>
-                                     <div className={styles.itemHeader}>
-                                        <span className={styles.itemName}>새로운 그룹 생성</span>
+                                    <div className={styles.itemHeader}>
+                                        <span className={styles.itemName}>새로운 그룹 생성/참여</span>
                                         <FontAwesomeIcon icon={faPlus} />
                                     </div>
                                 </div>
                             </div>
                         </div>
-                     </div>
+                    </div>
                     <button onClick={() => setGroupOverlayOpen(false)} className={styles.closeOverlayBtn}>
                         <FontAwesomeIcon icon={faTimes} />
                     </button>
@@ -342,16 +405,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
                             <h4 className={`${styles.menuText} ${isOpen ? styles.openText : ''}`}>채널</h4>
                             {isOpen && <button onClick={() => setIsChannelModalOpen(true)} className={styles.addChannelBtn}><FontAwesomeIcon icon={faPlus} /></button>}
                         </div>
-                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                            <SortableContext items={groupChannels.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                                <ul className={styles.optionsBarChannel}>
-                                    <div className={styles.channelActiveIndicator} style={channelIndicatorStyle}></div>
-                                    {groupChannels.map((channel, index) => (
-                                        <SortableChannel key={channel.id} channel={channel} isOpen={isOpen} elementRef={el => { channelRefs.current[index] = el; }} />
-                                    ))}
-                                </ul>
-                            </SortableContext>
-                        </DndContext>
+                        {isChannelLoading ? (
+                            <div className={`${styles.menuText} ${isOpen ? styles.openText : ''}`} style={{ padding: '0 10px' }}>채널 로딩중...</div>
+                        ) : (
+                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                <SortableContext items={groupChannels.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                                    <ul className={styles.optionsBarChannel}>
+                                        <div className={styles.channelActiveIndicator} style={channelIndicatorStyle}></div>
+                                        {groupChannels.map((channel, index) => (
+                                            <SortableChannel key={channel.id} channel={channel} isOpen={isOpen} elementRef={el => { channelRefs.current[index] = el; }} />
+                                        ))}
+                                    </ul>
+                                </SortableContext>
+                            </DndContext>
+                        )}
                     </div>
                 )}
 
@@ -381,10 +448,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
                                 <FontAwesomeIcon icon={faUserEdit} />
                                 <span>프로필 수정</span>
                             </Link>
-                            <Link to="/logout" className={`${styles.profileMenuItem} ${styles.logoutAction}`} onClick={() => setProfileMenuOpen(false)}>
+                            <div
+                                className={`${styles.profileMenuItem} ${styles.logoutAction}`}
+                                onClick={handleLogout}
+                            >
                                 <FontAwesomeIcon icon={faSignOutAlt} />
                                 <span>로그아웃</span>
-                            </Link>
+                            </div>
                         </div>
                     )}
                 </div>

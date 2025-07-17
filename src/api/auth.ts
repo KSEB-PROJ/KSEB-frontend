@@ -31,3 +31,11 @@ export const login = (loginData: UserLoginRequest) => {
 export const register = (registerData: UserRegisterRequest) => {
     return apiClient.post('/auth/register', registerData);
 };
+
+/**
+ * 로그아웃 API 요청 함수
+ * @returns Promise - API 요청 결과
+ */
+export const logout = () => {
+    return apiClient.post('/auth/logout');
+};

@@ -1,12 +1,25 @@
 @keyframes live-bg {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
 }
 
 @keyframes overlay-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes profile-menu-in {
@@ -14,6 +27,7 @@
         opacity: 0;
         transform: translateY(10px) scale(0.95);
     }
+
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -38,9 +52,11 @@
     background-size: 200% 200%;
     animation: live-bg 15s ease infinite;
 }
+
 .menu.open {
     width: 280px;
 }
+
 .menu a {
     text-decoration: none;
     color: #eef0f4;
@@ -68,9 +84,11 @@
     z-index: 10;
     transition: transform 0.3s ease;
 }
+
 .groupCrest:hover {
     transform: scale(1.1);
 }
+
 .crestInner {
     width: 100%;
     height: 100%;
@@ -81,7 +99,7 @@
     font-size: 1.2rem;
     font-weight: 700;
     color: #fff;
-    background: linear-gradient(45deg, rgba(var(--group-color, var(--group-color-fallback)), 1), rgba(var(--group-color, var(--group-color-fallback)), 0.7));
+    background: linear-gradient(45deg, rgb(var(--group-color, var(--group-color-fallback))), rgba(var(--group-color, var(--group-color-fallback)), 0.7));
     box-shadow: 0 0 15px -2px rgba(var(--group-color, var(--group-color-fallback)), 0.5);
     transition: background .4s ease, box-shadow .4s ease;
 }
@@ -112,6 +130,7 @@
     justify-content: center;
     align-items: center;
 }
+
 .groupOverlay.open {
     opacity: 1;
     pointer-events: all;
@@ -123,12 +142,13 @@
     max-width: 600px;
     height: 70vh;
     background: rgba(26, 26, 30, 0.8);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
     padding: 2rem;
     position: relative;
     display: flex;
 }
+
 .timelineConnector {
     position: absolute;
     left: 2rem;
@@ -137,6 +157,7 @@
     width: 2px;
     background: linear-gradient(to bottom, transparent, #444, transparent);
 }
+
 .timeline {
     width: 100%;
     overflow-y: auto;
@@ -150,6 +171,7 @@
     position: relative;
     cursor: pointer;
 }
+
 .itemDot {
     width: 16px;
     height: 16px;
@@ -157,17 +179,21 @@
     background-color: #555;
     border: 3px solid #1a1a1e;
     position: absolute;
-    left: -8px; /* half of width */
+    left: -8px;
+    /* half of width */
     top: 50%;
     transform: translateY(-50%);
     transition: all 0.3s ease;
     z-index: 2;
 }
+
 .groupItem:hover .itemDot {
     background-color: rgb(var(--item-color, var(--group-color-fallback)));
     transform: translateY(-50%) scale(1.2);
 }
-.groupItemSelected .itemDot, .groupItemHovered .itemDot {
+
+.groupItemSelected .itemDot,
+.groupItemHovered .itemDot {
     background-color: rgb(var(--item-color, var(--group-color-fallback)));
     transform: translateY(-50%) scale(1.5);
     box-shadow: 0 0 15px rgba(var(--item-color, var(--group-color-fallback)), 0.7);
@@ -186,17 +212,20 @@
     gap: 1rem;
     margin-bottom: 0.5rem;
 }
+
 .itemName {
     font-size: 1.3rem;
     font-weight: 600;
     color: #aaa;
     transition: color 0.3s ease;
 }
+
 .groupItem:hover .itemName,
-.groupItemSelected .itemName, 
+.groupItemSelected .itemName,
 .groupItemHovered .itemName {
     color: #fff;
 }
+
 .selectedBadge {
     font-size: 0.75rem;
     font-weight: 700;
@@ -216,6 +245,7 @@
     justify-content: space-between;
     align-items: flex-end;
 }
+
 .groupItemHovered .itemDetails,
 .groupItemSelected .itemDetails {
     max-height: 100px;
@@ -232,14 +262,16 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
     padding: 0.5rem 1rem;
     border-radius: 8px;
 }
+
 .inviteCode span {
     font-family: 'Courier New', Courier, monospace;
     color: #ddd;
 }
+
 .inviteCode button {
     background: none;
     border: none;
@@ -247,6 +279,7 @@
     cursor: pointer;
     font-size: 0.9rem;
 }
+
 .inviteCode button:hover {
     color: #fff;
 }
@@ -255,9 +288,17 @@
 .addGroupItem {
     color: #666;
 }
-.addGroupItem .itemDot { background-color: #444; }
-.addGroupItem:hover .itemDot { background-color: #fff; }
-.addGroupItem:hover .itemName, .addGroupItem:hover .itemHeader svg {
+
+.addGroupItem .itemDot {
+    background-color: #444;
+}
+
+.addGroupItem:hover .itemDot {
+    background-color: #fff;
+}
+
+.addGroupItem:hover .itemName,
+.addGroupItem:hover .itemHeader svg {
     color: #fff;
 }
 
@@ -266,8 +307,8 @@
     position: absolute;
     top: 2rem;
     right: 2rem;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: #fff;
     width: 40px;
     height: 40px;
@@ -276,10 +317,12 @@
     transition: background-color 0.2s, transform 0.2s;
     z-index: 1000;
 }
+
 .closeOverlayBtn:hover {
-    background: rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.2);
     transform: rotate(90deg) scale(1.1);
 }
+
 /* ▲▲▲▲▲ [수정됨] Timeline 그룹 선택 오버레이 ▲▲▲▲▲ */
 
 
@@ -291,6 +334,7 @@
     transition: transform .3s ease .1s, opacity .3s ease .1s, color .2s ease;
     white-space: nowrap;
 }
+
 .menuText.openText {
     opacity: 1;
     transform: translateX(0);
@@ -304,6 +348,7 @@
     margin: 0;
     flex-shrink: 0;
 }
+
 .activeIndicator {
     position: absolute;
     left: 1rem;
@@ -313,6 +358,7 @@
     z-index: 0;
     background-color: rgb(var(--group-color, var(--group-color-fallback)));
 }
+
 .menuItem {
     list-style: none;
     position: relative;
@@ -320,6 +366,7 @@
     height: 45px;
     margin: 0.5rem 0;
 }
+
 .menuOption {
     display: flex;
     align-items: center;
@@ -334,6 +381,7 @@
     background-color: transparent;
     transition: background-color 0.2s ease, color 0.2s ease;
 }
+
 .menuOption:hover {
     background-color: rgba(255, 255, 255, 0.05);
 }
@@ -342,13 +390,16 @@
 .menu.open .menuOption:hover {
     color: #fff;
 }
+
 .menu.open .menuOption.active .icon,
 .menu.open .menuOption:hover .icon {
     color: #fff;
 }
+
 .menu.open .menuOption.active .menuText {
     color: #fff;
 }
+
 .icon {
     font-size: 1.1rem;
     min-width: 20px;
@@ -356,22 +407,28 @@
     color: #a0a0a0;
     transition: color 0.2s ease;
 }
+
 .chatbotActive {
     background-color: rgba(var(--group-color, var(--group-color-fallback)), 0.15) !important;
     box-shadow: 0 0 15px -2px rgba(var(--group-color, var(--group-color-fallback)), 0.4);
 }
-.chatbotActive .icon, .chatbotActive .menuText {
+
+.chatbotActive .icon,
+.chatbotActive .menuText {
     color: rgb(var(--group-color, var(--group-color-fallback))) !important;
     text-shadow: 0 0 10px rgba(var(--group-color, var(--group-color-fallback)), 0.7);
 }
+
 .menuBreak {
     padding: 0.5rem 1rem;
 }
+
 .menuBreak hr {
     border: none;
     height: 1px;
     background-color: rgba(255, 255, 255, 0.1);
 }
+
 .channelSection {
     padding: 0 1rem;
     flex-grow: 1;
@@ -379,12 +436,14 @@
     display: flex;
     flex-direction: column;
 }
+
 .channelHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0 10px 10px;
 }
+
 .addChannelBtn {
     background: none;
     border: none;
@@ -393,15 +452,18 @@
     font-size: 0.9rem;
     padding: 5px;
 }
+
 .addChannelBtn:hover {
     color: #fff;
 }
+
 .optionsBarChannel {
     list-style: none;
     padding: 0;
     margin: 0;
     position: relative;
 }
+
 .channelActiveIndicator {
     position: absolute;
     left: -8px;
@@ -413,6 +475,7 @@
     background-color: rgb(var(--group-color, var(--group-color-fallback)));
     box-shadow: 0 0 10px rgb(var(--group-color, var(--group-color-fallback)));
 }
+
 .channelItem {
     list-style: none;
     height: 45px;
@@ -422,6 +485,7 @@
     position: relative;
     z-index: 1;
 }
+
 .channelLink {
     position: relative;
     display: flex;
@@ -431,19 +495,24 @@
     color: #a0a0a0;
     transition: color 0.2s ease, background-color 0.2s ease;
 }
+
 .channelLink:hover {
     background-color: rgba(255, 255, 255, 0.05);
 }
+
 .channelLink:hover .menuText,
 .channelLink:hover .icon {
     color: rgb(var(--group-color, var(--group-color-fallback)));
 }
+
 .channelLink.active .menuText {
     font-weight: 600;
 }
+
 .channelLink.active .icon {
     color: #fff;
 }
+
 .channelContent {
     display: flex;
     align-items: center;
@@ -453,6 +522,7 @@
     padding: 0 12px;
     transition: padding-left 0.2s ease-in-out;
 }
+
 .dragHandle {
     position: absolute;
     left: 0;
@@ -467,16 +537,20 @@
     opacity: 0;
     transition: opacity 0.2s ease-in-out;
 }
+
 .draggableItem:hover .dragHandle {
     opacity: 1;
 }
+
 .draggableItem:hover .channelContent {
     padding-left: 30px;
 }
+
 .collapseSection {
     padding: 0.5rem 1rem;
     margin-top: auto;
 }
+
 .collapseButton {
     display: flex;
     align-items: center;
@@ -493,25 +567,30 @@
     border: none;
     transition: background-color 0.2s ease, color 0.2s ease;
 }
+
 .collapseButton:hover {
     background-color: rgba(255, 255, 255, 0.05);
     color: #fff;
 }
+
 .collapseIcon {
     font-size: 1.1rem;
     min-width: 20px;
     text-align: center;
     transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2);
 }
+
 .menu:not(.open) .collapseIcon {
     transform: rotate(180deg);
 }
+
 .profileSection {
     padding: 1rem 1rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     flex-shrink: 0;
     position: relative;
 }
+
 .profileLink {
     display: flex;
     align-items: center;
@@ -523,26 +602,33 @@
     transition: background-color .2s ease;
     cursor: pointer;
 }
+
 .profileLink:hover {
     background-color: rgba(255, 255, 255, 0.05);
 }
+
 .profileLink.profileActive {
     background-color: rgba(var(--group-color, var(--group-color-fallback)), 0.2);
 }
+
 .profileActive .profileIcon {
     color: #fff;
     background-color: rgb(var(--group-color, var(--group-color-fallback)));
     box-shadow: 0 0 10px rgba(var(--group-color, var(--group-color-fallback)), 0.7);
 }
-.profileActive .profileName, .profileActive .profileRole {
+
+.profileActive .profileName,
+.profileActive .profileRole {
     color: #fff;
 }
+
 .profileDetails {
     display: flex;
     align-items: center;
     gap: 15px;
     transition: gap .2s ease;
 }
+
 .profileIcon {
     font-size: 1.5rem;
     min-width: 25px;
@@ -553,6 +639,7 @@
     background-color: #333;
     transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
+
 .profileTextContainer {
     display: flex;
     flex-direction: column;
@@ -562,23 +649,28 @@
     transition: transform .3s ease .1s, opacity .3s ease .1s;
     white-space: nowrap;
 }
+
 .profileTextContainer.openText {
     transform: translateX(0);
     opacity: 1;
 }
+
 .profileName {
     font-weight: 600;
     color: #eef0f4;
     transition: color 0.2s ease;
 }
+
 .profileRole {
     font-size: 0.8rem;
     color: #a0a0a0;
     transition: color 0.2s ease;
 }
+
 .menu:not(.open) .profileDetails {
     gap: 0;
 }
+
 .profileMenu {
     position: absolute;
     bottom: calc(100% - 1rem);
@@ -594,6 +686,7 @@
     transform-origin: bottom center;
     animation: profile-menu-in 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
 }
+
 .profileMenuItem {
     display: flex;
     align-items: center;
@@ -606,15 +699,18 @@
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease;
 }
+
 .profileMenuItem:hover {
     background-color: rgba(var(--group-color, var(--group-color-fallback)), 0.15);
     color: #fff;
 }
+
 .profileMenuItem svg {
     font-size: 1rem;
     width: 20px;
     text-align: center;
 }
+
 .profileMenuItem.logoutAction:hover {
     background-color: rgba(239, 68, 68, 0.15);
     color: #f87171;

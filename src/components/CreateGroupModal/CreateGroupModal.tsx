@@ -7,21 +7,24 @@
  * - FontAwesome 6.x (아이콘 표시용, @fortawesome 라이브러리)
  * # 참고사항
  * - 디자인은 CSS 모듈(styles)로 분리되어 있으니 색상·레이아웃 커스텀은 해당 파일에서!
- * - onClose, onCreateGroup 등 핵심 이벤트는 부모에서 제어함
+ * - onClose, onGroupUpdate 등 핵심 이벤트는 부모에서 제어함
  * - 초대코드 참여 로직 등은 실제 API 연동 등 추가 개발 필요
  */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styles from './CreateGroupModal.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faUsers, faHashtag, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import toast from 'react-hot-toast';
+import { createGroup, joinGroup } from '../../api/groups';
+import { AxiosError } from 'axios';
 
 // 모달이 받을 props의 타입 정의
 // - onClose: 모달을 닫는 함수 (필수, 부모가 제공)
-// - onCreateGroup: 새 그룹 생성 시 호출되는 함수 (필수, 부모가 구현)
+// - onGroupUpdate: 그룹 생성/참여 성공 시 호출될 함수 (부모가 목록 갱신)
 // - initialColorName: 모달이 열릴 때 선택된 초기 색상명 (부모에서 지정)
 interface Props {
     onClose: () => void;
-    onCreateGroup: (groupData: { name: string; color: string; colorValue: string; }) => void;
+    onGroupUpdate: () => void;
     initialColorName: string;
 }
 
@@ -43,7 +46,7 @@ const colorOptions = [
 ];
 
 // 실제 그룹 생성 모달 컴포넌트 (함수형 컴포넌트)
-const CreateGroupModal: React.FC<Props> = ({ onClose, onCreateGroup, initialColorName }) => {
+const CreateGroupModal: React.FC<Props> = ({ onClose, onGroupUpdate, initialColorName }) => {
     // 모달 전체 영역을 참조 (배경/테마 컬러 동적 변경에 사용)
     const modalRef = useRef<HTMLDivElement>(null);
 
@@ -88,21 +91,41 @@ const CreateGroupModal: React.FC<Props> = ({ onClose, onCreateGroup, initialColo
     // [그룹 생성] 폼 제출 이벤트 핸들러
     // - 그룹명 입력값과 선택 색상 등 필요한 데이터 부모에게 전달
     // - 그룹명이 비어 있지 않을 때만 동작
-    const handleCreateSubmit = (e: React.FormEvent) => {
+    const handleCreateSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (groupName.trim()) {
-            onCreateGroup({ name: groupName.trim(), color: selectedColor.name, colorValue: selectedColor.value });
-            handleClose();
+            await toast.promise(
+                createGroup({ name: groupName.trim(), themeColor: selectedColor.value }),
+                {
+                    loading: '그룹 생성 중...',
+                    success: () => {
+                        onGroupUpdate(); // 성공 시 부모 컴포넌트에 알려 목록 갱신
+                        handleClose();
+                        return <b>그룹이 성공적으로 생성되었습니다!</b>;
+                    },
+                    error: (err: AxiosError<{ message?: string }>) => err.response?.data?.message || '그룹 생성에 실패했습니다.',
+                }
+            );
         }
     };
-    
+
     // [초대코드 참여] 폼 제출 이벤트 핸들러
     // - 실서비스에서는 초대코드 인증/참여 기능을 추가해야 함 (지금은 alert)
-    const handleJoinSubmit = (e: React.FormEvent) => {
+    const handleJoinSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if(inviteCode.trim()){
-            alert(`초대 코드 "${inviteCode}"로 그룹에 참여합니다! (실제 기능 구현 필요)`);
-            handleClose();
+        if (inviteCode.trim()) {
+            await toast.promise(
+                joinGroup(inviteCode.trim()),
+                {
+                    loading: '그룹에 참여하는 중...',
+                    success: () => {
+                        onGroupUpdate(); // 성공 시 부모 컴포넌트에 알려 목록 갱신
+                        handleClose();
+                        return <b>그룹에 성공적으로 참여했습니다!</b>;
+                    },
+                    error: (err: AxiosError<{ message?: string }>) => err.response?.data?.message || '그룹 참여에 실패했습니다.',
+                }
+            );
         }
     }
 
@@ -195,7 +218,7 @@ const CreateGroupModal: React.FC<Props> = ({ onClose, onCreateGroup, initialColo
 
                     {/* [초대코드 참여 폼 화면] */}
                     <div className={`${styles.view} ${view === 'join' ? styles.active : ''}`}>
-                         <form onSubmit={handleJoinSubmit} className={styles.formContent}>
+                        <form onSubmit={handleJoinSubmit} className={styles.formContent}>
                             <p className={styles.description}>받은 8자리 초대 코드를 입력해 주세요.</p>
                             <div className={styles.inputGroup}>
                                 <input type="text" id="inviteCode" value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} placeholder=" " required />
