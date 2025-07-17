@@ -1,3 +1,10 @@
+@keyframes pop-up {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .wrapper {
     position: relative;
     display: flex;
@@ -5,49 +12,83 @@
     gap: 0.5rem;
 }
 
-/* ── 버튼·텍스트 ─────────────────────────────── */
+/* --- 버튼·텍스트 --- */
 
-.trigger,
-.clear {
+.trigger {
     all: unset;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
+    box-sizing: border-box;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 8px;
     font-size: 0.9rem;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    color: #888;
-    transition: background 0.2s, color 0.2s;
+    color: #a0a0a0;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s, color 0.2s, border-color 0.2s;
 }
 
-.trigger:hover,
-.clear:hover {
-    background: rgba(var(--group-color), 0.25);
+.trigger:hover:not(:disabled) {
+    background: rgba(var(--group-color-rgb), 0.2);
     color: #fff;
+    border-color: rgba(var(--group-color-rgb), 0.5);
+}
+
+.trigger:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
 }
 
 .text {
-    font-size: 0.85rem;
-    color: #888;
-    font-weight: 600;
+    font-size: 0.9rem;
+    color: #e0e0e0;
+    font-weight: 500;
+    white-space: nowrap; /* 날짜 텍스트 줄바꿈 방지 */
 }
 
-/* ── 팝업 달력 ─────────────────────────────── */
+.clear {
+    all: unset;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    color: #666;
+    background: rgba(255,255,255,0.05);
+    transition: all 0.2s;
+}
+
+.clear:hover:not(:disabled) {
+    background: #ef4444;
+    color: #fff;
+    transform: scale(1.1);
+}
+
+.clear:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* --- 팝업 달력 --- */
 
 .calendar {
-    position: absolute;
-    top: 110%;
-    left: 0;
-    width: 260px;
-    padding: 1rem;
+    width: 280px;
     border-radius: 12px;
-    background: #1a1a1a;
-    border: 1px solid rgba(var(--group-color), 0.3);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
-    z-index: 1000;
+    background: #2a2a2e;
+    border: 1px solid rgba(var(--group-color-rgb), 0.3);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    z-index: 1300; /* 모달(1200)보다 위에 오도록 설정 */
+    opacity: 0;
+    transform: translateY(10px); /* 애니메이션 시작 위치 */
     animation: pop-up 0.25s ease-out forwards;
+    display: flex;
+    flex-direction: column;
 }
+
 
 /* 네비게이션 헤더 */
 .nav {
@@ -55,6 +96,7 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0.5rem;
+    padding: 1rem 1rem 0.5rem;
 }
 
 .nav button {
@@ -67,7 +109,7 @@
 }
 
 .nav button:hover {
-    background: rgba(var(--group-color), 0.25);
+    background: rgba(var(--group-color-rgb), 0.25);
     color: #fff;
 }
 
@@ -76,13 +118,15 @@
 .weekRow {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
+    padding: 0 1rem;
 }
 
 .weekHead span {
     font-size: 0.75rem;
     text-align: center;
-    color: #666;
+    color: #777;
     margin-bottom: 0.25rem;
+    padding: 0.25rem 0;
 }
 
 .day {
@@ -93,12 +137,14 @@
     place-items: center;
     cursor: pointer;
     font-size: 0.9rem;
-    border-radius: 6px;
-    transition: background 0.2s, color 0.2s;
+    border-radius: 50%;
+    transition: background 0.2s, color 0.2s, outline-color 0.2s;
+    outline: 2px solid transparent;
+    outline-offset: -3px;
 }
 
 .day:hover {
-    background: rgba(var(--group-color), 0.15);
+    background: rgba(var(--group-color-rgb), 0.15);
 }
 
 .dimmed {
@@ -106,11 +152,67 @@
 }
 
 .today {
-    outline: 2px dashed rgba(var(--group-color), 0.6);
-    outline-offset: -3px;
+    outline-color: rgba(var(--group-color-rgb), 0.6);
 }
 
 .chosen {
-    background: rgb(var(--group-color));
+    background: rgb(var(--group-color-rgb));
     color: #fff;
+    font-weight: bold;
+}
+
+/* --- 시간 선택 UI 스타일 --- */
+.timePicker {
+    max-height: 140px;
+    overflow-y: auto;
+    border-top: 1px solid #333;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+}
+
+.timeOption {
+    all: unset;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 0.9em;
+    transition: background 0.2s;
+}
+
+.timeOption:hover {
+    background: rgba(var(--group-color-rgb), 0.15);
+}
+
+.chosenTime {
+    background: rgba(var(--group-color-rgb), 0.4);
+    color: #fff;
+    font-weight: bold;
+}
+
+/* --- 확인 버튼 스타일 --- */
+.actions {
+    padding: 0.75rem;
+    border-top: 1px solid #333;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.confirmButton {
+    all: unset;
+    cursor: pointer;
+    background: rgb(var(--group-color-rgb));
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: filter 0.2s;
+}
+
+.confirmButton:hover {
+    filter: brightness(1.15);
 }
