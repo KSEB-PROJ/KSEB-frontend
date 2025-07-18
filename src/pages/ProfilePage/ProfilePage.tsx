@@ -12,6 +12,11 @@ const ProfilePage: React.FC = () => {
     const [useremail, setUseremail] = useState('');       // 사용자이메일
     const [password, setPassword] = useState('');       // 비밀번호
     const [newPassword, setNewPassword] = useState('');       // 비밀번호 확인
+
+    ////////////////////////////////
+    const [passwordConfirm, setPasswordConfirm] = useState('');
+    ///////////////////////////////
+
     const [showPassword, setShowPassword] = useState(false); // 비밀번호 표시 여부(토글)
     const navigate = useNavigate(); // 리액트 라우터의 페이지 이동 함수
 
@@ -19,7 +24,15 @@ const ProfilePage: React.FC = () => {
      * - 기본 제출 동작 방지
      */
     const handleProfileEdit = (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault(); // 페이지 새로고침 방지
+        event.preventDefault(); // 페이지 새로고침 
+
+        ///////////////////////////////
+        if (newPassword && newPassword !== passwordConfirm) {
+            alert("새 비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+            return;
+        }
+        ///////////////////////////////
+
         console.log('Updated profile image file:', userprofile); //변수 미사용 오류 방지
         navigate('/profile');
     };
@@ -151,6 +164,31 @@ const ProfilePage: React.FC = () => {
                         title={showPassword ? "Hide password" : "Show password"}
                     ></i>
                 </div>
+
+                ///////////////////////////////
+                {/* 비밀번호 확인 영역 */}
+                    <div className={styles.inputBox}>
+                        {/* 비밀번호 입력 필드 (보이기/숨기기 토글 지원) */}
+                        <input
+                            type={showPassword ? "text" : "password"} // 보이기 여부에 따라 type 전환
+                            className={styles.inputField}
+                            value={passwordConfirm}
+                            onChange={(e) => { setPasswordConfirm(e.target.value) }}
+                            required={!!newPassword} //newpassword가 있을 때만 필수
+                        />
+                        {/* 입력란 라벨 */}
+                        <label htmlFor="passc" className={styles.label}>
+                            PasswordConfirm
+                        </label>
+                        {/* 자물쇠 아이콘 (클릭하면 비밀번호 보이기/숨기기) */}
+                        <i
+                            className={`bx bx-lock-alt ${styles.icon}`}
+                            onClick={togglePasswordVisibility}
+                            style={{ cursor: "pointer" }}
+                            title={showPassword ? "Hide password" : "Show password"}
+                        ></i>
+                    </div>
+                ///////////////////////////////
 
                 {/* 회원정보 수정 버튼 */}
                 <div className={styles.inputBox}>

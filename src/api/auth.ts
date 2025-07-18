@@ -38,4 +38,4 @@ export const register = (registerData: UserRegisterRequest) => {
  */
 export const logout = () => {
     return apiClient.post('/auth/logout');
-};
+}; 
