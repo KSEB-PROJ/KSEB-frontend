@@ -58,10 +58,13 @@ interface Channel extends ChannelListDto {
 }
 
 interface SortableChannelProps {
-    channel: Channel; isOpen: boolean; elementRef: (el: HTMLLIElement | null) => void;
+    channel: Channel;
+    isOpen: boolean;
+    elementRef: (el: HTMLLIElement | null) => void;
+    selectedGroupId: number; // [추가] 현재 선택된 그룹 ID를 받도록 합니다.
 }
 
-const SortableChannel = ({ channel, isOpen, elementRef }: SortableChannelProps) => {
+const SortableChannel = ({ channel, isOpen, elementRef, selectedGroupId }: SortableChannelProps) => { // [수정] selectedGroupId prop 추가
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: channel.id,
         disabled: !channel.isDraggable,
@@ -74,7 +77,8 @@ const SortableChannel = ({ channel, isOpen, elementRef }: SortableChannelProps) 
             style={style} {...attributes}
             className={`${styles.channelItem} ${channel.isDraggable && isOpen ? styles.draggableItem : ''}`}
         >
-            <NavLink to={`/app/channels/${channel.id}`} className={({ isActive }) => `${styles.channelLink} ${isActive ? styles.active : ''}`}>
+            {/* 👇 [수정] NavLink의 'to' 경로를 새 URL 구조에 맞게 변경합니다. */}
+            <NavLink to={`/app/groups/${selectedGroupId}/channels/${channel.id}`} className={({ isActive }) => `${styles.channelLink} ${isActive ? styles.active : ''}`}>
                 {channel.isDraggable && <div {...listeners} className={styles.dragHandle}><FontAwesomeIcon icon={faGripVertical} /></div>}
                 <div className={styles.channelContent}>
                     <FontAwesomeIcon icon={channel.type === 'notice' ? faBullhorn : channel.type === 'calendar' ? faCalendarAlt : faCommentDots} className={styles.icon} />
@@ -84,6 +88,7 @@ const SortableChannel = ({ channel, isOpen, elementRef }: SortableChannelProps) 
         </li>
     );
 };
+
 
 interface SidebarProps {
     isOpen: boolean; onToggle: () => void; onChatbotToggle: () => void; isChatbotOpen: boolean;
@@ -196,7 +201,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
             setMainIndicatorStyle(prev => ({ ...prev, opacity: 0 }));
         }
 
-        const channelIndex = groupChannels.findIndex(c => `/app/channels/${c.id}` === location.pathname);
+        const channelIndex = groupChannels.findIndex(c => location.pathname.includes(`/channels/${c.id}`));
         const channelActiveEl = channelIndex > -1 ? channelRefs.current[channelIndex] : null;
         if (channelActiveEl) {
             const top = channelActiveEl.offsetTop + (channelActiveEl.offsetHeight / 2);
@@ -296,7 +301,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
                         </div>
                     ) : selectedGroup ? (
                         <>
-                            {/* [오류 수정] 복잡한 인라인 스타일 대신 CSS 클래스를 사용하도록 변경 */}
                             <div className={styles.groupCrest} onClick={() => setGroupOverlayOpen(true)}>
                                 <div className={styles.crestInner}>{selectedGroup.initials}</div>
                             </div>
@@ -413,7 +417,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
                                     <ul className={styles.optionsBarChannel}>
                                         <div className={styles.channelActiveIndicator} style={channelIndicatorStyle}></div>
                                         {groupChannels.map((channel, index) => (
-                                            <SortableChannel key={channel.id} channel={channel} isOpen={isOpen} elementRef={el => { channelRefs.current[index] = el; }} />
+                                            <SortableChannel key={channel.id} channel={channel} isOpen={isOpen} elementRef={el => { channelRefs.current[index] = el; }} selectedGroupId={selectedGroup.id} />
                                         ))}
                                     </ul>
                                 </SortableContext>

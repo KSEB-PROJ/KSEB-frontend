@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ChannelListDto, ChannelCreateRequest } from '../types'; // 아래에서 생성할 타입
+import type { ChannelListDto, ChannelCreateRequest, Channel } from '../types';
 
 const apiClient = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -14,6 +14,16 @@ const apiClient = axios.create({
 export const getChannelsByGroup = (groupId: number) => {
     return apiClient.get<ChannelListDto[]>(`/groups/${groupId}/channels`);
 };
+
+/**
+ * 특정 채널의 상세 정보를 가져오는 API
+ * @param groupId - 그룹 ID
+ * @param channelId - 채널 ID
+ */
+export const getChannelDetail = (groupId: number, channelId: number) => {
+    return apiClient.get<Channel>(`/groups/${groupId}/channels/${channelId}`);
+}
+
 
 /**
  * 새로운 채널을 생성하는 API

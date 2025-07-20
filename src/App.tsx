@@ -54,7 +54,7 @@ const App: React.FC = () => {
           <Route path="feedback" element={<FeedbackPage />} />
           <Route path="profile" element={<ProfilePage />} />
           {/* 👇 채널 페이지 라우팅 추가 */}
-          <Route path="channels/:channelId" element={<ChannelLayout />} />
+          <Route path="groups/:groupId/channels/:channelId" element={<ChannelLayout />} />
         </Route>
 
         {/* 잘못된 접근 리디렉션 */}
