@@ -1,66 +1,19 @@
 import React, { useState, useMemo, useRef, useLayoutEffect, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import styles from './NoticePage.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faThumbtack, faPen, faTrash, faTimes, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faPen, faTrash, faTimes, faCheck } from '@fortawesome/free-solid-svg-icons';
 import DatePicker from '../../../components/date-picker/DatePicker';
+import { getNotices, createNotice, updateNotice, deleteNotice } from '../../../api/notice';
+import type { Notice, NoticeUpdateRequest } from '../../../types';
+import dayjs from 'dayjs';
 
-
-/* --------------------- [1] 타입 & 샘플 데이터 정의 --------------------- */
-/**
- * @typedef Notice
- * @property id          고유 id (number)
- * @property author      작성자 (string)
- * @property content     공지 내용 (string)
- * @property timestamp   작성 시각 (ISO 8601 string)
- * @property isPinned    고정 여부 (선택)
- * @property expiresAt   만료 일시 (선택)
- * @property originChannel  원 채널명(선택)
- */
-// 임시 데이터라 실제 db 변수, 값이랑 다름
-interface Notice {
-    id: number;
-    author: string;
-    content: string;
-    timestamp: string;
-    isPinned?: boolean;
-    expiresAt?: string | null;
-    originChannel?: string;
-}
-
-// 샘플 데이터
-const initialNotices: Notice[] = [
-    {
-        id: 1,
-        author: '관리자',
-        content: '[필독] 캡스톤 디자인 최종 발표 관련 중요 안내입니다...',
-        timestamp: '2025-07-10T10:00:00',
-        isPinned: true,
-        expiresAt: '2025-08-10T23:59:59',
-    },
-    {
-        id: 2,
-        author: '박서연',
-        content: '다음 주 월요일(28일) 팀 회의는 오후 3시로 변경...',
-        timestamp: '2025-07-11T11:00:00',
-        isPinned: true,
-        expiresAt: null,
-        originChannel: '#일반',
-    },
-    {
-        id: 3,
-        author: '김세현',
-        content: '교수님께서 주신 피드백을 정리해서 올립니다...',
-        timestamp: '2025-07-01T14:30:00',
-        expiresAt: '2025-07-30T23:59:59',
-        originChannel: '#회의록',
-    },
-];
-
-/* --------------------- [2] Marker: 공지 왼쪽 타임라인 동그라미 --------------------- */
+/*  Marker: 공지 왼쪽 타임라인 */
 /**
  * @description
- *  공지의 "진행/만료 상태"를 시각적으로 보여주는 타임라인 마커 컴포넌트
- *  - 남은 기간, 고정 여부(영구 공지) 등을 나타냄
+ * 공지의 "진행/만료 상태"를 시각적으로 보여주는 타임라인 마커 컴포넌트
+ * - 남은 기간, 고정 여부(영구 공지) 등을 나타냄
  */
 const Marker: React.FC<{ notice: Notice; isHovered: boolean }> = ({
     notice,
@@ -69,9 +22,9 @@ const Marker: React.FC<{ notice: Notice; isHovered: boolean }> = ({
     // 현재 시각
     const now = new Date();
 
-    // 공지 만료일 유무
-    const hasLifespan = !!notice.expiresAt;
-    const isInfinite = !notice.expiresAt;
+    // 공지 만료일 유무 (pinnedUntil 값으로 판단)
+    const hasLifespan = !!notice.pinnedUntil;
+    const isInfinite = notice.pinnedUntil === null; // pinnedUntil이 null이면 영구 고정으로 간주 (고정된 상태에서)
 
     // 마우스 올렸을 때 툴팁 상태
     const [tooltip, setTooltip] = useState({
@@ -87,13 +40,13 @@ const Marker: React.FC<{ notice: Notice; isHovered: boolean }> = ({
      */
     const getProgressProps = () => {
         if (!hasLifespan) return null;
-        const start = new Date(notice.timestamp).getTime();
-        const end = new Date(notice.expiresAt!).getTime();
+        const start = new Date(notice.createdAt).getTime();
+        const end = new Date(notice.pinnedUntil!).getTime();
         const nowT = now.getTime();
         const total = end - start;
-        if (total <= 0) return null;
+        if (total <= 0) return { statusClass: styles.danger, circumference: 2 * Math.PI * 8, strokeDashoffset: 0 };
         const remain = end - nowT;
-        if (remain <= 0) return null;
+        if (remain <= 0) return { statusClass: styles.danger, circumference: 2 * Math.PI * 8, strokeDashoffset: 0 };
         const progress = remain / total;
         let statusClass = styles.safe;
         if (progress < 0.15) statusClass = styles.danger;
@@ -109,16 +62,16 @@ const Marker: React.FC<{ notice: Notice; isHovered: boolean }> = ({
      */
     const handleMouseEnter = () => {
         if (hasLifespan) {
-            const end = new Date(notice.expiresAt!);
+            const end = new Date(notice.pinnedUntil!);
             const diff = end.getTime() - now.getTime();
             const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
             setTooltip({
                 visible: true,
-                text: `D-${days}`,
+                text: days > 0 ? `D-${days}` : '만료됨',
                 isDanger: progressProps?.statusClass === styles.danger,
                 isInfo: false,
             });
-        } else if (isInfinite) {
+        } else if (isInfinite && notice.pinnedUntil !== undefined) { // 고정 상태일때만
             setTooltip({
                 visible: true,
                 text: '영구 공지',
@@ -127,6 +80,8 @@ const Marker: React.FC<{ notice: Notice; isHovered: boolean }> = ({
             });
         }
     };
+
+    const isPinned = notice.pinnedUntil !== undefined;
 
     return (
         <div
@@ -143,11 +98,11 @@ const Marker: React.FC<{ notice: Notice; isHovered: boolean }> = ({
         >
             {/* 원형 베이스 */}
             <div
-                className={`${styles.markerBase} ${isHovered ? styles.hoverActive : ''} ${isInfinite ? styles.infiniteMarker : ''
+                className={`${styles.markerBase} ${isHovered ? styles.hoverActive : ''} ${isPinned && isInfinite ? styles.infiniteMarker : ''
                     }`}
             />
             {/* 기간 있는 경우만 원형 진행률 */}
-            {progressProps && (
+            {isPinned && progressProps && (
                 <svg className={styles.markerSvg} viewBox="0 0 22 22">
                     <circle
                         className={`${styles.markerProgress} ${progressProps.statusClass}`}
@@ -172,12 +127,12 @@ const Marker: React.FC<{ notice: Notice; isHovered: boolean }> = ({
     );
 };
 
-/* --------------------- [3] NoticeItem: 공지 개별 항목 --------------------- */
+/* NoticeItem: 공지 개별 항목  */
 /**
  * @description
- *  개별 공지 카드 렌더링 (수정/삭제/핀 고정/더보기 등)
- *  - 수정 모드/읽기 모드/확장 여부 관리
- *  - 협업 시 각 기능별 주석 참고!
+ * 개별 공지 카드 렌더링 (수정/삭제/더보기 등)
+ * - 수정 모드/읽기 모드/확장 여부 관리
+ * - 협업 시 각 기능별 주석 참고!
  */
 const NoticeItem: React.FC<{
     notice: Notice;
@@ -186,9 +141,8 @@ const NoticeItem: React.FC<{
     onToggleExpand: () => void;
     onStartEdit: () => void;
     onEndEdit: () => void;
-    onPin: () => void;
-    onDelete: () => void;
-    onUpdate: (d: Partial<Notice>) => void;
+    onDelete: (noticeId: number) => void;
+    onUpdate: (noticeId: number, data: NoticeUpdateRequest) => void;
     showDate: boolean;
     isHovered: boolean;
     onMouseEnter: () => void;
@@ -199,7 +153,6 @@ const NoticeItem: React.FC<{
     onToggleExpand,
     onStartEdit,
     onEndEdit,
-    onPin,
     onDelete,
     onUpdate,
     showDate,
@@ -214,7 +167,7 @@ const NoticeItem: React.FC<{
 
     // 만료일(달력) 상태
     const [editedExpiresAt, setEditedExpiresAt] = useState<string | null>(
-        notice.expiresAt ?? null
+        notice.pinnedUntil ?? null
     );
 
     // (1) 내용 오버플로우 체크 (읽기모드 & 확장X일 때)
@@ -229,7 +182,7 @@ const NoticeItem: React.FC<{
     // (2) 편집 모드 진입 시, 만료일/커서 초기화
     useEffect(() => {
         if (isEditing && editableRef.current) {
-            setEditedExpiresAt(notice.expiresAt ?? null);
+            setEditedExpiresAt(notice.pinnedUntil ?? null);
             editableRef.current.focus();
             const range = document.createRange();
             const sel = window.getSelection();
@@ -238,32 +191,38 @@ const NoticeItem: React.FC<{
             sel?.removeAllRanges();
             sel?.addRange(range);
         }
-    }, [isEditing, notice.expiresAt]);
+    }, [isEditing, notice.pinnedUntil]);
 
     // (3) 저장 버튼 클릭 시, 수정한 내용 및 만료일 반영
     const handleUpdate = () => {
-        const newContent = editableRef.current?.innerText ?? '';
-        onUpdate({ content: newContent, expiresAt: editedExpiresAt });
+        const newContent = editableRef.current?.innerText.trim() ?? '';
+        if (!newContent) {
+            toast.error('공지 내용을 입력해주세요.');
+            return;
+        }
+        onUpdate(notice.id, { content: newContent, pinnedUntil: editedExpiresAt });
         onEndEdit();
     };
 
-    // 작성일 yyyy.MM.dd 형태로 가공
-    const d = new Date(notice.timestamp);
+    // 작성일 yyyy.MM.dd 형태
+    const d = new Date(notice.createdAt);
     const dateStr = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+    
+    const isPinned = notice.pinnedUntil !== undefined;
 
     return (
         <div
-            className={`${styles.timelineEntry} ${notice.isPinned ? styles.pinned : ''}`}
+            className={`${styles.timelineEntry} ${isPinned ? styles.pinned : ''}`}
             onMouseEnter={onMouseEnter}
         >
             <Marker notice={notice} isHovered={isHovered} />
             {showDate && <span className={styles.dateLabel}>{dateStr}</span>}
 
             <article className={styles.noticeCard}>
-                {/* 상단 버튼(수정/삭제/고정) */}
+                {/* 상단 버튼(수정/삭제) */}
                 <div className={styles.cardHeader}>
                     <div className={styles.authorGroup}>
-                        <span className={styles.author}>{notice.author}</span>
+                        <span className={styles.author}>{notice.userName}</span>
                         {notice.originChannel && (
                             <span className={styles.originChannel}>{notice.originChannel}</span>
                         )}
@@ -281,17 +240,9 @@ const NoticeItem: React.FC<{
                         <button
                             className={styles.iconButton}
                             title="삭제"
-                            onClick={onDelete}
+                            onClick={() => onDelete(notice.id)}
                         >
                             <FontAwesomeIcon icon={faTrash} />
-                        </button>
-                        {/* 핀 고정/해제 버튼 */}
-                        <button
-                            className={`${styles.iconButton} ${styles.pinButton}`}
-                            title={notice.isPinned ? '고정 해제' : '고정하기'}
-                            onClick={onPin}
-                        >
-                            <FontAwesomeIcon icon={faThumbtack} />
                         </button>
                     </div>
                 </div>
@@ -325,7 +276,7 @@ const NoticeItem: React.FC<{
                                 <FontAwesomeIcon icon={faTimes} />
                             </button>
                             {/* 만료일 DatePicker(달력) */}
-                            <DatePicker value={editedExpiresAt} onChange={setEditedExpiresAt} />
+                            <DatePicker value={editedExpiresAt} onChange={setEditedExpiresAt} showTime />
                             {/* 저장 */}
                             <button
                                 className={`${styles.actionButton} ${styles.saveButton}`}
@@ -352,16 +303,17 @@ const NoticeItem: React.FC<{
     );
 };
 
-/* --------------------- [4] NoticePage: 공지 전체 목록/생성 페이지 --------------------- */
+/* NoticePage: 공지 전체 목록/생성 페이지  */
 /**
  * @description
- *  전체 공지 관리 및 렌더링 페이지
- *  - 상태/정렬/생성/삭제/고정 등
- *  - useState, useMemo 등 React 기본 패턴 설명 포함
+ * 전체 공지 관리 및 렌더링 페이지
+ * - 상태/정렬/생성/삭제 등
+ * - useState, useMemo 등 React 기본 패턴 설명 포함
  */
 const NoticePage: React.FC = () => {
+    const { groupId, channelId } = useParams<{ groupId: string, channelId: string }>();
     // 공지 데이터 (공지 배열)
-    const [notices, setNotices] = useState<Notice[]>(initialNotices);
+    const [notices, setNotices] = useState<Notice[]>([]);
 
     // 확장(더보기)된 공지 id Set
     const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
@@ -377,26 +329,61 @@ const NoticePage: React.FC = () => {
     const [newContent, setNewContent] = useState('');
     const [newExpiresAt, setNewExpiresAt] = useState<string | null>(null);
 
-    /**
-     * 핀(고정) 토글 핸들러
-     */
-    const handlePin = (id: number) =>
-        setNotices(ns => ns.map(n => n.id === id ? { ...n, isPinned: !n.isPinned } : n));
+    // API 로딩 상태
+    const [isLoading, setIsLoading] = useState(true);
 
+    useEffect(() => {
+        if (!groupId) return;
+
+        const fetchNotices = async () => {
+            setIsLoading(true);
+            try {
+                const response = await getNotices(parseInt(groupId));
+                setNotices(response.data);
+            } catch (error) {
+                toast.error("공지 목록을 불러오는 데 실패했습니다.");
+                console.error(error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchNotices();
+    }, [groupId]);
+    
     /**
      * 삭제 핸들러
      */
     const handleDelete = (id: number) => {
+        if (!groupId) return;
         if (window.confirm('정말 이 공지를 삭제하시겠습니까?')) {
-            setNotices(ns => ns.filter(n => n.id !== id));
+            const promise = deleteNotice(parseInt(groupId), id);
+            toast.promise(promise, {
+                loading: '삭제 중...',
+                success: () => {
+                    setNotices(ns => ns.filter(n => n.id !== id));
+                    return <b>삭제되었습니다.</b>;
+                },
+                error: <b>삭제에 실패했습니다.</b>,
+            });
         }
     };
 
     /**
      * 공지 내용/만료일 수정 핸들러
      */
-    const handleUpdate = (id: number, d: Partial<Notice>) =>
-        setNotices(ns => ns.map(n => n.id === id ? { ...n, ...d } : n));
+    const handleUpdate = (id: number, data: NoticeUpdateRequest) => {
+        if (!groupId) return;
+        const promise = updateNotice(parseInt(groupId), id, data);
+        toast.promise(promise, {
+            loading: '수정 중...',
+            success: (response) => {
+                setNotices(ns => ns.map(n => n.id === id ? response.data : n));
+                return <b>수정되었습니다.</b>;
+            },
+            error: <b>수정에 실패했습니다.</b>,
+        });
+    };
 
     /**
      * 더보기(확장) 토글 핸들러
@@ -416,41 +403,51 @@ const NoticePage: React.FC = () => {
     /**
      * 새 공지 생성(저장) 핸들러
      */
-    const createNotice = () => {
+    const handleCreateNotice = () => {
+        if (!groupId || !channelId) return;
+
         if (!newContent.trim()) {
-            alert('공지 내용을 입력해주세요.');
+            toast.error('공지 내용을 입력해주세요.');
             return;
         }
-        const n: Notice = {
-            id: Date.now(),
-            author: 'CurrentUser', // 실제 앱에서는 로그인 정보로 대체!
-            content: newContent,
-            timestamp: new Date().toISOString(),
-            expiresAt: newExpiresAt,
-        };
-        setNotices(ns => [n, ...ns]);
-        setCreating(false);
-        setNewContent('');
-        setNewExpiresAt(null);
+        
+        const promise = createNotice(parseInt(groupId), {
+            channelId: parseInt(channelId),
+            content: newContent.trim(),
+            pinnedUntil: newExpiresAt,
+        });
+
+        toast.promise(promise, {
+            loading: '공지 생성 중...',
+            success: (response) => {
+                setNotices(ns => [response.data, ...ns]);
+                setCreating(false);
+                setNewContent('');
+                setNewExpiresAt(null);
+                return <b>공지가 등록되었습니다.</b>;
+            },
+            error: <b>공지 등록에 실패했습니다.</b>,
+        });
     };
 
     /**
-     * 공지 리스트 정렬
-     * - 고정공지(pinned)가 항상 위로, 그다음 최신순
+     * 공지 리스트 정렬 (최신순)
      */
     const sorted = useMemo(() => {
         return [...notices].sort((a, b) => {
-            if (a.isPinned && !b.isPinned) return -1;
-            if (!a.isPinned && b.isPinned) return 1;
-            return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+            return dayjs(b.createdAt).valueOf() - dayjs(a.createdAt).valueOf();
         });
     }, [notices]);
 
-    /* --------------------- [화면 렌더링] --------------------- */
+    if (isLoading) {
+        return <div className={styles.container}>공지사항을 불러오는 중...</div>
+    }
+
+    /*  [화면 렌더링]  */
     return (
         <div className={styles.container}>
             <div className={styles.timeline}>
-                {/* ── 새 공지 생성 카드 ── */}
+                {/* 새 공지 생성 카드  */}
                 <div className={`${styles.timelineEntry} ${styles.creatorEntry}`}>
                     <div
                         className={styles.creatorMarker}
@@ -477,12 +474,12 @@ const NoticePage: React.FC = () => {
                                         <FontAwesomeIcon icon={faTimes} />
                                     </button>
                                     {/* 만료일 달력 */}
-                                    <DatePicker value={newExpiresAt} onChange={setNewExpiresAt} />
+                                    <DatePicker value={newExpiresAt} onChange={setNewExpiresAt} showTime/>
                                     {/* 저장 버튼 */}
                                     <button
                                         className={`${styles.actionButton} ${styles.saveButton}`}
                                         title="저장"
-                                        onClick={createNotice}
+                                        onClick={handleCreateNotice}
                                     >
                                         <FontAwesomeIcon icon={faCheck} />
                                     </button>
@@ -499,11 +496,11 @@ const NoticePage: React.FC = () => {
                     )}
                 </div>
 
-                {/* ── 공지 리스트 전체 출력 ── */}
+                {/*  공지 리스트 전체 출력  */}
                 {sorted.map((n, i) => {
                     // 이전 공지 날짜와 비교, 날짜 라벨 출력 여부 결정
-                    const prevDate = i > 0 ? new Date(sorted[i - 1].timestamp).toLocaleDateString() : null;
-                    const showDate = new Date(n.timestamp).toLocaleDateString() !== prevDate;
+                    const prevDate = i > 0 ? new Date(sorted[i - 1].createdAt).toLocaleDateString() : null;
+                    const showDate = new Date(n.createdAt).toLocaleDateString() !== prevDate;
                     return (
                         <NoticeItem
                             key={n.id}
@@ -513,9 +510,8 @@ const NoticePage: React.FC = () => {
                             onToggleExpand={() => toggleExpand(n.id)}
                             onStartEdit={() => setEditingId(n.id)}
                             onEndEdit={() => setEditingId(null)}
-                            onPin={() => handlePin(n.id)}
-                            onDelete={() => handleDelete(n.id)}
-                            onUpdate={d => handleUpdate(n.id, d)}
+                            onDelete={handleDelete}
+                            onUpdate={handleUpdate}
                             showDate={showDate}
                             isHovered={hoveredId === n.id}
                             onMouseEnter={() => setHoveredId(n.id)}

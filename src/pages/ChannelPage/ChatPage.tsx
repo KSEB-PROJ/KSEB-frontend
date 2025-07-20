@@ -10,6 +10,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { getMessages, sendMessage, updateMessage, deleteMessage } from '../../api/chat';
+import { promoteMessageToNotice } from '../../api/notice'; // 공지 등록 API import
 import type { ChatMessageResponse } from '../../types';
 import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
@@ -208,7 +209,7 @@ const MediaViewer: React.FC<{ content: ViewerContent | null, onClose: () => void
 // 메인 채팅 페이지 컴포넌트
 const ChatPage: React.FC = () => {
     // URL 파라미터에서 채널 ID 가져오기
-    const { channelId } = useParams<{ channelId: string }>();
+    const { groupId, channelId } = useParams<{ groupId: string, channelId: string }>();
 
     // DOM 요소 참조를 위한 ref
     const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -333,6 +334,27 @@ const ChatPage: React.FC = () => {
             error: <b>수정에 실패했습니다.</b>
         });
     };
+    
+    // 메시지 공지 등록 핸들러
+    const handlePromoteToNotice = (messageId: number) => {
+        if(!groupId || !channelId) return;
+
+        // confirm 창을 띄워 사용자에게 확인 받음
+        if(window.confirm('이 메시지를 공지로 등록하시겠습니까?')) {
+            const promise = promoteMessageToNotice(parseInt(groupId), parseInt(channelId), messageId, {});
+            toast.promise(promise, {
+                loading: '공지로 등록 중...',
+                success: () => {
+                    return <b>공지로 등록되었습니다.</b>;
+                },
+                error: (err) => {
+                    console.error(err);
+                    return <b>공지 등록에 실패했습니다.</b>
+                }
+            });
+        }
+    };
+
 
     // 메시지 삭제 핸들러 (실제 삭제 실행)
     const handleRemoveMsg = async (messageId: number) => {
@@ -413,7 +435,12 @@ const ChatPage: React.FC = () => {
                                             ) : (
                                                 /* 기본 액션 버튼 */
                                                 <>
-                                                    <button title="공지로 등록"><FontAwesomeIcon icon={faThumbTack} /></button>
+                                                    {/* [수정] 텍스트 메시지만 공지 등록 가능하도록 조건 추가 */}
+                                                    {msg.messageType === 'TEXT' && (
+                                                        <button title="공지로 등록" onClick={() => handlePromoteToNotice(msg.id)}>
+                                                            <FontAwesomeIcon icon={faThumbTack} />
+                                                        </button>
+                                                    )}
                                                     {msg.isMine && !msg.fileUrl && (
                                                         <button title="수정" onClick={() => handleEditStart(msg)}>
                                                             <FontAwesomeIcon icon={faPencil} />
