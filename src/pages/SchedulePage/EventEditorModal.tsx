@@ -41,7 +41,7 @@ const TaskItem: React.FC<{
             sel?.addRange(range);
         }
     }, [isEditing]);
-    
+
     const handleBlur = () => {
         setIsEditing(false);
         if (textRef.current) {
@@ -123,14 +123,11 @@ const EventEditorModal: React.FC<{
     }, [onClose]);
 
     const updateFormData = useCallback((field: keyof ScheduleEvent, value: ScheduleEvent[keyof ScheduleEvent]) => {
-        // [수정] 일정 수정은 isEditable, 참가 상태 변경은 항상 가능하도록 조건 변경
-        if (!isEditable && field !== 'participants') return;
         setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
-    }, [isEditable]);
+    }, []);
 
     const handleSave = () => {
         if (!formData) return;
-        // [수정] 참가 상태만 변경하는 경우도 저장 가능하도록, isEditable 체크는 title 검증에만 적용
         if (isEditable && !formData.title.trim()) {
             alert('일정 제목을 입력해주세요.');
             return;
@@ -143,11 +140,10 @@ const EventEditorModal: React.FC<{
         const originalId = formData.id.startsWith('event-') ? formData.id.split('-').slice(0, 3).join('-') : formData.id;
         onDelete(originalId);
     };
-    
-    // 👇 [신규] 현재 유저의 참석 상태를 변경하는 함수
+
     const handleParticipantStatusChange = (newStatus: EventParticipant['status']) => {
-        if (!formData) return;
-        const updatedParticipants = formData.participants?.map(p => 
+        if (!formData || !isEditable) return;
+        const updatedParticipants = formData.participants?.map(p =>
             p.userId === CURRENT_USER_ID ? { ...p, status: newStatus } : p
         );
         updateFormData('participants', updatedParticipants);
@@ -183,7 +179,6 @@ const EventEditorModal: React.FC<{
 
     if (!formData) return null;
 
-    // 👇 [신규] 현재 유저의 참석 상태를 찾음
     const currentUserStatus = formData.participants?.find(p => p.userId === CURRENT_USER_ID)?.status;
 
     return (
@@ -193,18 +188,24 @@ const EventEditorModal: React.FC<{
                 onClick={(e) => e.stopPropagation()}
                 style={{ '--event-theme-color': formData.color } as React.CSSProperties}
             >
-
                 <header className={styles.header}>
-                    <h2>{String(formData.id).startsWith('temp-') ? '새 일정 추가' : '일정 정보'}</h2>
-                    {!isEditable && !formData.groupName && <div className={styles.readOnlyBadge}><FontAwesomeIcon icon={faLock} /> 읽기 전용</div>}
-                    {formData.ownerType === 'GROUP' && formData.groupName && (
-                        <div className={styles.groupInfoBadge}>
-                            <FontAwesomeIcon icon={faLayerGroup} />
-                            <span>{formData.groupName}</span>
-                        </div>
-                    )}
-                    <button className={styles.closeButton} onClick={handleClose}><FontAwesomeIcon icon={faTimes} /></button>
+                    <div className={styles.headerLeft}>
+                        {formData.ownerType === 'GROUP' && formData.groupName && (
+                            <div className={styles.groupInfoBadge}>
+                                <FontAwesomeIcon icon={faLayerGroup} />
+                                <span>{formData.groupName}</span>
+                            </div>
+                        )}
+                    </div>
+                    <div className={styles.headerCenter}>
+                        <h2>{String(formData.id).startsWith('temp-') ? '새 일정 추가' : '일정 정보'}</h2>
+                    </div>
+                    <div className={styles.headerRight}>
+                        {!isEditable && <div className={styles.readOnlyBadge}><FontAwesomeIcon icon={faLock} /> 읽기 전용</div>}
+                        <button className={styles.closeButton} onClick={handleClose}><FontAwesomeIcon icon={faTimes} /></button>
+                    </div>
                 </header>
+
 
                 <main className={styles.content}>
                     <div className={styles.inputGroup}>
@@ -216,14 +217,44 @@ const EventEditorModal: React.FC<{
                         <label htmlFor='location'><FontAwesomeIcon icon={faMapMarkerAlt} /> 장소 또는 링크</label>
                     </div>
 
-                    {/* 👇 [수정] 그룹 일정일 때만 참가자 및 참석 여부 UI 표시 */}
                     {formData.ownerType === 'GROUP' && (
                         <>
                             <div className={styles.sectionDivider} />
                             <div className={styles.participantSection}>
-                                <div className={styles.textareaLabel}>
-                                    <FontAwesomeIcon icon={faUsers} />
-                                    <span>참여자 ({formData.participants?.length || 0})</span>
+                                <div className={styles.participantHeader}>
+                                    <div className={styles.textareaLabel}>
+                                        <FontAwesomeIcon icon={faUsers} />
+                                        <span>참여자 ({formData.participants?.length || 0})</span>
+                                    </div>
+                                    <div className={styles.statusIconGroup}>
+                                        <button
+                                            className={`${styles.statusIconButton} ${currentUserStatus === 'ACCEPTED' ? styles.active : ''}`}
+                                            onClick={() => handleParticipantStatusChange('ACCEPTED')}
+                                            disabled={!isEditable}
+                                            data-status="accepted"
+                                            title="참석"
+                                        >
+                                            <FontAwesomeIcon icon={faCheckCircle} />
+                                        </button>
+                                        <button
+                                            className={`${styles.statusIconButton} ${currentUserStatus === 'TENTATIVE' ? styles.active : ''}`}
+                                            onClick={() => handleParticipantStatusChange('TENTATIVE')}
+                                            disabled={!isEditable}
+                                            data-status="tentative"
+                                            title="미정"
+                                        >
+                                            <FontAwesomeIcon icon={faQuestionCircle} />
+                                        </button>
+                                        <button
+                                            className={`${styles.statusIconButton} ${currentUserStatus === 'DECLINED' ? styles.active : ''}`}
+                                            onClick={() => handleParticipantStatusChange('DECLINED')}
+                                            disabled={!isEditable}
+                                            data-status="declined"
+                                            title="거절"
+                                        >
+                                            <FontAwesomeIcon icon={faTimesCircle} />
+                                        </button>
+                                    </div>
                                 </div>
                                 <ul className={styles.participantList}>
                                     {formData.participants?.map(p => (
@@ -233,33 +264,10 @@ const EventEditorModal: React.FC<{
                                         </li>
                                     ))}
                                 </ul>
-                                {/* [신규] 참석 여부 선택 버튼 UI */}
-                                <div className={styles.statusButtonsContainer}>
-                                    <button
-                                        className={`${styles.statusButton} ${currentUserStatus === 'ACCEPTED' ? styles.activeStatus : ''}`}
-                                        onClick={() => handleParticipantStatusChange('ACCEPTED')}
-                                        data-status="accepted"
-                                    >
-                                        <FontAwesomeIcon icon={faCheckCircle} /> 참석
-                                    </button>
-                                    <button
-                                        className={`${styles.statusButton} ${currentUserStatus === 'TENTATIVE' ? styles.activeStatus : ''}`}
-                                        onClick={() => handleParticipantStatusChange('TENTATIVE')}
-                                        data-status="tentative"
-                                    >
-                                        <FontAwesomeIcon icon={faQuestionCircle} /> 미정
-                                    </button>
-                                    <button
-                                        className={`${styles.statusButton} ${currentUserStatus === 'DECLINED' ? styles.activeStatus : ''}`}
-                                        onClick={() => handleParticipantStatusChange('DECLINED')}
-                                        data-status="declined"
-                                    >
-                                        <FontAwesomeIcon icon={faTimesCircle} /> 거절
-                                    </button>
-                                </div>
                             </div>
                         </>
                     )}
+
 
                     <div className={styles.sectionDivider} />
 
@@ -307,7 +315,7 @@ const EventEditorModal: React.FC<{
                             </div>
                         )}
                     </div>
-                    
+
                     <div className={styles.sectionDivider} />
                     <div className={styles.controlSection}>
                         <div className={styles.controlRow}>
@@ -335,8 +343,8 @@ const EventEditorModal: React.FC<{
 
                     <div className={styles.todoSection}>
                         <div className={styles.textareaLabel}>
-                           <FontAwesomeIcon icon={faTasks} />
-                           <span>To-Do List ({formData.tasks?.length || 0})</span>
+                            <FontAwesomeIcon icon={faTasks} />
+                            <span>To-Do List ({formData.tasks?.length || 0})</span>
                         </div>
                         <div className={styles.todoListContainer}>
                             <ul className={styles.todoList}>
@@ -378,7 +386,9 @@ const EventEditorModal: React.FC<{
                         <button onClick={handleClose} className={`${styles.button} ${styles.cancelButton}`}>
                             취소
                         </button>
-                        <button onClick={handleSave} className={`${styles.button} ${styles.saveButton}`}>저장</button>
+                        {isEditable && (
+                            <button onClick={handleSave} className={`${styles.button} ${styles.saveButton}`}>저장</button>
+                        )}
                     </div>
                 </footer>
             </div>
