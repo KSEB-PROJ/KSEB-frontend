@@ -523,3 +523,49 @@
 .saveButton:hover {
   filter: brightness(1.15);
 }
+
+/* 참가자 참석 상태 버튼 컨테이너 */
+.statusButtonsContainer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* 개별 참석 상태 버튼 */
+.statusButton {
+  background: #333;
+  color: #a0a0a0;
+  border: 1px solid #444;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.statusButton:hover {
+  background: #444;
+  color: #fff;
+}
+
+/* 활성화된(선택된) 참석 상태 버튼 스타일 */
+.statusButton.activeStatus {
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.statusButton[data-status="accepted"].activeStatus {
+  background-color: #22c55e;
+}
+.statusButton[data-status="tentative"].activeStatus {
+  background-color: #f97316;
+}
+.statusButton[data-status="declined"].activeStatus {
+  background-color: #ef4444;
+}

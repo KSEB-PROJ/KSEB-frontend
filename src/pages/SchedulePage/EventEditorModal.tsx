@@ -16,6 +16,8 @@ const colorPalette = [
     '#f97316', '#22c55e', '#eab308', '#06b6d4',
     '#ef4444', '#6366f1', '#a855f7', '#10b981'
 ];
+// [추가] 현재 사용자 ID (임시 Mock 데이터)
+const CURRENT_USER_ID = 123;
 
 // TaskItem 컴포넌트 로직
 const TaskItem: React.FC<{
@@ -28,7 +30,6 @@ const TaskItem: React.FC<{
     const [isEditing, setIsEditing] = useState(false);
     const textRef = useRef<HTMLDivElement>(null);
 
-    // 편집 모드가 활성화되면 div에 포커스를 주고, 커서를 맨 뒤로 이동
     useEffect(() => {
         if (isEditing && textRef.current) {
             textRef.current.focus();
@@ -41,7 +42,6 @@ const TaskItem: React.FC<{
         }
     }, [isEditing]);
     
-    // 편집 완료 (포커스 잃었을 때)
     const handleBlur = () => {
         setIsEditing(false);
         if (textRef.current) {
@@ -123,23 +123,34 @@ const EventEditorModal: React.FC<{
     }, [onClose]);
 
     const updateFormData = useCallback((field: keyof ScheduleEvent, value: ScheduleEvent[keyof ScheduleEvent]) => {
-        if (!isEditable) return;
+        // [수정] 일정 수정은 isEditable, 참가 상태 변경은 항상 가능하도록 조건 변경
+        if (!isEditable && field !== 'participants') return;
         setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
     }, [isEditable]);
 
     const handleSave = () => {
-        if (!isEditable || !formData) return;
-        if (formData.title.trim()) {
-            onSave(formData);
-        } else {
+        if (!formData) return;
+        // [수정] 참가 상태만 변경하는 경우도 저장 가능하도록, isEditable 체크는 title 검증에만 적용
+        if (isEditable && !formData.title.trim()) {
             alert('일정 제목을 입력해주세요.');
+            return;
         }
+        onSave(formData);
     };
 
     const handleDelete = () => {
         if (!isEditable || !formData) return;
         const originalId = formData.id.startsWith('event-') ? formData.id.split('-').slice(0, 3).join('-') : formData.id;
         onDelete(originalId);
+    };
+    
+    // 👇 [신규] 현재 유저의 참석 상태를 변경하는 함수
+    const handleParticipantStatusChange = (newStatus: EventParticipant['status']) => {
+        if (!formData) return;
+        const updatedParticipants = formData.participants?.map(p => 
+            p.userId === CURRENT_USER_ID ? { ...p, status: newStatus } : p
+        );
+        updateFormData('participants', updatedParticipants);
     };
 
     const handleAddTask = () => {
@@ -161,15 +172,19 @@ const EventEditorModal: React.FC<{
     };
 
     const ParticipantStatusIcon = ({ status }: { status: EventParticipant['status'] }) => {
-        switch (status) {
-            case 'ACCEPTED': return <FontAwesomeIcon icon={faCheckCircle} className={styles.statusAccepted} title="참석" />;
-            case 'DECLINED': return <FontAwesomeIcon icon={faTimesCircle} className={styles.statusDeclined} title="거절" />;
-            case 'TENTATIVE': return <FontAwesomeIcon icon={faQuestionCircle} className={styles.statusTentative} title="미정" />;
-            default: return null;
-        }
+        const iconMap = {
+            'ACCEPTED': { icon: faCheckCircle, className: styles.statusAccepted, title: "참석" },
+            'DECLINED': { icon: faTimesCircle, className: styles.statusDeclined, title: "거절" },
+            'TENTATIVE': { icon: faQuestionCircle, className: styles.statusTentative, title: "미정" }
+        };
+        const { icon, className, title } = iconMap[status];
+        return <FontAwesomeIcon icon={icon} className={className} title={title} />;
     };
 
     if (!formData) return null;
+
+    // 👇 [신규] 현재 유저의 참석 상태를 찾음
+    const currentUserStatus = formData.participants?.find(p => p.userId === CURRENT_USER_ID)?.status;
 
     return (
         <div className={`${styles.overlay} ${isClosing ? styles.closing : ''}`} onClick={handleClose}>
@@ -183,7 +198,7 @@ const EventEditorModal: React.FC<{
                     <h2>{String(formData.id).startsWith('temp-') ? '새 일정 추가' : '일정 정보'}</h2>
                     {!isEditable && !formData.groupName && <div className={styles.readOnlyBadge}><FontAwesomeIcon icon={faLock} /> 읽기 전용</div>}
                     {formData.ownerType === 'GROUP' && formData.groupName && (
-                        <div className={styles.groupInfoBadge} style={{ '--group-color': formData.color?.replace('#', '') } as React.CSSProperties}>
+                        <div className={styles.groupInfoBadge}>
                             <FontAwesomeIcon icon={faLayerGroup} />
                             <span>{formData.groupName}</span>
                         </div>
@@ -201,6 +216,7 @@ const EventEditorModal: React.FC<{
                         <label htmlFor='location'><FontAwesomeIcon icon={faMapMarkerAlt} /> 장소 또는 링크</label>
                     </div>
 
+                    {/* 👇 [수정] 그룹 일정일 때만 참가자 및 참석 여부 UI 표시 */}
                     {formData.ownerType === 'GROUP' && (
                         <>
                             <div className={styles.sectionDivider} />
@@ -217,6 +233,30 @@ const EventEditorModal: React.FC<{
                                         </li>
                                     ))}
                                 </ul>
+                                {/* [신규] 참석 여부 선택 버튼 UI */}
+                                <div className={styles.statusButtonsContainer}>
+                                    <button
+                                        className={`${styles.statusButton} ${currentUserStatus === 'ACCEPTED' ? styles.activeStatus : ''}`}
+                                        onClick={() => handleParticipantStatusChange('ACCEPTED')}
+                                        data-status="accepted"
+                                    >
+                                        <FontAwesomeIcon icon={faCheckCircle} /> 참석
+                                    </button>
+                                    <button
+                                        className={`${styles.statusButton} ${currentUserStatus === 'TENTATIVE' ? styles.activeStatus : ''}`}
+                                        onClick={() => handleParticipantStatusChange('TENTATIVE')}
+                                        data-status="tentative"
+                                    >
+                                        <FontAwesomeIcon icon={faQuestionCircle} /> 미정
+                                    </button>
+                                    <button
+                                        className={`${styles.statusButton} ${currentUserStatus === 'DECLINED' ? styles.activeStatus : ''}`}
+                                        onClick={() => handleParticipantStatusChange('DECLINED')}
+                                        data-status="declined"
+                                    >
+                                        <FontAwesomeIcon icon={faTimesCircle} /> 거절
+                                    </button>
+                                </div>
                             </div>
                         </>
                     )}
@@ -291,7 +331,6 @@ const EventEditorModal: React.FC<{
                         </div>
                     </div>
 
-
                     <div className={styles.sectionDivider} />
 
                     <div className={styles.todoSection}>
@@ -337,9 +376,9 @@ const EventEditorModal: React.FC<{
                     <div style={{ flexGrow: 1 }} />
                     <div className={styles.actionButtons}>
                         <button onClick={handleClose} className={`${styles.button} ${styles.cancelButton}`}>
-                            {isEditable ? '취소' : '닫기'}
+                            취소
                         </button>
-                        {isEditable && <button onClick={handleSave} className={`${styles.button} ${styles.saveButton}`}>저장</button>}
+                        <button onClick={handleSave} className={`${styles.button} ${styles.saveButton}`}>저장</button>
                     </div>
                 </footer>
             </div>
