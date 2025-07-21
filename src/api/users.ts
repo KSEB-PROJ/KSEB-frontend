@@ -1,7 +1,7 @@
 //axios로 연결
 import axios from 'axios';
 // 데이터 타입
-import type { UserUpdateRequest,UserResponse } from '../types';
+import type { UserUpdateRequest,UserResponse,PasswordChangeRequest } from '../types';
 
 /**
  * API 클라이언트 설정
@@ -21,6 +21,26 @@ const apiClient = axios.create({
 export const me = (newName: UserUpdateRequest) => {
     // apiClient를 사용해 '/users/me' 경로로 patch 방식의 api 전송
     return apiClient.patch('/users/me', newName);
+};
+
+/**
+ * 이름 변경 API 요청 함수
+ * @param newName - 새로운 이름을 담은 객체
+ * @returns Promise - API 요청 결과
+ */
+export const changePassword = (newPassword: PasswordChangeRequest) => {
+    // apiClient를 사용해 '/users/me' 경로로 patch 방식의 api 전송
+    return apiClient.patch('/users/me/password', newPassword);
+};
+
+/**
+ * 프로필 이미지 변경 API 요청 함수
+ * @param profileImg - 프로필 이미지를 담은 객체
+ * @returns Promise - API 요청 결과
+ */
+export const myemail  = (email: UserResponse) => {
+    // apiClient를 사용해 '/auth/login' 경로로 patch 방식의 api 전송
+    return apiClient.patch('/users/me', email);
 };
 
 /**

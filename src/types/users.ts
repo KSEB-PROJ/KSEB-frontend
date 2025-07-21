@@ -7,8 +7,13 @@ export interface UserUpdateRequest {
 }
 
 export interface UserResponse {
-  // id : number;
-  // email: string;
-  // name: string;  
+  id : number;
+  email: string;
+  name: string;  
   profileImg: string;
+}
+
+export interface PasswordChangeRequest {
+  currentPassword: string;
+  newPassword: string;  
 }

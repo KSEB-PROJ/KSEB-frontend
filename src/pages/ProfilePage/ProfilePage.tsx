@@ -13,8 +13,8 @@ const ProfilePage: React.FC = () => {
     const [name, setName] = useState('');       // 사용자명
     const [profileImg, setProfileImg] = useState('');
     const [prevuseremail] = useState('기존 설정된 사용자이메일');
-    const [useremail, setUseremail] = useState('');       // 사용자이메일
-    const [password, setPassword] = useState('');       // 비밀번호
+    const [email, setEmail] = useState('');       // 사용자이메일
+    const [currentPassword, setCurrentPassword] = useState('');       // 비밀번호
     const [newPassword, setNewPassword] = useState('');       // 비밀번호 확인
     const [passwordConfirm, setPasswordConfirm] = useState('');
     const [showPassword, setShowPassword] = useState(false); // 비밀번호 표시 여부(토글)
@@ -36,12 +36,42 @@ const ProfilePage: React.FC = () => {
             {
                 loading: '프로필 이름 수정 중...',
                 success: () => {
-                    navigate('/app'); // 성공 시 페이지 이동
+                    navigate('/app/home'); // 성공 시 페이지 이동
                     return <b>프로필 이름 수정 완료!!!</b>; // 성공 알림 메시지
                 },
                 error: (err: AxiosError<{ message?: string }>) => {
                     // 백엔드에서 온 에러 메시지를 우선적으로 사용
                     return err.response?.data?.message || '프로필 이름 수정에 실패했습니다.';
+                },
+            }
+        ); }
+        if (email){
+        await toast.promise(
+            myemail ({ email }), // API 함수에 입력값 전달
+            {
+                loading: '프로필 이메일 수정 중...',
+                success: () => {
+                    navigate('/app/home'); // 성공 시 페이지 이동
+                    return <b>프로필 이메일 수정 완료!!!</b>; // 성공 알림 메시지
+                },
+                error: (err: AxiosError<{ message?: string }>) => {
+                    // 백엔드에서 온 에러 메시지를 우선적으로 사용
+                    return err.response?.data?.message || '프로필 이메일 수정에 실패했습니다.';
+                },
+            }
+        ); }
+        if (currentPassword){
+        await toast.promise(
+            password({ newPassword }), // API 함수에 입력값 전달
+            {
+                loading: '프로필 비밀번호 수정 중...',
+                success: () => {
+                    navigate('/app/home'); // 성공 시 페이지 이동
+                    return <b>프로필 비밀번호 수정 완료!!!</b>; // 성공 알림 메시지
+                },
+                error: (err: AxiosError<{ message?: string }>) => {
+                    // 백엔드에서 온 에러 메시지를 우선적으로 사용
+                    return err.response?.data?.message || '프로필 비밀번호 수정에 실패했습니다.';
                 },
             }
         ); }
@@ -51,7 +81,7 @@ const ProfilePage: React.FC = () => {
             {
                 loading: '프로필 이미지 수정 중...',
                 success: () => {
-                    navigate('/app'); // 성공 시 페이지 이동
+                    navigate('/app/home'); // 성공 시 페이지 이동
                     return <b>프로필 이미지 수정 완료!!!</b>; // 성공 알림 메시지
                 },
                 error: (err: AxiosError<{ message?: string }>) => {
@@ -61,7 +91,7 @@ const ProfilePage: React.FC = () => {
             }
             );}
 
-        navigate('/profile');
+        navigate('/app/profile');
     };
     /**
      * 비밀번호 보이기/숨기기 토글 함수
@@ -136,8 +166,8 @@ const ProfilePage: React.FC = () => {
                         type="email"
                         id="email" //html id
                         className={styles.inputField} //CSS Modules로부터 스타일 적용
-                        value={useremail} //현재 값
-                        onChange={(e) => { setUseremail(e.target.value) }} //값 변경 시 상태 업데이트
+                        value={email} //현재 값
+                        onChange={(e) => { setEmail(e.target.value) }} //값 변경 시 상태 업데이트
                     />
                     {/* 입력란 라벨 (floating label 효과, 스타일로 제어) */}
                     <label htmlFor="email" className={styles.label}>
@@ -154,8 +184,8 @@ const ProfilePage: React.FC = () => {
                         type={showPassword ? "text" : "password"} // 보이기 여부에 따라 type 전환
                         id="pass"
                         className={styles.inputField}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
                     />
                     {/* 입력란 라벨 */}
                     <label htmlFor="pass" className={styles.label}>
