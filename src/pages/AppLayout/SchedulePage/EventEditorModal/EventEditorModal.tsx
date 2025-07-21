@@ -5,21 +5,18 @@ import {
     faSignature, faPlus, faTrash, faTasks, faLock, faUsers, faCheckCircle,
     faTimesCircle, faQuestionCircle, faPalette, faLayerGroup, faCheck
 } from '@fortawesome/free-solid-svg-icons';
-import type { ScheduleEvent, EventTask, EventParticipant } from '../types';
+import type { ScheduleEvent, EventTask, EventParticipant } from '../../../../types';
 import styles from './EventEditorModal.module.css';
 import RecurrenceEditor from '../RecurrenceEditor/RecurrenceEditor';
 import DatePicker from '../../../../components/date-picker/DatePicker';
 
-// --- 색상 팔레트 옵션 ---
 const colorPalette = [
     '#8400ff', '#14d6ae', '#ec4899', '#3b82f6',
     '#f97316', '#22c55e', '#eab308', '#06b6d4',
     '#ef4444', '#6366f1', '#a855f7', '#10b981'
 ];
-// [추가] 현재 사용자 ID (임시 Mock 데이터)
-const CURRENT_USER_ID = 123;
+const CURRENT_USER_ID = 1;
 
-// TaskItem 컴포넌트 로직
 const TaskItem: React.FC<{
     task: EventTask;
     onUpdate: (field: keyof EventTask, value: EventTask[keyof EventTask]) => void;
@@ -94,26 +91,22 @@ const TaskItem: React.FC<{
 };
 
 
-// 메인 모달 컴포넌트
 const EventEditorModal: React.FC<{
     event: ScheduleEvent | null;
     onClose: () => void;
     onSave: (event: ScheduleEvent) => void;
-    onDelete: (eventId: string) => void;
+    onDelete: (eventId: string, ownerType: 'USER' | 'GROUP', ownerId: number) => void;
 }> = ({ event, onClose, onSave, onDelete }) => {
     const [formData, setFormData] = useState<ScheduleEvent | null>(null);
     const [isRecurrenceEnabled, setRecurrenceEnabled] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
 
+    // [수정] isEditable을 props로부터 직접 전달받아 사용
     const isEditable = useMemo(() => formData?.isEditable ?? false, [formData]);
     const modalKey = useMemo(() => (event?.id || 'new') + '-' + Date.now(), [event]);
 
     useEffect(() => {
-        if (event) {
-            setFormData({ ...event, color: event.color || colorPalette[0] });
-        } else {
-            setFormData(null);
-        }
+        setFormData(event); // 부모로부터 받은 event 객체를 그대로 상태로 사용
         setRecurrenceEnabled(!!event?.rrule);
     }, [event]);
 
@@ -137,12 +130,12 @@ const EventEditorModal: React.FC<{
 
     const handleDelete = () => {
         if (!isEditable || !formData) return;
-        const originalId = formData.id.startsWith('event-') ? formData.id.split('-').slice(0, 3).join('-') : formData.id;
-        onDelete(originalId);
+        onDelete(formData.id, formData.ownerType, formData.ownerId);
     };
 
+
     const handleParticipantStatusChange = (newStatus: EventParticipant['status']) => {
-        if (!formData || !isEditable) return;
+        if (!formData) return;
         const updatedParticipants = formData.participants?.map(p =>
             p.userId === CURRENT_USER_ID ? { ...p, status: newStatus } : p
         );
@@ -166,6 +159,10 @@ const EventEditorModal: React.FC<{
         const filteredTasks = formData.tasks?.filter(t => t.id !== taskId);
         updateFormData('tasks', filteredTasks);
     };
+    
+    const handleRecurrenceChange = useCallback((rrule: string | undefined) => {
+        updateFormData('rrule', rrule);
+    }, [updateFormData]);
 
     const ParticipantStatusIcon = ({ status }: { status: EventParticipant['status'] }) => {
         const iconMap = {
@@ -217,6 +214,7 @@ const EventEditorModal: React.FC<{
                         <label htmlFor='location'><FontAwesomeIcon icon={faMapMarkerAlt} /> 장소 또는 링크</label>
                     </div>
 
+                    {/* [수정] 그룹 일정일 때만 참석자 섹션 표시 */}
                     {formData.ownerType === 'GROUP' && (
                         <>
                             <div className={styles.sectionDivider} />
@@ -230,7 +228,6 @@ const EventEditorModal: React.FC<{
                                         <button
                                             className={`${styles.statusIconButton} ${currentUserStatus === 'ACCEPTED' ? styles.active : ''}`}
                                             onClick={() => handleParticipantStatusChange('ACCEPTED')}
-                                            disabled={!isEditable}
                                             data-status="accepted"
                                             title="참석"
                                         >
@@ -239,7 +236,6 @@ const EventEditorModal: React.FC<{
                                         <button
                                             className={`${styles.statusIconButton} ${currentUserStatus === 'TENTATIVE' ? styles.active : ''}`}
                                             onClick={() => handleParticipantStatusChange('TENTATIVE')}
-                                            disabled={!isEditable}
                                             data-status="tentative"
                                             title="미정"
                                         >
@@ -248,7 +244,6 @@ const EventEditorModal: React.FC<{
                                         <button
                                             className={`${styles.statusIconButton} ${currentUserStatus === 'DECLINED' ? styles.active : ''}`}
                                             onClick={() => handleParticipantStatusChange('DECLINED')}
-                                            disabled={!isEditable}
                                             data-status="declined"
                                             title="거절"
                                         >
@@ -311,7 +306,7 @@ const EventEditorModal: React.FC<{
                         </div>
                         {isRecurrenceEnabled && (
                             <div className={styles.recurrenceEditorWrapper}>
-                                <RecurrenceEditor rruleString={formData.rrule} onChange={(rrule) => updateFormData('rrule', rrule)} startDate={formData.start} modalKey={modalKey} isEditable={isEditable} />
+                                <RecurrenceEditor rruleString={formData.rrule} onChange={handleRecurrenceChange} startDate={formData.start} modalKey={modalKey} isEditable={isEditable} />
                             </div>
                         )}
                     </div>

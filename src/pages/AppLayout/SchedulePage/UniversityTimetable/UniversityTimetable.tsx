@@ -5,7 +5,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import type { Course } from '../types';
+// [수정] import 경로 및 타입 수정
+import type { Course } from '../../../../types';
 import styles from './UniversityTimetable.module.css';
 import panelStyles from '../SchedulePage.module.css';
 
@@ -34,7 +35,6 @@ const allMockCourses: Course[] = [
         location: '공학관 203호', color: '23, 168, 143'
     },
 ];
-// [수정] 색상 팔레트를 8개로 조정하여 그리드 균형 맞춤 나중에 hex 코드로 변경
 const colorPalette = [
     '88, 80, 230', '229, 9, 111', '23, 168, 143', '59, 130, 246',
     '232, 119, 45', '34, 197, 94', '234, 179, 8', '239, 68, 68'
@@ -108,7 +108,8 @@ const CourseModal: React.FC<{
     if (!form) return null;
 
     const change = (key: keyof Course, value: string) => {
-        setForm(prev => prev ? { ...prev, [key]: value } : null);
+        // [수정] prev 타입 명시
+        setForm((prev: Partial<Course> | null) => prev ? { ...prev, [key]: value } : null);
     };
 
     const nextStep = () => setStep(s => Math.min(s + 1, 4));
@@ -254,7 +255,7 @@ const CourseModal: React.FC<{
 };
 
 
-/* Main Component (수정 없음)*/
+/* Main Component */
 const UniversityTimetable: React.FC = () => {
     const [courses, setCourses] = useState<Course[]>(allMockCourses);
     const [semester, setSemester] = useState({ year: 2025, term: 1 });
@@ -306,10 +307,15 @@ const UniversityTimetable: React.FC = () => {
         const clash = courses.find(c => c.id !== d.id && c.semester === d.semester && c.day_of_week === d.day_of_week
             && ns < timeToMin(c.end_time) && ne > timeToMin(c.start_time));
         if (clash) { alert(`"${clash.course_name}" 강의와 시간이 겹칩니다.`); return; }
-        setCourses(p => d.id ? p.map(c => c.id === d.id ? d : c) : [...p, { ...d, id: Date.now() }]);
+        // [수정] prev 타입 명시
+        setCourses((prev: Course[]) => d.id ? prev.map(c => c.id === d.id ? d : c) : [...prev, { ...d, id: Date.now() }]);
         setModal(false);
     };
-    const deleteCourse = (id: number) => { setCourses(p => p.filter(c => c.id !== id)); setModal(false); };
+    const deleteCourse = (id: number) => { 
+        // [수정] prev 타입 명시
+        setCourses((prev: Course[]) => prev.filter(c => c.id !== id)); 
+        setModal(false); 
+    };
 
     const openAdd = () => {
         setEditing({ semester: semKey, day_of_week: 'MO', start_time: '09:00', end_time: '10:00', color: colorPalette[0] });
