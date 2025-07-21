@@ -1,4 +1,3 @@
-// src/pages/SchedulePage/types.ts
 
 /**
  * @typedef EventParticipant

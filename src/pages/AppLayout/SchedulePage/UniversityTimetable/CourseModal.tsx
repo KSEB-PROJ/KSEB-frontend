@@ -1,8 +1,7 @@
-// src/pages/SchedulePage/CourseModal.tsx
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
-import type { Course } from './types';
+import type { Course } from '../types';
 import styles from './UniversityTimetable.module.css';
 
 interface Props {

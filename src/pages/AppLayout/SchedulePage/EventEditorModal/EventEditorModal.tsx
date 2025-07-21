@@ -5,10 +5,10 @@ import {
     faSignature, faPlus, faTrash, faTasks, faLock, faUsers, faCheckCircle,
     faTimesCircle, faQuestionCircle, faPalette, faLayerGroup, faCheck
 } from '@fortawesome/free-solid-svg-icons';
-import type { ScheduleEvent, EventTask, EventParticipant } from './types';
+import type { ScheduleEvent, EventTask, EventParticipant } from '../types';
 import styles from './EventEditorModal.module.css';
-import RecurrenceEditor from './RecurrenceEditor';
-import DatePicker from '../../components/date-picker/DatePicker';
+import RecurrenceEditor from '../RecurrenceEditor/RecurrenceEditor';
+import DatePicker from '../../../../components/date-picker/DatePicker';
 
 // --- 색상 팔레트 옵션 ---
 const colorPalette = [

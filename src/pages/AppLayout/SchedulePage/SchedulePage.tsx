@@ -13,8 +13,8 @@ import 'dayjs/locale/ko';
 
 import styles from './SchedulePage.module.css';
 import type { ScheduleEvent, EventTask, EventParticipant } from './types';
-import EventEditorModal from './EventEditorModal';
-import UniversityTimetable from './UniversityTimetable';
+import EventEditorModal from './EventEditorModal/EventEditorModal';
+import UniversityTimetable from './UniversityTimetable/UniversityTimetable';
 
 dayjs.extend(isBetween);
 dayjs.locale('ko');
@@ -282,7 +282,7 @@ const SchedulePage: React.FC = () => {
             setCurrentTitle(calendarRef.current.getApi().view.title);
         }
     }, []);
-    
+
     // Todo 상태 아이콘을 반환하는 함수
     const TaskStatusIcon = ({ status }: { status: EventTask['status'] }) => {
         switch (status) {

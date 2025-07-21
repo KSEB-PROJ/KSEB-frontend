@@ -5,9 +5,9 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import type { Course } from './types';
+import type { Course } from '../types';
 import styles from './UniversityTimetable.module.css';
-import panelStyles from './SchedulePage.module.css';
+import panelStyles from '../SchedulePage.module.css';
 
 /* ----- 레이아웃 상수 ----- */
 const START_HOUR = 9;

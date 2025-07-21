@@ -12,9 +12,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faLayerGroup, faCalendarDays, faChevronLeft, faChevronRight, faCircle, faCircleHalfStroke, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 import 'dayjs/locale/ko';
 
-import schedulePageStyles from '../SchedulePage/SchedulePage.module.css';
-import type { ScheduleEvent, EventTask, EventParticipant } from '../SchedulePage/types';
-import EventEditorModal from '../SchedulePage/EventEditorModal';
+import schedulePageStyles from '../AppLayout/SchedulePage/SchedulePage.module.css';
+import type { ScheduleEvent, EventTask, EventParticipant } from '../AppLayout/SchedulePage/types';
+import EventEditorModal from '../AppLayout/SchedulePage/EventEditorModal/EventEditorModal';
 
 dayjs.extend(isBetween);
 dayjs.locale('ko');
@@ -92,14 +92,14 @@ const CalendarPage: React.FC = () => {
                 try {
                     const rule = new RRule({ ...RRule.parseString(event.rrule), dtstart: dayjs(event.start).toDate() });
                     const duration = dayjs(event.end).diff(dayjs(event.start));
-                    
+
                     return rule.between(viewStart, viewEnd).map(date => ({
                         ...eventStyleOptions,
                         id: getEventInstanceId(event, date),
                         start: date,
                         end: dayjs(date).add(duration, 'ms').toDate()
                     }));
-                } catch (e) { 
+                } catch (e) {
                     console.error("Error parsing rrule:", e);
                     return [];
                 }
@@ -120,7 +120,7 @@ const CalendarPage: React.FC = () => {
             </div>
         );
     };
-    
+
     const handleDateClick = (arg: DateClickArg) => {
         if (clickTimeout.current) {
             clearTimeout(clickTimeout.current);
@@ -233,7 +233,7 @@ const CalendarPage: React.FC = () => {
         calendarRef.current?.getApi()[action]();
         if (action === 'today') setAgendaDate(new Date());
     };
-    
+
     useEffect(() => {
         const api = calendarRef.current?.getApi();
         if (api) {
@@ -242,7 +242,7 @@ const CalendarPage: React.FC = () => {
             api.gotoDate('2025-07-01');
         }
     }, []);
-    
+
 
     const TaskStatusIcon = ({ status }: { status: EventTask['status'] }) => {
         const iconMap = { 'TODO': faCircle, 'DOING': faCircleHalfStroke, 'DONE': faCircleCheck };

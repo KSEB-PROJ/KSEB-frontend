@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import styles from './ProfilePage.module.css';
-import { updateUserProfile, changePassword, getCurrentUser } from '../../api/users';
+import { updateUserProfile, changePassword, getCurrentUser } from '../../../api/users';
 import { AxiosError } from 'axios';
-import type { UserResponse } from '../../types';
+import type { UserResponse } from '../../../types';
 
 const ProfilePage: React.FC = () => {
     const navigate = useNavigate();

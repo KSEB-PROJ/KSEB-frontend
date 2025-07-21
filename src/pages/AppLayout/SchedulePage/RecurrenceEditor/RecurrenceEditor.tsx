@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { RRule, rrulestr } from 'rrule';
 import dayjs from 'dayjs';
 import styles from './RecurrenceEditor.module.css';
-import DatePicker from '../../components/date-picker/DatePicker';
+import DatePicker from '../../../../components/date-picker/DatePicker';
 
 interface Props {
   rruleString?: string;
@@ -15,8 +15,8 @@ interface Props {
 }
 
 // ... 나머지 코드는 이전과 동일하나, isEditable prop을 사용하도록 수정 ...
-const RRuleWeekdays = [ RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR, RRule.SA, RRule.SU ];
-const weekdayMap = [ { value: 0, label: '월' }, { value: 1, label: '화' }, { value: 2, label: '수' }, { value: 3, label: '목' }, { value: 4, label: '금' }, { value: 5, label: '토' }, { value: 6, label: '일' } ];
+const RRuleWeekdays = [RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR, RRule.SA, RRule.SU];
+const weekdayMap = [{ value: 0, label: '월' }, { value: 1, label: '화' }, { value: 2, label: '수' }, { value: 3, label: '목' }, { value: 4, label: '금' }, { value: 5, label: '토' }, { value: 6, label: '일' }];
 
 const RecurrenceEditor: React.FC<Props> = ({ rruleString, onChange, startDate, modalKey, isEditable = true }) => {
   const [freq, setFreq] = useState<string>('NONE');

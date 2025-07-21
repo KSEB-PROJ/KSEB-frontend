@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import NoticePage from './NoticePage/NoticePage';
 import CalendarPage from './CalendarPage';
-import ChatPage from './ChatPage';
+import ChatPage from './ChatPage/ChatPage';
 import styles from './ChannelPage.module.css';
 import { getChannelDetail } from '../../api/channels';
 import type { Channel } from '../../types';
@@ -21,7 +21,7 @@ const ChannelLayout: React.FC = () => {
                 try {
                     const response = await getChannelDetail(parseInt(groupId), parseInt(channelId));
                     const data = response.data;
-                    
+
                     const formattedChannel: Channel = {
                         ...data,
                         description: data.description || `이곳은 ${data.name} 채널입니다.`
@@ -48,11 +48,11 @@ const ChannelLayout: React.FC = () => {
     if (error) {
         return <div style={{ padding: '2rem', color: 'red' }}>{error}</div>;
     }
-    
+
     if (!channel) {
         return <div>채널을 찾을 수 없습니다.</div>;
     }
-    
+
     const renderChannelPage = () => {
         switch (channel.channelTypeCode.toLowerCase()) {
             case 'notice':
@@ -65,7 +65,7 @@ const ChannelLayout: React.FC = () => {
                 return <div>알 수 없는 채널 타입입니다: {channel.channelTypeCode}</div>;
         }
     };
-    
+
     return (
         <div className={styles.channelContainer}>
             <header className={`${styles.channelHeader} ${channel.channelTypeCode.toLowerCase() === 'notice' ? styles.noticeHeader : ''}`}>

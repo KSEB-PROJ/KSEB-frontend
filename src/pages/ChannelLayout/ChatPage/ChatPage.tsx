@@ -9,9 +9,9 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { getMessages, sendMessage, updateMessage, deleteMessage } from '../../api/chat';
-import { promoteMessageToNotice } from '../../api/notice'; // 공지 등록 API import
-import type { ChatMessageResponse } from '../../types';
+import { getMessages, sendMessage, updateMessage, deleteMessage } from '../../../api/chat';
+import { promoteMessageToNotice } from '../../../api/notice'; // 공지 등록 API import
+import type { ChatMessageResponse } from '../../../types';
 import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
 
@@ -334,13 +334,13 @@ const ChatPage: React.FC = () => {
             error: <b>수정에 실패했습니다.</b>
         });
     };
-    
+
     // 메시지 공지 등록 핸들러
     const handlePromoteToNotice = (messageId: number) => {
-        if(!groupId || !channelId) return;
+        if (!groupId || !channelId) return;
 
         // confirm 창을 띄워 사용자에게 확인 받음
-        if(window.confirm('이 메시지를 공지로 등록하시겠습니까?')) {
+        if (window.confirm('이 메시지를 공지로 등록하시겠습니까?')) {
             const promise = promoteMessageToNotice(parseInt(groupId), parseInt(channelId), messageId, {});
             toast.promise(promise, {
                 loading: '공지로 등록 중...',

@@ -5,10 +5,10 @@ import AppLayout from './pages/AppLayout/AppLayout';
 import MainPage from './pages/MainPage/MainPage';
 import LoginPage from './pages/LoginForm/LoginForm';
 import RegisterPage from './pages/RegisterForm/RegisterForm';
-import SchedulePage from './pages/SchedulePage/SchedulePage';
-import FeedbackPage from './pages/FeedbackPage/FeedbackPage';
-import ProfilePage from './pages/ProfilePage/ProfilePage';
-import ChannelLayout from './pages/ChannelPage/ChannelLayout';
+import SchedulePage from './pages/AppLayout/SchedulePage/SchedulePage';
+import FeedbackPage from './pages/AppLayout/FeedbackPage/FeedbackPage';
+import ProfilePage from './pages/AppLayout/ProfilePage/ProfilePage';
+import ChannelLayout from './pages/ChannelLayout/ChannelLayout';
 
 const App: React.FC = () => {
   return (
