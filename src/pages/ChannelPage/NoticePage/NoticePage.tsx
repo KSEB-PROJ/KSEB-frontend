@@ -8,8 +8,11 @@ import DatePicker from '../../../components/date-picker/DatePicker';
 import { getNotices, createNotice, updateNotice, deleteNotice } from '../../../api/notice';
 import type { Notice, NoticeUpdateRequest } from '../../../types';
 import dayjs from 'dayjs';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 
-/*  Marker: 공지 왼쪽 타임라인 */
+/* Marker: 공지 왼쪽 타임라인 */
 /**
  * @description
  * 공지의 "진행/만료 상태"를 시각적으로 보여주는 타임라인 마커 컴포넌트
@@ -138,29 +141,24 @@ const NoticeItem: React.FC<{
     notice: Notice;
     isExpanded: boolean;
     isEditing: boolean;
+    isDeleting: boolean; // [추가] 삭제 확인 상태
     onToggleExpand: () => void;
     onStartEdit: () => void;
     onEndEdit: () => void;
-    onDelete: (noticeId: number) => void;
+    onDeleteClick: () => void; // [수정] 삭제 버튼 클릭 핸들러
+    onConfirmDelete: () => void; // [추가] 삭제 최종 확인 핸들러
+    onCancelDelete: () => void; // [추가] 삭제 취소 핸들러
     onUpdate: (noticeId: number, data: NoticeUpdateRequest) => void;
     showDate: boolean;
     isHovered: boolean;
     onMouseEnter: () => void;
 }> = ({
-    notice,
-    isExpanded,
-    isEditing,
-    onToggleExpand,
-    onStartEdit,
-    onEndEdit,
-    onDelete,
-    onUpdate,
-    showDate,
-    isHovered,
-    onMouseEnter,
+    notice, isExpanded, isEditing, isDeleting, onToggleExpand, onStartEdit, onEndEdit,
+    onDeleteClick, onConfirmDelete, onCancelDelete, onUpdate, showDate, isHovered, onMouseEnter,
 }) => {
     // 수정 가능한 content DOM ref
     const editableRef = useRef<HTMLDivElement>(null);
+    const markdownRef = useRef<HTMLDivElement>(null);
 
     // 내용이 2줄 이상 넘어갈 경우 '더보기' 버튼 표시
     const [isOverflowing, setOverflow] = useState(false);
@@ -172,26 +170,30 @@ const NoticeItem: React.FC<{
 
     // (1) 내용 오버플로우 체크 (읽기모드 & 확장X일 때)
     useLayoutEffect(() => {
-        if (editableRef.current && !isEditing) {
-            setOverflow(
-                editableRef.current.scrollHeight > editableRef.current.clientHeight
-            );
+        const targetRef = markdownRef.current;
+        if (targetRef && !isEditing) {
+            setOverflow(targetRef.scrollHeight > targetRef.clientHeight);
         }
     }, [notice.content, isExpanded, isEditing]);
 
+
     // (2) 편집 모드 진입 시, 만료일/커서 초기화
     useEffect(() => {
-        if (isEditing && editableRef.current) {
+        if (isEditing) {
+            if (editableRef.current) {
+                editableRef.current.innerText = notice.content;
+                editableRef.current.focus();
+                const range = document.createRange();
+                const sel = window.getSelection();
+                range.selectNodeContents(editableRef.current);
+                range.collapse(false);
+                sel?.removeAllRanges();
+                sel?.addRange(range);
+            }
             setEditedExpiresAt(notice.pinnedUntil ?? null);
-            editableRef.current.focus();
-            const range = document.createRange();
-            const sel = window.getSelection();
-            range.selectNodeContents(editableRef.current);
-            range.collapse(false);
-            sel?.removeAllRanges();
-            sel?.addRange(range);
         }
-    }, [isEditing, notice.pinnedUntil]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isEditing]);
 
     // (3) 저장 버튼 클릭 시, 수정한 내용 및 만료일 반영
     const handleUpdate = () => {
@@ -207,95 +209,78 @@ const NoticeItem: React.FC<{
     // 작성일 yyyy.MM.dd 형태
     const d = new Date(notice.createdAt);
     const dateStr = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
-    
-    const isPinned = notice.pinnedUntil !== undefined;
 
     return (
         <div
-            className={`${styles.timelineEntry} ${isPinned ? styles.pinned : ''}`}
+            className={`${styles.timelineEntry} ${notice.pinnedUntil !== undefined ? styles.pinned : ''}`}
             onMouseEnter={onMouseEnter}
         >
             <Marker notice={notice} isHovered={isHovered} />
             {showDate && <span className={styles.dateLabel}>{dateStr}</span>}
-
             <article className={styles.noticeCard}>
                 {/* 상단 버튼(수정/삭제) */}
                 <div className={styles.cardHeader}>
                     <div className={styles.authorGroup}>
                         <span className={styles.author}>{notice.userName}</span>
-                        {notice.originChannel && (
-                            <span className={styles.originChannel}>{notice.originChannel}</span>
-                        )}
+                        {notice.originChannel && <span className={styles.originChannel}>{notice.originChannel}</span>}
                     </div>
                     <div className={styles.buttonGroup}>
-                        {/* 수정 버튼 */}
-                        <button
-                            className={styles.iconButton}
-                            title="수정"
-                            onClick={onStartEdit}
-                        >
-                            <FontAwesomeIcon icon={faPen} />
-                        </button>
-                        {/* 삭제 버튼 */}
-                        <button
-                            className={styles.iconButton}
-                            title="삭제"
-                            onClick={() => onDelete(notice.id)}
-                        >
-                            <FontAwesomeIcon icon={faTrash} />
-                        </button>
+                        {isDeleting ? (
+                            <div className={styles.deleteConfirm}>
+                                <span className={styles.deleteConfirmText}>삭제?</span>
+                                <button onClick={onConfirmDelete} className={`${styles.iconButton} ${styles.confirmButton}`} title="확인">
+                                    <FontAwesomeIcon icon={faCheck} />
+                                </button>
+                                <button onClick={onCancelDelete} className={`${styles.iconButton} ${styles.cancelButton}`} title="취소">
+                                    <FontAwesomeIcon icon={faTimes} />
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <button className={styles.iconButton} title="수정" onClick={onStartEdit}>
+                                    <FontAwesomeIcon icon={faPen} />
+                                </button>
+                                <button className={styles.iconButton} title="삭제" onClick={onDeleteClick}>
+                                    <FontAwesomeIcon icon={faTrash} />
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
-
                 {/* 내용 영역 */}
                 <div
                     className={`${styles.contentWrapper} ${isEditing ? styles.editingWrapper : ''
                         }`}
                 >
-                    {/* 공지 본문 (수정/읽기 모드 모두 지원) */}
-                    <div
-                        ref={editableRef}
-                        className={`${styles.content} ${isExpanded && !isEditing ? styles.expandedContent : ''
-                            }`}
-                        contentEditable={isEditing}
-                        suppressContentEditableWarning
-                        data-placeholder="공지 내용을 입력하세요..."
-                    >
-                        {notice.content}
-                    </div>
-
+                    {isEditing ? (
+                        <div
+                            ref={editableRef}
+                            className={styles.content}
+                            contentEditable={true}
+                            suppressContentEditableWarning
+                            data-placeholder="공지 내용을 입력하세요..."
+                        />
+                    ) : (
+                        <div
+                            ref={markdownRef}
+                            className={`${styles.content} ${isExpanded ? styles.expandedContent : ''}`}
+                        >
+                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{notice.content}</ReactMarkdown>
+                        </div>
+                    )}
                     {/* (수정모드) 편집액션: 취소/만료일설정/저장 */}
                     {isEditing ? (
                         <div className={styles.editActions}>
                             {/* 취소 */}
-                            <button
-                                className={`${styles.actionButton} ${styles.cancelButton}`}
-                                title="취소"
-                                onClick={onEndEdit}
-                            >
-                                <FontAwesomeIcon icon={faTimes} />
-                            </button>
+                            <button className={`${styles.actionButton} ${styles.cancelButton}`} title="취소" onClick={onEndEdit}><FontAwesomeIcon icon={faTimes} /></button>
                             {/* 만료일 DatePicker(달력) */}
                             <DatePicker value={editedExpiresAt} onChange={setEditedExpiresAt} showTime />
                             {/* 저장 */}
-                            <button
-                                className={`${styles.actionButton} ${styles.saveButton}`}
-                                title="저장"
-                                onClick={handleUpdate}
-                            >
-                                <FontAwesomeIcon icon={faCheck} />
-                            </button>
+                            <button className={`${styles.actionButton} ${styles.saveButton}`} title="저장" onClick={handleUpdate}><FontAwesomeIcon icon={faCheck} /></button>
                         </div>
                     ) : (
                         // 읽기모드 && 오버플로우(2줄 초과)면 '더보기/간략히'
-                        (isOverflowing || isExpanded) && (
-                            <button
-                                className={styles.readMoreButton}
-                                onClick={onToggleExpand}
-                            >
-                                {isExpanded ? '간략히' : '더 보기'}
-                            </button>
-                        )
+                        (isOverflowing || isExpanded) && <button className={styles.readMoreButton} onClick={onToggleExpand}>{isExpanded ? '간략히' : '더 보기'}</button>
                     )}
                 </div>
             </article>
@@ -320,6 +305,9 @@ const NoticePage: React.FC = () => {
 
     // 편집중인 공지 id (하나만 가능)
     const [editingId, setEditingId] = useState<number | null>(null);
+
+    // [추가] 삭제 확인할 공지 ID 상태
+    const [deletingId, setDeletingId] = useState<number | null>(null);
 
     // 마우스 올린(hover) 공지 id
     const [hoveredId, setHoveredId] = useState<number | null>(null);
@@ -350,23 +338,24 @@ const NoticePage: React.FC = () => {
 
         fetchNotices();
     }, [groupId]);
-    
+
     /**
-     * 삭제 핸들러
+     * [수정] 삭제 최종 확인 핸들러
      */
-    const handleDelete = (id: number) => {
+    const handleConfirmDelete = (id: number) => {
         if (!groupId) return;
-        if (window.confirm('정말 이 공지를 삭제하시겠습니까?')) {
-            const promise = deleteNotice(parseInt(groupId), id);
-            toast.promise(promise, {
-                loading: '삭제 중...',
-                success: () => {
-                    setNotices(ns => ns.filter(n => n.id !== id));
-                    return <b>삭제되었습니다.</b>;
-                },
-                error: <b>삭제에 실패했습니다.</b>,
-            });
-        }
+        setDeletingId(null); // 확인 UI 닫기
+
+        const promise = deleteNotice(parseInt(groupId), id);
+        toast.promise(promise, {
+            loading: '삭제 중...',
+            success: () => {
+                // 성공 시 1초 후 새로고침
+                setTimeout(() => window.location.reload(), 1000);
+                return <b>삭제되었습니다. 잠시 후 새로고침됩니다.</b>;
+            },
+            error: <b>삭제에 실패했습니다.</b>,
+        });
     };
 
     /**
@@ -377,9 +366,10 @@ const NoticePage: React.FC = () => {
         const promise = updateNotice(parseInt(groupId), id, data);
         toast.promise(promise, {
             loading: '수정 중...',
-            success: (response) => {
-                setNotices(ns => ns.map(n => n.id === id ? response.data : n));
-                return <b>수정되었습니다.</b>;
+            success: () => {
+                // 성공 시 1초 후 새로고침
+                setTimeout(() => window.location.reload(), 1000);
+                return <b>수정되었습니다. 잠시 후 새로고침됩니다.</b>;
             },
             error: <b>수정에 실패했습니다.</b>,
         });
@@ -410,7 +400,7 @@ const NoticePage: React.FC = () => {
             toast.error('공지 내용을 입력해주세요.');
             return;
         }
-        
+
         const promise = createNotice(parseInt(groupId), {
             channelId: parseInt(channelId),
             content: newContent.trim(),
@@ -419,12 +409,10 @@ const NoticePage: React.FC = () => {
 
         toast.promise(promise, {
             loading: '공지 생성 중...',
-            success: (response) => {
-                setNotices(ns => [response.data, ...ns]);
-                setCreating(false);
-                setNewContent('');
-                setNewExpiresAt(null);
-                return <b>공지가 등록되었습니다.</b>;
+            success: () => {
+                // 성공 시 1초 후 새로고침
+                setTimeout(() => window.location.reload(), 1000);
+                return <b>공지가 등록되었습니다. 잠시 후 새로고침됩니다.</b>;
             },
             error: <b>공지 등록에 실패했습니다.</b>,
         });
@@ -443,7 +431,7 @@ const NoticePage: React.FC = () => {
         return <div className={styles.container}>공지사항을 불러오는 중...</div>
     }
 
-    /*  [화면 렌더링]  */
+    /* [화면 렌더링]  */
     return (
         <div className={styles.container}>
             <div className={styles.timeline}>
@@ -474,7 +462,7 @@ const NoticePage: React.FC = () => {
                                         <FontAwesomeIcon icon={faTimes} />
                                     </button>
                                     {/* 만료일 달력 */}
-                                    <DatePicker value={newExpiresAt} onChange={setNewExpiresAt} showTime/>
+                                    <DatePicker value={newExpiresAt} onChange={setNewExpiresAt} showTime />
                                     {/* 저장 버튼 */}
                                     <button
                                         className={`${styles.actionButton} ${styles.saveButton}`}
@@ -496,7 +484,7 @@ const NoticePage: React.FC = () => {
                     )}
                 </div>
 
-                {/*  공지 리스트 전체 출력  */}
+                {/* 공지 리스트 전체 출력  */}
                 {sorted.map((n, i) => {
                     // 이전 공지 날짜와 비교, 날짜 라벨 출력 여부 결정
                     const prevDate = i > 0 ? new Date(sorted[i - 1].createdAt).toLocaleDateString() : null;
@@ -507,10 +495,13 @@ const NoticePage: React.FC = () => {
                             notice={n}
                             isExpanded={expandedIds.has(n.id)}
                             isEditing={editingId === n.id}
+                            isDeleting={deletingId === n.id}
                             onToggleExpand={() => toggleExpand(n.id)}
                             onStartEdit={() => setEditingId(n.id)}
                             onEndEdit={() => setEditingId(null)}
-                            onDelete={handleDelete}
+                            onDeleteClick={() => setDeletingId(n.id)}
+                            onConfirmDelete={() => handleConfirmDelete(n.id)}
+                            onCancelDelete={() => setDeletingId(null)}
                             onUpdate={handleUpdate}
                             showDate={showDate}
                             isHovered={hoveredId === n.id}
