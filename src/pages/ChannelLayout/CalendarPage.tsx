@@ -57,7 +57,7 @@ const CalendarPage: React.FC = () => {
     const [currentTitle, setCurrentTitle] = useState('');
     const [events, setEvents] = useState<ScheduleEvent[]>([]);
     const [tasks, setTasks] = useState<EventTask[]>(mockTasks);
-    const [agendaDate, setAgendaDate] = useState(new Date());
+    const [agendaDate, setAgendaDate] = useState(new Date('2025-07-01'));
     const [viewRange, setViewRange] = useState({ start: new Date(), end: new Date() });
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,18 +67,24 @@ const CalendarPage: React.FC = () => {
         if (groupId) {
             const numericGroupId = parseInt(groupId, 10);
             const filteredEvents = allMockGroupEvents.filter(e => e.ownerId === numericGroupId);
-            setEvents(filteredEvents);
+
+            if (filteredEvents.length > 0) {
+                setEvents(filteredEvents);
+            } else {
+                console.warn(`[Dev] No mock events for groupId ${numericGroupId}. Displaying all mock group events.`);
+                setEvents(allMockGroupEvents);
+            }
         }
     }, [groupId]);
 
-    // 👇 [수정] 데이터가 누락되지 않도록 로직을 단순화하고 FullCalendar에 처리를 위임합니다.
     const processedEvents = useMemo((): EventInput[] => {
-        const viewStart = dayjs(viewRange.start).startOf('day').toDate();
-        const viewEnd = dayjs(viewRange.end).endOf('day').toDate();
+        const calendarEvents: EventInput[] = [];
+        const viewStart = dayjs(viewRange.start).startOf('day');
+        const viewEnd = dayjs(viewRange.end).endOf('day');
 
-        return events.flatMap(event => {
+        events.forEach(event => {
             const isEditable = true;
-            const eventStyleOptions: EventInput = {
+            const eventStyleOptions = {
                 ...event,
                 display: 'block',
                 classNames: [schedulePageStyles.calendarEvent],
@@ -91,23 +97,21 @@ const CalendarPage: React.FC = () => {
             if (event.rrule && event.end) {
                 try {
                     const rule = new RRule({ ...RRule.parseString(event.rrule), dtstart: dayjs(event.start).toDate() });
-                    const duration = dayjs(event.end).diff(dayjs(event.start));
-
-                    return rule.between(viewStart, viewEnd).map(date => ({
-                        ...eventStyleOptions,
-                        id: getEventInstanceId(event, date),
-                        start: date,
-                        end: dayjs(date).add(duration, 'ms').toDate()
-                    }));
-                } catch (e) {
-                    console.error("Error parsing rrule:", e);
-                    return [];
-                }
+                    rule.between(viewStart.toDate(), viewEnd.toDate()).forEach(date => {
+                        const duration = dayjs(event.end).diff(dayjs(event.start));
+                        const instanceStart = dayjs(date);
+                        const instanceEnd = instanceStart.add(duration, 'ms');
+                        calendarEvents.push({ ...eventStyleOptions, id: getEventInstanceId(event, date), start: instanceStart.toDate(), end: instanceEnd.toDate() });
+                    });
+                } catch (e) { console.error("Error parsing rrule:", e); }
             } else {
-                return [eventStyleOptions];
+                if (dayjs(event.start).isBefore(viewEnd) && dayjs(event.end ?? event.start).isAfter(viewStart)) {
+                    calendarEvents.push({ ...eventStyleOptions, id: event.id });
+                }
             }
         });
-    }, [events, viewRange.start, viewRange.end]);
+        return calendarEvents;
+    }, [events, viewRange]);
 
 
     const renderEventContent = (eventInfo: EventContentArg) => {
@@ -234,16 +238,6 @@ const CalendarPage: React.FC = () => {
         if (action === 'today') setAgendaDate(new Date());
     };
 
-    useEffect(() => {
-        const api = calendarRef.current?.getApi();
-        if (api) {
-            setCurrentTitle(api.view.title);
-            // FullCalendar가 준비되면 초기 날짜를 2025년 7월로 설정
-            api.gotoDate('2025-07-01');
-        }
-    }, []);
-
-
     const TaskStatusIcon = ({ status }: { status: EventTask['status'] }) => {
         const iconMap = { 'TODO': faCircle, 'DOING': faCircleHalfStroke, 'DONE': faCircleCheck };
         return <FontAwesomeIcon icon={iconMap[status]} title={status} />;
@@ -266,6 +260,7 @@ const CalendarPage: React.FC = () => {
                             ref={calendarRef}
                             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                             initialView="dayGridMonth"
+                            initialDate="2025-07-01"
                             headerToolbar={false}
                             dayMaxEvents={2}
                             events={processedEvents}
