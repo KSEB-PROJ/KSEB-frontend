@@ -1,34 +1,60 @@
-//axios로 연결
 import axios from 'axios';
-// 데이터 타입
-import type { UserUpdateRequest,UserResponse } from '../types';
+import type { UserUpdateRequest, PasswordChangeRequest, UserResponse } from '../types';
 
-/**
- * API 클라이언트 설정
- * - baseURL: 모든 요청에 기본적으로 사용될 서버 주소.
- * - withCredentials: 요청 시 쿠키 같은 인증 정보를 함께 보내주는 설정입니다.
- */
 const apiClient = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL,
+     // 로그인 시 받은 쿠키를 모든 요청에 자동으로 첨부.
     withCredentials: true,
 });
 
 /**
- * 이름 변경 API 요청 함수
- * @param newName - 새로운 이름을 담은 객체
- * @returns Promise - API 요청 결과
+ * 사용자 프로필 정보(이름)와 이미지 파일을 함께 업데이트하는 API
+ * @param name - 변경할 새로운 이름
+ * @param profileImg - 업로드할 프로필 이미지 File 객체
+ * @returns Promise<UserResponse>
  */
-export const me = (newName: UserUpdateRequest) => {
-    // apiClient를 사용해 '/users/me' 경로로 patch 방식의 api 전송
-    return apiClient.patch('/users/me', newName);
+export const updateUserProfile = (name?: string, profileImg?: File) => {
+    const formData = new FormData();
+
+    // 이름 데이터
+    const updateDto: UserUpdateRequest = { name: name || '' };
+    // DTO 객체를 JSON 문자열로 변환하고 Blob으로 감싸서 Content-Type을 지정.
+    formData.append('dto', new Blob([JSON.stringify(updateDto)], { type: "application/json" }));
+
+    // 이미지 파일 추가 (파일이 존재할 경우)
+    if (profileImg) {
+        formData.append('profileImg', profileImg);
+    }
+
+    return apiClient.patch<UserResponse>('/users/me', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+};
+
+
+/**
+ * 비밀번호 변경 API
+ * @param data - 현재 비밀번호와 새 비밀번호
+ * @returns Promise
+ */
+export const changePassword = (data: PasswordChangeRequest) => {
+    return apiClient.patch('/users/me/password', data);
 };
 
 /**
- * 프로필 이미지 변경 API 요청 함수
- * @param profileImg - 프로필 이미지를 담은 객체
- * @returns Promise - API 요청 결과
+ * 프로필 이미지 삭제 API
+ * @returns Promise<UserResponse>
  */
-export const profileImage  = (profileImg: UserResponse) => {
-    // apiClient를 사용해 '/auth/login' 경로로 patch 방식의 api 전송
-    return apiClient.patch('/users/me', profileImg);
+export const deleteProfileImage = () => {
+    return apiClient.delete<UserResponse>('/users/me/profile-image');
+};
+
+/**
+ * 현재 로그인된 사용자의 정보를 가져오는 API
+ * @returns Promise<UserResponse>
+ */
+export const getCurrentUser = () => {
+    return apiClient.get<UserResponse>('/users/me');
 };

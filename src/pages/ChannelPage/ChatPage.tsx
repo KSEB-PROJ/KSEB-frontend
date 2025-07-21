@@ -15,8 +15,8 @@ import type { ChatMessageResponse } from '../../types';
 import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
 
-// 백엔드 API의 기본 URL (vite 환경 변수에서 가져옴)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL.replace('/api', '');
+// 백엔드 API의 기본 URL
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace('/api', '');
 
 /**
  * [커스텀 훅] Textarea 자동 높이 조절
@@ -416,7 +416,12 @@ const ChatPage: React.FC = () => {
                                 >
                                     {!msg.isMine && (
                                         <div className={styles.authorInfo}>
-                                            <img src={"https://i.imgur.com/5cLDeXy.png"} className={styles.avatar} alt={msg.userName} />
+                                            <div className={styles.authorName}>{msg.userName}</div>
+                                            <img
+                                                src={msg.profileImgUrl ? `${API_BASE_URL}${msg.profileImgUrl}` : "https://i.imgur.com/5cLDeXy.png"}
+                                                className={styles.avatar}
+                                                alt={msg.userName}
+                                            />
                                         </div>
                                     )}
                                     <div className={styles.messageContent}>
@@ -479,7 +484,6 @@ const ChatPage: React.FC = () => {
                                             </div>
                                         ) : (
                                             <div className={styles.messageFragment}>
-                                                {!msg.isMine && <div className={styles.authorName}>{msg.userName}</div>}
                                                 {msg.content && <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{msg.content}</ReactMarkdown>}
                                                 <FileAttachment message={msg} onMediaClick={setViewerContent} />
                                             </div>

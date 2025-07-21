@@ -4,6 +4,7 @@ export interface ChatMessageResponse {
     channelId: number;
     userId: number;
     userName: string;
+    profileImgUrl?: string; // 프로필 이미지 URL 필드 추가
     content?: string;
     messageType: string;
     fileUrl?: string;

@@ -18,8 +18,7 @@ import { NavLink, useLocation, Link, useNavigate } from 'react-router-dom';
 import styles from './Sidebar.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    type IconDefinition, faHome, faCalendarAlt, faCommentDots, faVideo, faBullhorn, faAnglesLeft, faPlus,
-    faUser, faRobot, faGripVertical, faTimes, faSignOutAlt, faUserEdit, faCopy
+    type IconDefinition, faHome, faCalendarAlt, faCommentDots, faVideo, faBullhorn, faAnglesLeft, faPlus, faRobot, faGripVertical, faTimes, faSignOutAlt, faUserEdit, faCopy
 } from '@fortawesome/free-solid-svg-icons';
 import toast from 'react-hot-toast';
 
@@ -34,6 +33,8 @@ import type { Group, GroupListDto } from '../../types/group';
 import { logout } from '../../api/auth';
 import { getChannelsByGroup, createChannel } from '../../api/channels';
 import type { ChannelListDto } from '../../types/channel';
+import { getCurrentUser } from '../../api/users';
+import type { UserResponse } from '../../types';
 
 
 // 메뉴 아이템 타입 정의
@@ -109,6 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
     const [hoveredId, setHoveredId] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isChannelLoading, setIsChannelLoading] = useState(false);
+    const [currentUser, setCurrentUser] = useState<UserResponse | null>(null);
 
     const mainmenuRefs = useRef<(HTMLLIElement | null)[]>([]);
     const channelRefs = useRef<(HTMLLIElement | null)[]>([]);
@@ -219,6 +221,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    useEffect(() => {
+        const fetchCurrentUser = async () => {
+            try {
+                const response = await getCurrentUser();
+                setCurrentUser(response.data);
+            } catch (error) {
+                console.error("Failed to fetch user data:", error);
+            }
+        };
+
+        fetchCurrentUser();
     }, []);
 
     const handleLogout = async () => {
@@ -439,11 +454,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
                         onClick={() => setProfileMenuOpen(prev => !prev)}
                     >
                         <div className={styles.profileDetails}>
-                            <FontAwesomeIcon icon={faUser} className={styles.profileIcon} />
+                            <img
+                                src={currentUser?.profileImg ? `${import.meta.env.VITE_API_BASE_URL.replace('/api', '')}${currentUser.profileImg}` : `https://i.imgur.com/5cLDeXy.png`}
+                                alt="profile"
+                                className={styles.profileIcon}
+                                style={{ borderRadius: '50%', objectFit: 'cover', padding: 0 }}
+                            />
                             <div className={`${styles.profileTextContainer} ${isOpen ? styles.openText : ''}`}>
-                                <span className={styles.profileName}>User Name</span>
-                                <span className={styles.profileRole}>Online</span>
-                            </div>
+                                <span className={styles.profileName}>{currentUser?.name || 'User Name'}</span>
+                                <span className={styles.profileRole}>{currentUser?.email || 'email@example.com'}</span>                            </div>
                         </div>
                     </div>
                     {isProfileMenuOpen && (
