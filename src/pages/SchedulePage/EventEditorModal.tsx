@@ -1,67 +1,98 @@
-// src/pages/SchedulePage/EventEditorModal.tsx
-
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faClock, faSync, faMapMarkerAlt, faAlignLeft, faCalendarDay, faTimes,
-  faSignature, faPlus, faTrash, faTasks, faLock, faUsers, faCheckCircle, 
-  faTimesCircle, faQuestionCircle, faPalette, faLayerGroup, faCheck
+    faClock, faSync, faMapMarkerAlt, faAlignLeft, faCalendarDay, faTimes,
+    faSignature, faPlus, faTrash, faTasks, faLock, faUsers, faCheckCircle,
+    faTimesCircle, faQuestionCircle, faPalette, faLayerGroup, faCheck
 } from '@fortawesome/free-solid-svg-icons';
 import type { ScheduleEvent, EventTask, EventParticipant } from './types';
 import styles from './EventEditorModal.module.css';
 import RecurrenceEditor from './RecurrenceEditor';
 import DatePicker from '../../components/date-picker/DatePicker';
 
-// --- [새로 추가] 색상 팔레트 옵션 ---
+// --- 색상 팔레트 옵션 ---
 const colorPalette = [
-    '#8400ff', '#14d6ae', '#ec4899', '#3b82f6', 
-    '#f97316', '#22c55e', '#eab308', '#06b6d4', 
+    '#8400ff', '#14d6ae', '#ec4899', '#3b82f6',
+    '#f97316', '#22c55e', '#eab308', '#06b6d4',
     '#ef4444', '#6366f1', '#a855f7', '#10b981'
 ];
+// [추가] 현재 사용자 ID (임시 Mock 데이터)
+const CURRENT_USER_ID = 123;
 
-// 할 일 아이템 컴포넌트
+// TaskItem 컴포넌트 로직
 const TaskItem: React.FC<{
-  task: EventTask;
-  onUpdate: (field: keyof EventTask, value: EventTask[keyof EventTask]) => void;
-  onDelete: () => void;
-  isEditable: boolean;
+    task: EventTask;
+    onUpdate: (field: keyof EventTask, value: EventTask[keyof EventTask]) => void;
+    onDelete: () => void;
+    isEditable: boolean;
 }> = ({ task, onUpdate, onDelete, isEditable }) => {
-  const statuses: EventTask['status'][] = ['TODO', 'DOING', 'DONE'];
+    const statuses: EventTask['status'][] = ['TODO', 'DOING', 'DONE'];
+    const [isEditing, setIsEditing] = useState(false);
+    const textRef = useRef<HTMLDivElement>(null);
 
-  return (
-    <li className={styles.taskItem}>
-      <div className={styles.statusPillGroup}>
-        {statuses.map(status => (
-          <button
-            key={status}
-            data-status={status}
-            className={`${styles.statusPill} ${task.status === status ? styles.active : ''}`}
-            onClick={() => onUpdate('status', status)}
-            disabled={!isEditable}
-          >
-            {status === 'TODO' && '할 일'}
-            {status === 'DOING' && '진행중'}
-            {status === 'DONE' && '완료'}
-          </button>
-        ))}
-      </div>
-      <input
-        type="text"
-        value={task.title}
-        onChange={(e) => onUpdate('title', e.target.value)}
-        className={styles.taskTitleInput}
-        placeholder="할 일 내용 입력..."
-        disabled={!isEditable}
-      />
-      <div className={styles.taskDueDate}>
-        <DatePicker value={task.dueDate} onChange={(date) => onUpdate('dueDate', date)} showTime isEditable={isEditable} />
-      </div>
-      <button onClick={onDelete} className={styles.deleteTaskButton} title="삭제" disabled={!isEditable}>
-        <FontAwesomeIcon icon={faTrash} />
-      </button>
-    </li>
-  );
+    useEffect(() => {
+        if (isEditing && textRef.current) {
+            textRef.current.focus();
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(textRef.current);
+            range.collapse(false);
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+        }
+    }, [isEditing]);
+
+    const handleBlur = () => {
+        setIsEditing(false);
+        if (textRef.current) {
+            onUpdate('title', textRef.current.innerText);
+        }
+    };
+
+    return (
+        <li className={styles.taskItem}>
+            <div className={styles.statusPillGroup}>
+                {statuses.map(status => (
+                    <button
+                        key={status}
+                        data-status={status}
+                        className={`${styles.statusPill} ${task.status === status ? styles.active : ''}`}
+                        onClick={() => onUpdate('status', status)}
+                        disabled={!isEditable}
+                    >
+                        {status === 'TODO' && '할 일'}
+                        {status === 'DOING' && '진행중'}
+                        {status === 'DONE' && '완료'}
+                    </button>
+                ))}
+            </div>
+            <div
+                ref={textRef}
+                className={`${styles.taskTitle} ${isEditing ? styles.editing : ''}`}
+                contentEditable={isEditable}
+                onClick={() => isEditable && setIsEditing(true)}
+                onBlur={handleBlur}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.currentTarget.blur();
+                    }
+                }}
+                suppressContentEditableWarning={true}
+            >
+                {task.title || (isEditable ? '' : '새로운 할 일')}
+            </div>
+
+            <div className={styles.taskDueDate}>
+                <DatePicker value={task.dueDate} onChange={(date) => onUpdate('dueDate', date)} showTime isEditable={isEditable} />
+            </div>
+            <button onClick={onDelete} className={styles.deleteTaskButton} title="삭제" disabled={!isEditable}>
+                <FontAwesomeIcon icon={faTrash} />
+            </button>
+        </li>
+    );
 };
+
 
 // 메인 모달 컴포넌트
 const EventEditorModal: React.FC<{
@@ -78,7 +109,6 @@ const EventEditorModal: React.FC<{
     const modalKey = useMemo(() => (event?.id || 'new') + '-' + Date.now(), [event]);
 
     useEffect(() => {
-        // [수정] 모달이 열릴 때 기본 색상 설정
         if (event) {
             setFormData({ ...event, color: event.color || colorPalette[0] });
         } else {
@@ -93,17 +123,16 @@ const EventEditorModal: React.FC<{
     }, [onClose]);
 
     const updateFormData = useCallback((field: keyof ScheduleEvent, value: ScheduleEvent[keyof ScheduleEvent]) => {
-        if (!isEditable) return;
         setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
-    }, [isEditable]);
+    }, []);
 
     const handleSave = () => {
-        if (!isEditable || !formData) return;
-        if (formData.title.trim()) {
-            onSave(formData);
-        } else {
+        if (!formData) return;
+        if (isEditable && !formData.title.trim()) {
             alert('일정 제목을 입력해주세요.');
+            return;
         }
+        onSave(formData);
     };
 
     const handleDelete = () => {
@@ -111,7 +140,15 @@ const EventEditorModal: React.FC<{
         const originalId = formData.id.startsWith('event-') ? formData.id.split('-').slice(0, 3).join('-') : formData.id;
         onDelete(originalId);
     };
-    
+
+    const handleParticipantStatusChange = (newStatus: EventParticipant['status']) => {
+        if (!formData || !isEditable) return;
+        const updatedParticipants = formData.participants?.map(p =>
+            p.userId === CURRENT_USER_ID ? { ...p, status: newStatus } : p
+        );
+        updateFormData('participants', updatedParticipants);
+    };
+
     const handleAddTask = () => {
         if (!formData || !isEditable) return;
         const newTask: EventTask = { id: Date.now(), eventId: formData.id, title: '', status: 'TODO', dueDate: null };
@@ -130,37 +167,45 @@ const EventEditorModal: React.FC<{
         updateFormData('tasks', filteredTasks);
     };
 
-    const ParticipantStatusIcon = ({ status }: { status: EventParticipant['status']}) => {
-        switch (status) {
-            case 'ACCEPTED': return <FontAwesomeIcon icon={faCheckCircle} className={styles.statusAccepted} title="참석" />;
-            case 'DECLINED': return <FontAwesomeIcon icon={faTimesCircle} className={styles.statusDeclined} title="거절" />;
-            case 'TENTATIVE': return <FontAwesomeIcon icon={faQuestionCircle} className={styles.statusTentative} title="미정" />;
-            default: return null;
-        }
+    const ParticipantStatusIcon = ({ status }: { status: EventParticipant['status'] }) => {
+        const iconMap = {
+            'ACCEPTED': { icon: faCheckCircle, className: styles.statusAccepted, title: "참석" },
+            'DECLINED': { icon: faTimesCircle, className: styles.statusDeclined, title: "거절" },
+            'TENTATIVE': { icon: faQuestionCircle, className: styles.statusTentative, title: "미정" }
+        };
+        const { icon, className, title } = iconMap[status];
+        return <FontAwesomeIcon icon={icon} className={className} title={title} />;
     };
-    
+
     if (!formData) return null;
+
+    const currentUserStatus = formData.participants?.find(p => p.userId === CURRENT_USER_ID)?.status;
 
     return (
         <div className={`${styles.overlay} ${isClosing ? styles.closing : ''}`} onClick={handleClose}>
-            <div 
-                className={`${styles.modalContainer} ${isClosing ? styles.closing : ''}`} 
+            <div
+                className={`${styles.modalContainer} ${isClosing ? styles.closing : ''}`}
                 onClick={(e) => e.stopPropagation()}
                 style={{ '--event-theme-color': formData.color } as React.CSSProperties}
             >
-
                 <header className={styles.header}>
-                    <h2>{String(formData.id).startsWith('temp-') ? '새 일정 추가' : '일정 정보'}</h2>
-                    {/* --- [수정] 읽기전용/그룹 정보 배지 --- */}
-                    {!isEditable && !formData.groupName && <div className={styles.readOnlyBadge}><FontAwesomeIcon icon={faLock} /> 읽기 전용</div>}
-                    {formData.ownerType === 'GROUP' && formData.groupName && (
-                        <div className={styles.groupInfoBadge} style={{'--group-color': formData.color?.replace('#', '')} as React.CSSProperties}>
-                            <FontAwesomeIcon icon={faLayerGroup} />
-                            <span>{formData.groupName}</span>
-                        </div>
-                    )}
-                    <button className={styles.closeButton} onClick={handleClose}><FontAwesomeIcon icon={faTimes} /></button>
+                    <div className={styles.headerLeft}>
+                        {formData.ownerType === 'GROUP' && formData.groupName && (
+                            <div className={styles.groupInfoBadge}>
+                                <FontAwesomeIcon icon={faLayerGroup} />
+                                <span>{formData.groupName}</span>
+                            </div>
+                        )}
+                    </div>
+                    <div className={styles.headerCenter}>
+                        <h2>{String(formData.id).startsWith('temp-') ? '새 일정 추가' : '일정 정보'}</h2>
+                    </div>
+                    <div className={styles.headerRight}>
+                        {!isEditable && <div className={styles.readOnlyBadge}><FontAwesomeIcon icon={faLock} /> 읽기 전용</div>}
+                        <button className={styles.closeButton} onClick={handleClose}><FontAwesomeIcon icon={faTimes} /></button>
+                    </div>
                 </header>
+
 
                 <main className={styles.content}>
                     <div className={styles.inputGroup}>
@@ -176,9 +221,40 @@ const EventEditorModal: React.FC<{
                         <>
                             <div className={styles.sectionDivider} />
                             <div className={styles.participantSection}>
-                                <div className={styles.textareaLabel}>
-                                    <FontAwesomeIcon icon={faUsers} />
-                                    <span>참여자 ({formData.participants?.length || 0})</span>
+                                <div className={styles.participantHeader}>
+                                    <div className={styles.textareaLabel}>
+                                        <FontAwesomeIcon icon={faUsers} />
+                                        <span>참여자 ({formData.participants?.length || 0})</span>
+                                    </div>
+                                    <div className={styles.statusIconGroup}>
+                                        <button
+                                            className={`${styles.statusIconButton} ${currentUserStatus === 'ACCEPTED' ? styles.active : ''}`}
+                                            onClick={() => handleParticipantStatusChange('ACCEPTED')}
+                                            disabled={!isEditable}
+                                            data-status="accepted"
+                                            title="참석"
+                                        >
+                                            <FontAwesomeIcon icon={faCheckCircle} />
+                                        </button>
+                                        <button
+                                            className={`${styles.statusIconButton} ${currentUserStatus === 'TENTATIVE' ? styles.active : ''}`}
+                                            onClick={() => handleParticipantStatusChange('TENTATIVE')}
+                                            disabled={!isEditable}
+                                            data-status="tentative"
+                                            title="미정"
+                                        >
+                                            <FontAwesomeIcon icon={faQuestionCircle} />
+                                        </button>
+                                        <button
+                                            className={`${styles.statusIconButton} ${currentUserStatus === 'DECLINED' ? styles.active : ''}`}
+                                            onClick={() => handleParticipantStatusChange('DECLINED')}
+                                            disabled={!isEditable}
+                                            data-status="declined"
+                                            title="거절"
+                                        >
+                                            <FontAwesomeIcon icon={faTimesCircle} />
+                                        </button>
+                                    </div>
                                 </div>
                                 <ul className={styles.participantList}>
                                     {formData.participants?.map(p => (
@@ -192,29 +268,30 @@ const EventEditorModal: React.FC<{
                         </>
                     )}
 
+
                     <div className={styles.sectionDivider} />
-                    
+
                     <div className={styles.controlSection}>
                         <div className={styles.controlRow}>
-                          <div className={styles.controlLabel}><FontAwesomeIcon icon={faClock} />시간</div>
-                          <div className={styles.controlContent}>
-                            <div className={styles.datePickerGroup}>
-                              <DatePicker value={formData.start} onChange={(iso) => updateFormData('start', iso || '')} showTime={!formData.allDay} isEditable={isEditable}/>
-                              {!formData.allDay && formData.end && <span className={styles.timeSeparator}>~</span>}
-                              {!formData.allDay && formData.end && <DatePicker value={formData.end} onChange={(iso) => updateFormData('end', iso || '')} showTime={true} isEditable={isEditable}/>}
+                            <div className={styles.controlLabel}><FontAwesomeIcon icon={faClock} />시간</div>
+                            <div className={styles.controlContent}>
+                                <div className={styles.datePickerGroup}>
+                                    <DatePicker value={formData.start} onChange={(iso) => updateFormData('start', iso || '')} showTime={!formData.allDay} isEditable={isEditable} />
+                                    {!formData.allDay && formData.end && <span className={styles.timeSeparator}>~</span>}
+                                    {!formData.allDay && formData.end && <DatePicker value={formData.end} onChange={(iso) => updateFormData('end', iso || '')} showTime={true} isEditable={isEditable} />}
+                                </div>
                             </div>
-                          </div>
                         </div>
                         <div className={styles.controlRow}>
-                          <div className={styles.controlLabel}><FontAwesomeIcon icon={faCalendarDay} />하루 종일</div>
-                          <div className={styles.controlContent}>
-                            <div className={styles.switchControl}>
-                              <label className={styles.switch}>
-                                <input type="checkbox" checked={!!formData.allDay} onChange={e => updateFormData('allDay', e.target.checked)} disabled={!isEditable}/>
-                                <span className={styles.slider}></span>
-                              </label>
+                            <div className={styles.controlLabel}><FontAwesomeIcon icon={faCalendarDay} />하루 종일</div>
+                            <div className={styles.controlContent}>
+                                <div className={styles.switchControl}>
+                                    <label className={styles.switch}>
+                                        <input type="checkbox" checked={!!formData.allDay} onChange={e => updateFormData('allDay', e.target.checked)} disabled={!isEditable} />
+                                        <span className={styles.slider}></span>
+                                    </label>
+                                </div>
                             </div>
-                          </div>
                         </div>
                     </div>
 
@@ -225,21 +302,20 @@ const EventEditorModal: React.FC<{
                             <div className={styles.controlLabel}><FontAwesomeIcon icon={faSync} />반복</div>
                             <div className={styles.controlContent}>
                                 <div className={styles.switchControl}>
-                                <label className={styles.switch}>
-                                    <input type="checkbox" checked={isRecurrenceEnabled} onChange={e => isEditable && setRecurrenceEnabled(e.target.checked)} disabled={!isEditable}/>
-                                    <span className={styles.slider}></span>
-                                </label>
+                                    <label className={styles.switch}>
+                                        <input type="checkbox" checked={isRecurrenceEnabled} onChange={e => isEditable && setRecurrenceEnabled(e.target.checked)} disabled={!isEditable} />
+                                        <span className={styles.slider}></span>
+                                    </label>
                                 </div>
                             </div>
                         </div>
                         {isRecurrenceEnabled && (
                             <div className={styles.recurrenceEditorWrapper}>
-                                <RecurrenceEditor rruleString={formData.rrule} onChange={(rrule) => updateFormData('rrule', rrule)} startDate={formData.start} modalKey={modalKey} isEditable={isEditable}/>
+                                <RecurrenceEditor rruleString={formData.rrule} onChange={(rrule) => updateFormData('rrule', rrule)} startDate={formData.start} modalKey={modalKey} isEditable={isEditable} />
                             </div>
                         )}
                     </div>
-                    
-                    {/* --- [새로 추가] 색상 선택 섹션 --- */}
+
                     <div className={styles.sectionDivider} />
                     <div className={styles.controlSection}>
                         <div className={styles.controlRow}>
@@ -255,7 +331,7 @@ const EventEditorModal: React.FC<{
                                             onClick={() => updateFormData('color', color)}
                                             disabled={!isEditable}
                                         >
-                                          {formData.color === color && <FontAwesomeIcon icon={faCheck} />}
+                                            {formData.color === color && <FontAwesomeIcon icon={faCheck} />}
                                         </button>
                                     ))}
                                 </div>
@@ -263,28 +339,29 @@ const EventEditorModal: React.FC<{
                         </div>
                     </div>
 
-
                     <div className={styles.sectionDivider} />
 
                     <div className={styles.todoSection}>
                         <div className={styles.textareaLabel}>
                             <FontAwesomeIcon icon={faTasks} />
-                            <span>To-Do List</span>
+                            <span>To-Do List ({formData.tasks?.length || 0})</span>
                         </div>
-                        <ul className={styles.todoList}>
-                        {(formData.tasks || []).map(task => (
-                            <TaskItem 
-                                key={task.id} 
-                                task={task} 
-                                onUpdate={(field, value) => handleUpdateTask(task.id, field, value)} 
-                                onDelete={() => handleDeleteTask(task.id)} 
-                                isEditable={isEditable}
-                            />
-                        ))}
-                        </ul>
-                        {isEditable && 
+                        <div className={styles.todoListContainer}>
+                            <ul className={styles.todoList}>
+                                {(formData.tasks || []).map(task => (
+                                    <TaskItem
+                                        key={task.id}
+                                        task={task}
+                                        onUpdate={(field, value) => handleUpdateTask(task.id, field, value)}
+                                        onDelete={() => handleDeleteTask(task.id)}
+                                        isEditable={isEditable}
+                                    />
+                                ))}
+                            </ul>
+                        </div>
+                        {isEditable &&
                             <button onClick={handleAddTask} className={styles.addTaskButton}>
-                            <FontAwesomeIcon icon={faPlus} /> 할 일 추가
+                                <FontAwesomeIcon icon={faPlus} /> 할 일 추가
                             </button>
                         }
                     </div>
@@ -296,20 +373,22 @@ const EventEditorModal: React.FC<{
                             <FontAwesomeIcon icon={faAlignLeft} />
                             <span>설명</span>
                         </label>
-                        <textarea id="description" value={formData.description || ''} onChange={(e) => updateFormData('description', e.target.value)} className={styles.textarea} placeholder="설명 및 메모 추가..." disabled={!isEditable}/>
+                        <textarea id="description" value={formData.description || ''} onChange={(e) => updateFormData('description', e.target.value)} className={styles.textarea} placeholder="설명 및 메모 추가..." disabled={!isEditable} />
                     </div>
                 </main>
-                
+
                 <footer className={styles.footer}>
-                     {(isEditable && !String(formData.id).startsWith('temp-')) ? (
+                    {(isEditable && !String(formData.id).startsWith('temp-')) ? (
                         <button onClick={handleDelete} className={styles.deleteButton}>삭제</button>
-                     ) : <div></div>}
+                    ) : <div></div>}
                     <div style={{ flexGrow: 1 }} />
                     <div className={styles.actionButtons}>
                         <button onClick={handleClose} className={`${styles.button} ${styles.cancelButton}`}>
-                            {isEditable ? '취소' : '닫기'}
+                            취소
                         </button>
-                        {isEditable && <button onClick={handleSave} className={`${styles.button} ${styles.saveButton}`}>저장</button>}
+                        {isEditable && (
+                            <button onClick={handleSave} className={`${styles.button} ${styles.saveButton}`}>저장</button>
+                        )}
                     </div>
                 </footer>
             </div>

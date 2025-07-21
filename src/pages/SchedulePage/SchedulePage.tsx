@@ -8,7 +8,7 @@ import { RRule } from 'rrule';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faCheck, faLayerGroup, faUser, faCalendarDays, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faLayerGroup, faUser, faCalendarDays, faChevronLeft, faChevronRight, faCircle, faCircleHalfStroke, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 import 'dayjs/locale/ko';
 
 import styles from './SchedulePage.module.css';
@@ -43,7 +43,7 @@ const mockEvents: ScheduleEvent[] = [
 ];
 
 const mockTasks: EventTask[] = [
-    { id: 1, eventId: 'event-user-1', title: '요구사항 정의서 작성', status: 'DONE', dueDate: '2025-07-16T11:00:00Z' },
+    { id: 1, eventId: 'event-user-1', title: '요구사항 정의서 작성 및 전체적인 기능 명세 구체화 작업', status: 'DONE', dueDate: '2025-07-16T11:00:00Z' },
     { id: 2, eventId: 'event-user-1', title: 'Figma 와이어프레임 제작', status: 'DOING', dueDate: '2025-07-16T18:00:00Z' },
     { id: 3, eventId: 'event-group-1-20250718', title: '발표 PPT 초안 완성', status: 'TODO', dueDate: null },
     { id: 4, eventId: 'event-group-1-20250718', title: '시연 시나리오 구체화', status: 'TODO', dueDate: null },
@@ -110,34 +110,22 @@ const SchedulePage: React.FC = () => {
         const color = props.color || '#888';
         const ownerIcon = props.ownerType === 'USER' ? faUser : faLayerGroup;
 
-        if (eventInfo.event.allDay) {
-            return (
-                <div
-                    className={`${styles.eventContent} ${styles.allDayStyle}`}
-                    style={{ '--event-bg-color': `${color}33` } as React.CSSProperties}
-                >
-                    <FontAwesomeIcon icon={ownerIcon} className={styles.eventIcon} style={{ color }} />
-                    <span className={styles.eventTitle}>{eventInfo.event.title}</span>
-                </div>
-            );
-        }
-        else {
-            return (
-                <div className={`${styles.eventContent} ${styles.timedStyle}`}>
-                    <div className={styles.iconWrapper} style={{ backgroundColor: color }}>
-                        <FontAwesomeIcon icon={ownerIcon} className={styles.eventIcon} />
-                    </div>
-                    <span className={styles.eventTitle}>{eventInfo.event.title}</span>
-                </div>
-            );
-        }
+        return (
+            <div
+                className={`${styles.eventContent} ${eventInfo.event.allDay ? styles.allDayStyle : styles.timedStyle}`}
+                style={{ '--event-theme-color': color } as React.CSSProperties}
+            >
+                <FontAwesomeIcon icon={ownerIcon} className={styles.eventIcon} />
+                <span className={styles.eventTitle}>{eventInfo.event.title}</span>
+            </div>
+        );
     };
 
     const handleMoreLinkClick = (arg: MoreLinkArg) => {
         const dateStr = dayjs(arg.date).format('YYYY-MM-DD');
         setExpandedDate(prev => (prev === dateStr ? null : dateStr));
     };
-    
+
     const handleDateClick = (arg: DateClickArg) => {
         if (clickTimeout.current) {
             clearTimeout(clickTimeout.current);
@@ -253,8 +241,12 @@ const SchedulePage: React.FC = () => {
     const handleToggleTask = (taskId: number) => {
         setTasks(prev => prev.map(t => {
             if (t.id === taskId) {
-                const nextStatus = { TODO: 'DOING', DOING: 'DONE', DONE: 'TODO' };
-                return { ...t, status: nextStatus[t.status] as 'TODO' | 'DOING' | 'DONE' };
+                const nextStatus: { [key in EventTask['status']]: EventTask['status'] } = {
+                    'TODO': 'DOING',
+                    'DOING': 'DONE',
+                    'DONE': 'TODO'
+                };
+                return { ...t, status: nextStatus[t.status] };
             }
             return t;
         }));
@@ -285,16 +277,21 @@ const SchedulePage: React.FC = () => {
         }
     };
 
-    const changeView = (newView: 'dayGridMonth' | 'timeGridWeek') => {
-        calendarRef.current?.getApi().changeView(newView);
-        setViewType(newView);
-    };
-
     useEffect(() => {
         if (calendarRef.current) {
             setCurrentTitle(calendarRef.current.getApi().view.title);
         }
     }, []);
+    
+    // Todo 상태 아이콘을 반환하는 함수
+    const TaskStatusIcon = ({ status }: { status: EventTask['status'] }) => {
+        switch (status) {
+            case 'TODO': return <FontAwesomeIcon icon={faCircle} title="할 일" />;
+            case 'DOING': return <FontAwesomeIcon icon={faCircleHalfStroke} title="진행중" />;
+            case 'DONE': return <FontAwesomeIcon icon={faCircleCheck} title="완료" />;
+            default: return null;
+        }
+    };
 
     return (
         <>
@@ -302,16 +299,12 @@ const SchedulePage: React.FC = () => {
                 <div className={styles.leftColumn}>
                     <div className={`${styles.panel} ${styles.calendarWrapper}`}>
                         <div className={styles.calendarHeader}>
-                            <span className={styles.headerTitle}>{currentTitle}</span>
-                            <div className={styles.floatingControls}>
-                                <button onClick={() => handleNav('prev')} className={styles.navArrow} title="이전"><FontAwesomeIcon icon={faChevronLeft} /></button>
-                                <button onClick={() => handleNav('next')} className={styles.navArrow} title="다음"><FontAwesomeIcon icon={faChevronRight} /></button>
+                            <div className={styles.headerControls}>
+                                <button onClick={() => handleNav('prev')} className={styles.navButton} title="이전 달"><FontAwesomeIcon icon={faChevronLeft} /></button>
+                                <span className={styles.headerTitle}>{currentTitle}</span>
+                                <button onClick={() => handleNav('next')} className={styles.navButton} title="다음 달"><FontAwesomeIcon icon={faChevronRight} /></button>
                             </div>
-                            <div className={styles.viewSwitcher}>
-                                <button className={viewType === 'dayGridMonth' ? styles.active : ''} onClick={() => changeView('dayGridMonth')}>Month</button>
-                                <button className={viewType === 'timeGridWeek' ? styles.active : ''} onClick={() => changeView('timeGridWeek')}>Week</button>
-                                <button onClick={() => handleNav('today')} className={styles.todayButton}>Today</button>
-                            </div>
+                            <button onClick={() => handleNav('today')} className={styles.todayButton}>Today</button>
                         </div>
                         <div className={styles.calendarContent}>
                             <FullCalendar
@@ -347,8 +340,9 @@ const SchedulePage: React.FC = () => {
                     </div>
                     <UniversityTimetable />
                 </div>
-                <div className={styles.rightColumn}>
-                    <div className={`${styles.panel} ${styles.agendaContainer}`}>
+                {/* key 속성을 추가해 내용이 바뀔 때마다 애니메이션 재실행 */}
+                <div className={styles.rightColumn} key={dayjs(agendaDate).format('YYYYMMDD')}>
+                    <div className={`${styles.panel} ${styles.agendaContainer} ${styles.animatedCard}`}>
                         <div className={styles.panelHeader}>
                             <h3><FontAwesomeIcon icon={faCalendarDays} /> Today's Agenda</h3>
                             <span className={styles.date}>{dayjs(agendaDate).format('MM월 DD일 dddd')}</span>
@@ -380,7 +374,7 @@ const SchedulePage: React.FC = () => {
                             ) : (<div className={styles.noItems}>오늘 등록된 일정이 없습니다.</div>)}
                         </div>
                     </div>
-                    <div className={`${styles.panel} ${styles.todoContainer}`}>
+                    <div className={`${styles.panel} ${styles.todoContainer} ${styles.animatedCard}`} style={{ animationDelay: '0.1s' }}>
                         <div className={styles.panelHeader}>
                             <h3>To-Do List</h3>
                             <span className={styles.todoHeaderSubtitle}>{selectedEvent?.title || '일정 선택 필요'}</span>
@@ -390,11 +384,11 @@ const SchedulePage: React.FC = () => {
                                 (selectedEvent?.extendedProps as ScheduleEvent)?.isEditable ? (
                                     <ul className={styles.todoList}>
                                         {selectedEventTasks.length > 0 ? selectedEventTasks.map(task => (
-                                            <li key={task.id} className={`${styles.todoItem} ${task.status === 'DONE' ? styles.completed : ''}`}>
-                                                <span className={styles.todoCheckbox} onClick={() => handleToggleTask(task.id)}>
-                                                    <FontAwesomeIcon icon={faCheck} size="xs" />
-                                                </span>
-                                                <span className={styles.todoTitle}>{task.title}</span>
+                                            <li key={task.id} className={`${styles.todoItem} ${styles[task.status.toLowerCase()]}`}>
+                                                <button className={styles.todoStatusButton} onClick={() => handleToggleTask(task.id)}>
+                                                    <TaskStatusIcon status={task.status} />
+                                                </button>
+                                                <span className={styles.todoTitle} title={task.title}>{task.title}</span>
                                             </li>
                                         )) : <div className={styles.noItems}>할 일이 없습니다.<br />새로운 할 일을 추가해보세요.</div>}
                                     </ul>

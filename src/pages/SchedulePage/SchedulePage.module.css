@@ -1,5 +1,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Inter:wght@400;500;600&display=swap');
 
+/* 카드 등장 애니메이션 */
+@keyframes card-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animatedCard {
+    animation: card-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+}
+
 /* --- Page Layout --- */
 .pageContainer {
     display: flex;
@@ -136,31 +152,27 @@
     height: 100%;
 }
 
-/* --- Floating Toolbar --- */
+/* --- 캘린더 헤더 --- */
 .calendarHeader {
     display: flex;
     align-items: center;
-    justify-content: center;
-    position: relative;
+    justify-content: space-between;
     padding: 0.5rem 0.25rem 1.5rem;
 }
 
+.headerControls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
 .headerTitle {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 600;
     color: #f4f4f5;
-    text-align: center;
 }
 
-.floatingControls {
-    position: absolute;
-    top: 0.5rem;
-    left: 0.25rem;
-    display: flex;
-    gap: 0.5rem;
-}
-
-.navArrow {
+.navButton {
     background: #27272A;
     border: 1px solid #3f3f46;
     color: #a1a1aa;
@@ -171,105 +183,74 @@
     transition: all 0.2s;
 }
 
-.navArrow:hover {
+.navButton:hover {
     background-color: #3f3f46;
     color: #fff;
-}
-
-.viewSwitcher {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.25rem;
-    display: flex;
-    background-color: #27272A;
-    border: 1px solid #3f3f46;
-    border-radius: 8px;
-    padding: 4px;
-    gap: 4px;
-}
-
-.viewSwitcher button {
-    background: transparent;
-    border: none;
-    color: #a1a1aa;
-    font-size: 0.9rem;
-    font-weight: 500;
-    padding: 0.4rem 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s;
+    transform: scale(1.05);
 }
 
 .todayButton {
-    background: transparent;
-    border: none;
+    background-color: transparent;
+    border: 1px solid #52525b;
     color: #a1a1aa;
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 0.5rem 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
 }
-
-.viewSwitcher button.active {
+.todayButton:hover {
     background-color: rgb(var(--group-color-rgb, 88, 80, 230));
+    border-color: rgb(var(--group-color-rgb, 88, 80, 230));
     color: #fff;
+    box-shadow: 0 0 15px rgba(var(--group-color-rgb, 88, 80, 230), 0.4);
 }
 
-.viewSwitcher .todayButton:hover {
-    color: rgb(var(--group-color-rgb, 88, 80, 230));
-}
 
-/* --- [수정] 이벤트 렌더링 V3 --- */
 .calendarEvent {
     cursor: pointer;
     padding: 2px 4px;
     height: 100%;
 }
 
-/* 공통 이벤트 콘텐츠 스타일 */
 .eventContent {
     display: flex;
     align-items: center;
     gap: 6px;
     height: 100%;
-    padding: 3px 6px;
-    border-radius: 4px;
+    padding: 4px 8px;
+    border-radius: 6px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
     font-size: 0.8rem;
     font-weight: 500;
-    transition: filter 0.2s ease;
-}
-.eventContent:hover {
-    filter: brightness(1.2);
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
 }
 
-/* 종일(All-day) 일정 스타일 */
+.eventContent:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    border-color: var(--event-theme-color);
+}
+
 .allDayStyle {
-    background-color: var(--event-bg-color); /* 투명도 적용된 배경 */
+    background-color: color-mix(in srgb, var(--event-theme-color) 20%, transparent);
     color: #fff;
 }
-
-/* 시간 지정 일정 스타일 */
 .timedStyle {
     color: #e0e0e0;
 }
+.timedStyle .eventIcon {
+    color: var(--event-theme-color);
+}
 
-/* 공통 아이콘 스타일 */
 .eventIcon {
     font-size: 0.7rem;
     flex-shrink: 0;
 }
-
-/* 시간 지정 일정의 아이콘 배경(원) */
-.iconWrapper {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    flex-shrink: 0;
-    color: #fff;
-}
-
-/* 이벤트 제목 스타일 */
 .eventTitle {
     white-space: nowrap;
     overflow: hidden;
@@ -287,19 +268,16 @@
     box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
     background-color: #2a2a2e !important;
 }
-
 .dayExpanded :global(.fc-daygrid-day-frame) {
     min-height: 250px;
     overflow-y: auto;
     overflow-x: hidden;
 }
-
 .dayExpanded :global(.fc-daygrid-day-events) {
     flex-grow: 1;
     flex-wrap: wrap;
     align-content: flex-start;
 }
-
 .dayExpanded :global(.fc-daygrid-more-link) {
     display: none;
 }
@@ -390,44 +368,35 @@
     font-size: 0.95rem;
 }
 
-.todoCheckbox {
-    width: 18px;
-    height: 18px;
-    background-color: #3f3f46;
-    border: 1px solid #52525b;
-    border-radius: 4px;
+.todoStatusButton {
+    background: none;
+    border: none;
+    color: #71717a;
+    width: 20px;
+    height: 20px;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     transition: all 0.2s;
     flex-shrink: 0;
+    font-size: 1.1rem;
 }
 
-.todoItem.completed .todoCheckbox,
-.todoCheckbox:hover {
-    background-color: rgb(var(--group-color));
-    border-color: rgb(var(--group-color));
+.todoItem.doing .todoStatusButton {
+    color: #60a5fa;
 }
-
-.todoCheckbox svg {
-    color: #18181B;
-    font-size: 12px;
-    opacity: 0;
-    transform: scale(0.5);
-    transition: all 0.2s;
+.todoItem.done .todoStatusButton {
+    color: #4ade80;
 }
-
-.todoItem.completed .todoCheckbox svg {
-    opacity: 1;
-    transform: scale(1);
+.todoStatusButton:hover {
+    transform: scale(1.2);
 }
 
 .todoTitle {
     transition: color 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-
-.todoItem.completed .todoTitle {
+.todoItem.done .todoTitle {
     text-decoration: line-through;
     color: #71717a;
 }
@@ -436,7 +405,10 @@
     margin-top: auto;
     padding-top: 1rem;
     border-top: 1px solid #3f3f46;
-    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 .addTodoInput {
@@ -444,11 +416,12 @@
     border: 1px solid #3f3f46;
     color: #fff;
     width: 100%;
-    padding: 0.8rem 0.8rem 0.8rem 2.5rem;
+    padding: 0.8rem 1rem; /* 좌우 패딩만 필요 */
     outline: none;
     font-size: 0.95rem;
     border-radius: 8px;
     transition: background-color 0.2s, border-color 0.2s;
+    flex-grow: 1; /* 남은 공간 모두 차지 */
 }
 
 .addTodoInput::placeholder {
@@ -461,12 +434,9 @@
 }
 
 .addTodoIcon {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
     color: #a1a1aa;
     transition: color 0.2s;
+    font-size: 1.1rem;
 }
 
 .addTodoWrapper:focus-within .addTodoIcon {
