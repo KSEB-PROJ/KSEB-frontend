@@ -476,3 +476,44 @@
     width: 100%;
     padding-left: 50px;
 }
+
+/* --- [추가] 삭제 확인 UI 스타일 --- */
+@keyframes fadeInConfirm {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.deleteConfirm {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    background-color: rgba(239, 68, 68, 0.1);
+    padding: 2px 4px;
+    border-radius: 6px;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    animation: fadeInConfirm 0.3s ease;
+}
+
+.deleteConfirmText {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #f87171; /* Light red */
+    margin: 0 0.5rem 0 0.25rem;
+}
+
+.deleteConfirm .iconButton {
+    opacity: 1; /* 항상 보이도록 */
+}
+
+.deleteConfirm .confirmButton {
+    color: #f87171;
+}
+.deleteConfirm .confirmButton:hover {
+    background-color: #ef4444;
+    color: #fff;
+}
+
+.deleteConfirm .cancelButton:hover {
+    background-color: #555;
+    color: #fff;
+}
