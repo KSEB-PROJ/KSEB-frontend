@@ -1,416 +1,714 @@
-/* ChannelLayout.tsx 전체 컨테이너 */
-.channelContainer {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    padding: 2rem;
-    box-sizing: border-box;
+/* --- 키프레임 애니메이션 정의 --- */
+
+/* 메시지가 아래에서 위로 나타나는 애니메이션 */
+@keyframes message-in {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-/* 채널 헤더 (채널명, 설명) */
-.channelHeader {
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid #333;
-    margin-bottom: 1.5rem;
+/* 액션 툴바가 아래에서 위로 나타나는 애니메이션 */
+@keyframes action-toolbar-in {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.channelHeader h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    margin: 0 0 0.5rem 0;
-    color: #fff;
+/* 수정 UI가 팝업처럼 나타나는 애니메이션 */
+@keyframes pop-in-edit {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
-/* 그룹 색상을 헤더 # 태그 앞에 적용 */
-.channelHeader h1::before {
-    content: "# ";
-    color: rgb(var(--group-color));
-    transition: color 0.4s ease;
+/* 삭제 확인 UI가 페이드인 되는 애니메이션 */
+@keyframes fade-in-confirm {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
-.channelHeader p {
-    font-size: 1rem;
-    color: #a0a0a0;
-    margin: 0;
-}
-
-.channelBody {
-    flex-grow: 1;
-    overflow-y: auto;
-}
-
-/* NoticePage.tsx 스타일 */
-.noticeItem {
-    background-color: #1c1c1c;
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-    border-left: 4px solid rgb(var(--group-color));
-    transition: border-color 0.4s ease;
-}
-
-.noticeItem h3 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.2rem;
-}
-
-.noticeMeta {
-    font-size: 0.8rem;
-    color: #888;
-    margin-bottom: 1rem;
-}
-
-/* CalendarPage.tsx, ChatPage.tsx 공통 콘텐츠 영역 */
-.channelContent {
-    color: #e0e0e0;
-}
-
-
-/* ChatPage.tsx 스타일 */
+/* --- 전체 채팅 컨테이너 --- */
 .chatContainer {
     display: flex;
     flex-direction: column;
     height: 100%;
+    padding: 0 2rem;
 }
 
+/* --- 채팅 메시지가 표시되는 영역 --- */
 .chatArea {
-    overflow-x: hidden;
-    flex-direction: column;
-    display: flex;
     flex-grow: 1;
+    /* 남은 공간을 모두 차지 */
     overflow-y: auto;
-    scrollbar-width: thin;
-    padding-right: 1rem; /* 스크롤바 공간 */
-}
-.pinIcon{
-    color: #bcbcbc;
-    font-size: 14px;
-    opacity: 0;
-}
-.pinIcon:hover{
-    animation: downloadPop 0.7s cubic-bezier(.25,.46,.45,.94);
-    filter: drop-shadow( 0 0 2px rgb(var(--group-color)))
-            drop-shadow( 0 0 2px rgb(var(--group-color)))
-            drop-shadow( 0 0 2px rgb(var(--group-color)));
-    opacity: 1;
-}
-.trashcanIcon{
-    color: #bcbcbc;
-    font-size: 14px;
-    opacity: 0;
-}
-.pencilIcon{
-    color: #bcbcbc;
-    font-size: 14px;
-    opacity: 0;
-}
-.pinned {
-    color: #ffbc00;
-    filter: drop-shadow(0 0 3px #ffdb7d);
-    opacity: 1 !important;
-    
-}
-.iconLeft{
-    position: absolute;
-    gap: 6px;
-    z-index: 10;
-    margin-left: 0;
-    margin-right: 8px;
-    top: -16px;
-    left: 3px;
-    align-self: flex-start;
-    display: flex;
-
-
-}
-.iconRight{
-    position: absolute;
-    gap: 6px;
-    z-index: 10;
-    left: 8px;
-    top: -16px;
-    align-self: flex-end;
-    display: flex;
-
-}
-.myMessage:hover .iconLeft, .otherMessage:hover .iconRight{
-    display: flex;
-    opacity: 1;
-}
-.myMessage:hover .pinIcon, .otherMessage:hover .pinIcon,
-.myMessage:hover .trashcanIcon, .myMessage:hover .pencilIcon,
-.fileBox:hover .trashcanIcon, .image:hover .trashcanIcon{
-    opacity: 1;
-}
-.myMessageRow {
-    justify-content: flex-end;
-}
-.otherMessageRow {
-    justify-content: flex-start;
-}
- .EditInput{
-    min-height: 32px;
-    border-radius: 10px;
-    border: 1px solid rgb(var(--group-color));
-    background: #bcbcbc;
-    color: rgb(var(--group-color));
-    outline: none;
-    box-sizing: border-box;
-    font-family: inherit;
-} 
-.chatMessage {
-    display: block;
-    max-width: 80%;
-    padding: 9px 10px;
-    border-radius: 18px;
-    margin-top: 15px;
+    /* 내용이 많아지면 스크롤 */
+    padding: 2rem 1rem;
     position: relative;
-    top: -5px;
-    line-height: 1.5;
-    word-break: break-all; 
-}
-.chatMessageRow {
-    display: flex;
-    align-items: flex-end;
-    margin-bottom: 2px;
-    width: 100%;
-    position: relative;
-    top: 3px;
 }
 
-.chatTimemyMessage {
+/* 채팅 영역 중앙의 타임라인 선 */
+.chatArea::before {
+    content: '';
     position: absolute;
-    right: 12px;         
-    bottom: 7px;
-    font-size: 11px;
-    color: #bcbcbc;
-    opacity: 0.7;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    background: linear-gradient(to bottom, transparent, #333, transparent);
+    z-index: 0;
 }
-.chatTimeotherMessage {
-    position: absolute;
-    left: 12px;     
-    bottom: 7px;
-    font-size: 11px;
-    color: #bcbcbc;
-    opacity: 0.7;
-}
-.timeLeft {
-    font-size: 11px;
-    color: #bcbcbc;
-    margin-left: 0;
-    margin-right: 6px;
-    margin-top:-8px;
-    align-self: flex-end;
-    text-align: right;
-    order: 1;
-}
-.timeRight {
-    font-size: 11px;
-    color: #bcbcbc;
-    margin-right: 6px;
-    margin-left: 0;
-    margin-top:-8px;
-    top: 15px;
-    text-align: left;
-    align-self: flex-end;
-    order: 3;
-}
-.myMessage {
-    /* 내 메시지 배경 색상을 그룹 색상으로 변경 */
-    background-color: rgb(var(--group-color));
-    color: #fff;
-    margin-left: 0;
-    margin-right: 0;
-    border-bottom-right-radius: 4px;
-    transition: background-color 0.4s ease;
-    order: 2;
+
+/* --- 날짜 구분선 --- */
+.dateSeparator {
+    text-align: center;
+    margin: 2rem 0;
     position: relative;
-    word-break: break-all; 
+    z-index: 1;
+    animation: message-in 0.5s ease-out forwards;
 }
-.username{
-    font-size: 11px;
-    color: #888;
+
+.dateSeparator span {
+    background-color: #121212;
+    color: #777;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.25rem 1rem;
+    border-radius: 12px;
+    border: 1px solid #333;
 }
-.profileArea {
-    margin-right: 6px;
-    order: 1;
+
+/* --- 개별 메시지 한 줄 --- */
+.messageRow {
     display: flex;
-    align-items: center;
+    margin-bottom: 0.5rem;
+    position: relative;
+    animation: message-in 0.4s ease-out forwards;
+    padding: 4px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.messageRow:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* --- 메시지 내용 전체 (아바타 제외) --- */
+.messageContent {
+    display: flex;
     flex-direction: column;
+    position: relative;
+    max-width: calc(100% - 36px - 1.5rem);
 }
-.profileImg{
-    margin-right: 0;
-    margin-left: 0;
+
+/* --- 작성자 정보 (아바타) --- */
+.authorInfo {
+    flex-shrink: 0;
+    text-align: center;
+    align-self: flex-start;
+}
+
+.authorName {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #ccc;
+    margin-bottom: 0.25rem;
+}
+
+.avatar {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: #36393f;
     object-fit: cover;
-}
-.otherMessage {
-    background-color: #3a3a3a;
-    color: #e0e0e0;
-    margin-right: 0;
-    margin-left: 0;
-    border-bottom-left-radius: 4px;
-    position: relative;
-    order: 2;
-    bottom: 15px;
-    word-break: break-all; 
+    background: #333;
+    transition: transform 0.2s ease;
 }
 
-.chatWrapper {
-    display: flex;
-    padding: 1rem 0;
-    border-top: 1px solid #333;
-    background-color: #121212; /* 배경색 통일 */
-    flex-direction: column;
+.messageRow:hover .avatar {
+    transform: scale(1.1);
 }
-.chatInputWrapper {
-    display: flex;
-    padding: 0 0;
-    background-color: #121212; /* 배경색 통일 */
-    flex-direction: row;
-}
-.image{
-    max-width: 200px; 
-    max-height: 300px;
-    width: auto;
-    height: auto;
+
+/* --- 실제 메시지 말풍선 --- */
+.messageFragment {
+    position: relative;
+    width: fit-content;
+    max-width: 100%;
+    padding: 0.8rem 1.2rem;
     border-radius: 12px;
-    object-fit: cover;
-    margin: 4px 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    display: block;
-    order: 2;
+    word-break: break-word;
+    line-height: 1.6;
 }
-.downloading {
-  animation: downloadPop 0.7s cubic-bezier(.25,.46,.45,.94);
-  box-shadow: 0 0 18px 2px rgb(var(--group-color));
+
+/* 말풍선 꼬리 선 */
+.messageFragment::before {
+    content: '';
+    position: absolute;
+    top: 18px;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 2px;
+    background-color: #333;
 }
-.fileInChatList{
-    display: row;
-    flex-wrap: wrap;
-    margin:0px;
-    margin-top: 3px;
-    gap: 3px;
-    order: 2;
+
+/* --- 타임스탬프 (시간 표시) --- */
+.timestamp {
+    font-size: 0.75rem;
+    color: #666;
+    padding: 0.25rem 0.2rem;
 }
-.fileBox {
+
+/* --- 다른 사람 메시지 스타일 --- */
+.otherMessage {
+    justify-content: flex-start;
+}
+
+.otherMessage .authorInfo {
+    margin-right: 1.5rem;
+}
+
+.otherMessage .messageContent {
+    align-items: flex-start;
+}
+
+.otherMessage .messageFragment {
+    background-color: #2a2a2e;
+    border: 1px solid #3a3a3e;
+}
+
+.otherMessage .messageFragment::before {
+    left: -20px;
+}
+
+.otherMessage .timestamp {
+    text-align: left;
+}
+
+/* --- 내 메시지 스타일 --- */
+.myMessage {
+    justify-content: flex-end;
+}
+
+.myMessage .messageContent {
+    align-items: flex-end;
+}
+
+.myMessage .messageFragment {
+    background: linear-gradient(135deg, rgba(var(--group-color), 0.3), rgba(var(--group-color), 0.15));
+    border: 1px solid rgba(var(--group-color), 0.4);
+    color: #fff;
+}
+
+.myMessage .messageFragment::before {
+    right: -20px;
+}
+
+.myMessage .timestamp {
+    text-align: right;
+}
+
+/* --- 메시지 액션 버튼 (수정, 삭제 등) 툴바 --- */
+.messageActions {
+    position: absolute;
+    bottom: 100%;
+    margin-bottom: 6px;
+    z-index: 10;
+    display: flex;
+    gap: 4px;
+    background: rgba(30, 30, 32, 0.8);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease-out;
+    animation: action-toolbar-in 0.2s ease-out;
+}
+
+/* 메시지에 마우스 올렸을 때 툴바 표시 */
+.messageRow:hover .messageActions,
+.messageActions:hover {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.myMessage .messageActions {
+    right: 0;
+}
+
+.otherMessage .messageActions {
+    left: 0;
+}
+
+.messageActions button {
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    transition: all 0.2s;
+}
+
+.messageActions button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+/* --- 파일/미디어 첨부 UI --- */
+.mediaContainer {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+    cursor: pointer;
+}
+
+.mediaOverlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
     display: flex;
     align-items: center;
-    background: #23272a;
-    color: #aaa;
-    gap: 8px; 
-    padding: 6px 10px;          
-    border-radius: 6px;
-    margin: 5px;
-    max-width: 300px;  
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
 }
 
-.fileName {
-    font-size: 13px;
-    margin-top: 5px;
-    text-align: center;
-    word-break: break-all;
+.mediaContainer:hover .mediaOverlay {
+    opacity: 1;
 }
-.fileIcon { color: #aaa; }
-.fileIcon--image { color: orange; }
-.fileIcon--video { color: green; }
-.fileIcon--audio { color: blue; }
-.fileIcon--pdf   { color: red; }
-.fileIcon--word  { color: #2364ae; }
-.fileIcon--excel { color: #1ea97c; }
-.fileIcon--etc   { color: #999; }
+
+.viewAction {
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+.imagePreview,
+.videoPreview {
+    display: block;
+    max-width: 320px;
+    max-height: 320px;
+    width: auto;
+    height: auto;
+    border-radius: 8px;
+    transition: transform 0.2s ease;
+}
+
+.mediaContainer:hover .imagePreview,
+.mediaContainer:hover .videoPreview {
+    transform: scale(1.05);
+}
+
+.fileAttachmentWrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin-top: 8px;
+    text-decoration: none;
+    color: inherit;
+    transition: background-color 0.2s ease;
+}
+
+.fileAttachmentWrapper:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.fileAttachmentIcon {
+    font-size: 1.5rem;
+    color: #999;
+}
+
+.fileAttachmentInfo {
+    flex-grow: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.fileAttachmentName {
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #ddd;
+}
+
+.fileAttachmentMeta {
+    font-size: 0.75rem;
+    color: #777;
+    text-transform: uppercase;
+}
+
+.fileAttachmentDownloadBtn {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ccc;
+    border: none;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: all 0.2s ease;
+}
+
+.fileAttachmentDownloadBtn:hover {
+    background-color: rgb(var(--group-color));
+    color: #fff;
+    transform: scale(1.1);
+}
+
+
+/* --- 하단 메시지 입력창 영역 --- */
+.chatInputArea {
+    padding: 1rem 0;
+    border-top: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+}
+
+.inputRow {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+}
+
 .chatInput {
     flex-grow: 1;
-    min-width: 60px;
     background-color: #2c2c2c;
     border: 1px solid #444;
     border-radius: 20px;
-    padding: 10px 15px;
+    padding: 10px 20px;
     color: #fff;
     outline: none;
-    margin-right: 10px;
-    margin-left: 10px;
-    overflow: hidden;
+    resize: none;
+    font-family: inherit;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s, height 0.2s ease;
+    max-height: 150px;
+    overflow-y: auto;
 }
 
-.attachButton {
+.chatInput:focus {
+    border-color: rgb(var(--group-color));
+    box-shadow: 0 0 10px rgba(var(--group-color), 0.3);
+}
+
+.sendButton {
+    width: 44px;
+    height: 44px;
     flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    color: #aaa;
-    width: 40px;
-    height: 40px;
     border-radius: 50%;
+    border: none;
+    background: rgb(var(--group-color));
+    color: #fff;
+    font-size: 1.2rem;
     cursor: pointer;
     transition: all 0.2s ease;
-    overflow: hidden;
-    flex-wrap: wrap;
+    display: grid;
+    place-items: center;
 }
+
+.sendButton:hover {
+    filter: brightness(1.2);
+    transform: scale(1.05);
+}
+
+.sendButton:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* --- 첨부 파일 미리보기 --- */
 .filePreviewList {
     display: flex;
     flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-bottom: 1rem;
+    width: 100%;
 }
-.attachButton:hover {
-    background: var(--theme-color);
-    color: #fff;
-    transform: rotate(90deg) scale(1.1);
-}
+
 .filePreviewItem {
     position: relative;
-    padding: 8px 18px;
-    background: rgb(var(--group-color));
+    padding: 0.5rem 1rem;
+    background: #333;
     border-radius: 16px;
-    border: 1px solid #d0d2d6;
-    font-size: 14px;
-    margin: 3px;
-    font-weight: 500;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    font-size: 0.8rem;
+    color: #ddd;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .removeFileButton {
     position: absolute;
     top: -5px;
     right: -5px;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     background: #fff;
-    color: #da1414;
-    border: 1px solid #ddd;
-    border-radius: 50%;
-    font-size: 13px;
-    line-height: 18px;
-    cursor: pointer;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-}
-
-.sendButton {
-    flex-shrink: 0;
-    position: relative;
-    /* 전송 버튼 배경 색상을 그룹 색상으로 변경 */
-    background-color: rgb(var(--group-color));
-    color: #fff;
+    color: #333;
     border: none;
     border-radius: 50%;
-    width: 40px;
-    overflow: hidden;
-    height: 40px;
     cursor: pointer;
-    font-size: 1rem;
-    transition: background-color 0.4s ease;
-}
-.sendButton:hover .sendIcon {
-    transform: translate(2px, -4px);
-}
-.sendButton:active .sendIcon {
-  transform: translate(20px, -20px) rotate(20deg) scale(1.1);
-  opacity: 0;
-  transition: transform 0.3s, opacity 0.3s;
+    font-size: 0.7rem;
+    display: grid;
+    place-items: center;
 }
 
+/* --- 메시지 수정 UI (디자인 개편) --- */
+.editContainer {
+    width: 100%;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    background-color: rgba(30, 30, 32, 0.7);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(var(--group-color), 0.3);
+    border-radius: 12px;
+    padding: 0.75rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    animation: pop-in-edit 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+}
+
+.editInput {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #fff;
+    outline: none;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 1rem;
+    padding: 0.25rem;
+    resize: none;
+    transition: height 0.2s ease, border-bottom-color 0.2s ease;
+    max-height: 200px;
+    overflow-y: auto;
+    border-bottom: 2px solid transparent;
+}
+
+.editInput:focus {
+    border-bottom-color: rgb(var(--group-color));
+}
+
+.editActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.editButton {
+    background: none;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: grid;
+    place-items: center;
+}
+
+.cancelButton {
+    background-color: #3a3a3e;
+    color: #a0a0a0;
+}
+
+.cancelButton:hover {
+    background-color: #ef4444;
+    color: #fff;
+}
+
+.saveButton {
+    background-color: #22c55e;
+    color: #fff;
+}
+
+.saveButton:hover {
+    filter: brightness(1.15);
+    transform: scale(1.05);
+}
+
+/* --- 삭제 확인 UI --- */
+.deleteConfirmContainer {
+    display: flex;
+    gap: 4px;
+    animation: fade-in-confirm 0.3s;
+}
+
+.confirmButton {
+    background-color: #ef4444 !important;
+    color: #fff !important;
+}
+
+.confirmButton:hover {
+    filter: brightness(1.15);
+}
+
+.cancelConfirmButton {
+    background-color: #4a4a4e !important;
+    color: #ccc !important;
+}
+
+.cancelConfirmButton:hover {
+    background-color: #5a5a5e !important;
+}
+
+
+/* --- 미디어 뷰어 (이미지/비디오 크게보기) --- */
+.mediaViewerOverlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    animation: fadeIn 0.3s ease;
+}
+
+.mediaViewerOverlay.closing {
+    animation: fadeOut 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+.viewerHeader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    color: #fff;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), transparent);
+    z-index: 2001;
+}
+
+.viewerActions {
+    display: flex;
+    gap: 1rem;
+}
+
+.viewerButton {
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.viewerButton:hover {
+    color: #fff;
+    transform: scale(1.1);
+}
+
+.mediaViewerContent {
+    max-width: 90vw;
+    max-height: 85vh;
+    animation: zoomIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.mediaViewerOverlay.closing .mediaViewerContent {
+    animation: zoomOut 0.3s ease forwards;
+}
+
+@keyframes zoomIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes zoomOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+}
+
+.viewerImage,
+.viewerVideo {
+    max-width: 100%;
+    max-height: 85vh;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
