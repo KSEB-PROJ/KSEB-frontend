@@ -14,11 +14,12 @@ import 'dayjs/locale/ko';
 import toast from 'react-hot-toast';
 
 import schedulePageStyles from '../AppLayout/SchedulePage/SchedulePage.module.css';
-import type { ScheduleEvent, EventTask, EventParticipant } from '../../types';
+import type { ScheduleEvent, EventTask, EventParticipant, UpdateTaskRequest, EventTaskCreateRequest } from '../../types';
 import EventEditorModal from '../AppLayout/SchedulePage/EventEditorModal/EventEditorModal';
 
-import { getGroupEvents, createGroupEvent, updateGroupEvent, deleteGroupEvent, transformToScheduleEvent } from '../../api/events';
+import { getGroupEvents, createGroupEvent, updateGroupEvent, deleteGroupEvent, transformToScheduleEvent, createTaskForEvent } from '../../api/events';
 import { getGroupDetail } from '../../api/groups';
+import { updateTask } from '../../api/tasks';
 
 
 dayjs.extend(isBetween);
@@ -62,15 +63,19 @@ const CalendarPage: React.FC = () => {
             const participants = groupDetail.members.map(m => ({ userId: m.userId, userName: m.userName, status: 'TENTATIVE' as const }));
             setGroupParticipants(participants);
 
+            const allTasks: EventTask[] = [];
             const groupForTransform = [{ id: numericGroupId, name: groupDetail.name, code: '', themeColor: '' }];
             const transformedEvents = eventsRes.map(event => {
                 const scheduleEvent = transformToScheduleEvent(event, groupForTransform);
-                // [수정] 그룹 캘린더 페이지의 권한 설정
-                scheduleEvent.isEditable = true; // 그룹 페이지에서는 모든 그룹 일정이 수정 가능
+                scheduleEvent.isEditable = true;
                 scheduleEvent.createdBy = event.createdBy;
+                if (scheduleEvent.tasks) {
+                    allTasks.push(...scheduleEvent.tasks);
+                }
                 return scheduleEvent;
             });
             setEvents(transformedEvents);
+            setTasks(allTasks);
 
         } catch (error) {
             toast.error("그룹 일정 정보를 불러오는 데 실패했습니다.");
@@ -137,11 +142,16 @@ const CalendarPage: React.FC = () => {
         if (clickTimeout.current) {
             clearTimeout(clickTimeout.current);
             clickTimeout.current = null;
+
+            const startDate = dayjs(arg.date);
+            const newEventStart = arg.allDay ? startDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss') : startDate.format('YYYY-MM-DDTHH:mm:ss');
+            const newEventEnd = arg.allDay ? startDate.endOf('day').format('YYYY-MM-DDTHH:mm:ss') : startDate.add(1, 'hour').format('YYYY-MM-DDTHH:mm:ss');
+
             setEditingEvent({
                 id: `temp-${Date.now()}`,
                 title: '',
-                start: arg.dateStr,
-                end: arg.allDay ? dayjs(arg.dateStr).add(1, 'day').format('YYYY-MM-DD') : dayjs(arg.dateStr).add(1, 'hour').toISOString(),
+                start: newEventStart,
+                end: newEventEnd,
                 allDay: arg.allDay,
                 ownerType: 'GROUP',
                 ownerId: parseInt(groupId || '0', 10),
@@ -175,36 +185,94 @@ const CalendarPage: React.FC = () => {
         if (!groupId) return;
         const numericGroupId = parseInt(groupId, 10);
         const isNew = String(eventData.id).startsWith('temp-');
+        const statusMap: { [key in EventTask['status']]: number } = { 'TODO': 1, 'DOING': 2, 'DONE': 3 };
 
-        const startDatetime = eventData.allDay ? dayjs(eventData.start).startOf('day').toISOString() : eventData.start;
-        const endDatetime = eventData.allDay ? dayjs(eventData.start).endOf('day').toISOString() : (eventData.end || eventData.start);
+        if (isNew) {
+            const requestData = {
+                title: eventData.title,
+                description: eventData.description,
+                location: eventData.location,
+                startDatetime: dayjs(eventData.start).format('YYYY-MM-DDTHH:mm:ss'),
+                endDatetime: eventData.end ? dayjs(eventData.end).format('YYYY-MM-DDTHH:mm:ss') : dayjs(eventData.start).format('YYYY-MM-DDTHH:mm:ss'),
+                allDay: eventData.allDay,
+                rrule: eventData.rrule,
+                themeColor: eventData.color
+            };
 
+            const promise = (async () => {
+                const eventResponse = await createGroupEvent(numericGroupId, requestData);
+                const newEventId = eventResponse.data.eventId;
 
-        const requestData = {
-            title: eventData.title,
-            description: eventData.description,
-            location: eventData.location,
-            startDatetime: startDatetime,
-            endDatetime: endDatetime,
-            allDay: eventData.allDay,
-            rrule: eventData.rrule,
-            themeColor: eventData.color
-        };
+                if (eventData.tasks && eventData.tasks.length > 0) {
+                    const taskPromises = eventData.tasks.map(task => {
+                        const taskData: EventTaskCreateRequest = {
+                            title: task.title,
+                            statusId: statusMap[task.status],
+                            assigneeId: undefined, // 그룹 이벤트는 담당자 지정 로직이 필요하면 추가
+                            dueDatetime: task.dueDate ? dayjs(task.dueDate).format('YYYY-MM-DDTHH:mm:ss') : null,
+                        };
+                        return createTaskForEvent(newEventId, taskData);
+                    });
+                    await Promise.all(taskPromises);
+                }
+            })();
 
-        const promise = isNew
-            ? createGroupEvent(numericGroupId, requestData)
-            : updateGroupEvent(numericGroupId, parseInt(eventData.id), requestData);
+            toast.promise(promise, {
+                loading: '일정 생성 중...',
+                success: () => {
+                    setIsModalOpen(false);
+                    fetchData();
+                    return <b>성공적으로 저장되었습니다.</b>;
+                },
+                error: (err) => {
+                    console.error(err);
+                    return <b>저장에 실패했습니다.</b>;
+                }
+            });
 
-        toast.promise(promise, {
-            loading: isNew ? '일정 생성 중...' : '일정 업데이트 중...',
-            success: () => {
-                setIsModalOpen(false);
-                fetchData();
-                return <b>성공적으로 저장되었습니다.</b>;
-            },
-            error: <b>저장에 실패했습니다.</b>
-        });
+        } else {
+            const eventId = parseInt(eventData.id);
+            const requestData = {
+                title: eventData.title,
+                description: eventData.description,
+                location: eventData.location,
+                startDatetime: dayjs(eventData.start).format('YYYY-MM-DDTHH:mm:ss'),
+                endDatetime: eventData.end ? dayjs(eventData.end).format('YYYY-MM-DDTHH:mm:ss') : dayjs(eventData.start).format('YYYY-MM-DDTHH:mm:ss'),
+                allDay: eventData.allDay,
+                rrule: eventData.rrule,
+                themeColor: eventData.color
+            };
+
+            const promise = (async () => {
+                await updateGroupEvent(numericGroupId, eventId, requestData);
+
+                const newTasks = eventData.tasks?.filter(t => t.id > 1000000000000) || [];
+                if (newTasks.length > 0) {
+                    const taskCreationPromises = newTasks.map(task => {
+                        const taskData: EventTaskCreateRequest = {
+                            title: task.title,
+                            statusId: statusMap[task.status],
+                            assigneeId: undefined,
+                            dueDatetime: task.dueDate ? dayjs(task.dueDate).format('YYYY-MM-DDTHH:mm:ss') : null,
+                        };
+                        return createTaskForEvent(eventId, taskData);
+                    });
+                    await Promise.all(taskCreationPromises);
+                }
+            })();
+
+            toast.promise(promise, {
+                loading: '일정 업데이트 중...',
+                success: () => {
+                    setIsModalOpen(false);
+                    fetchData();
+                    return <b>성공적으로 저장되었습니다.</b>;
+                },
+                error: <b>저장에 실패했습니다.</b>
+            });
+        }
     };
+
 
     const handleDeleteEvent = (eventId: string, ownerType: 'USER' | 'GROUP', ownerId: number) => {
         if (ownerType !== 'GROUP') return;
@@ -232,20 +300,55 @@ const CalendarPage: React.FC = () => {
     );
 
     const selectedEvent = useMemo(() => processedEvents.find(e => e.id === selectedEventId), [processedEvents, selectedEventId]);
+
     const selectedEventTasks = useMemo(() => {
         if (!selectedEventId) return [];
         const originalId = (selectedEvent?.extendedProps as ScheduleEvent)?.id || selectedEventId;
-        return tasks.filter(t => t.eventId === selectedEventId || t.eventId === originalId.split('-').slice(0, 3).join('-'));
+        const eventIdToMatch = originalId.split('-')[0];
+        return tasks.filter(t => t.eventId === eventIdToMatch);
     }, [tasks, selectedEventId, selectedEvent]);
 
     const handleToggleTask = (taskId: number) => {
-        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: t.status === 'TODO' ? 'DOING' : t.status === 'DOING' ? 'DONE' : 'TODO' } : t));
+        const statusMap: { [key in EventTask['status']]: number } = { 'TODO': 1, 'DOING': 2, 'DONE': 3 };
+        const taskToUpdate = tasks.find(t => t.id === taskId);
+        if (!taskToUpdate) return;
+
+        const statusCycle: { [key in EventTask['status']]: EventTask['status'] } = { 'TODO': 'DOING', 'DOING': 'DONE', 'DONE': 'TODO' };
+        const nextStatus = statusCycle[taskToUpdate.status];
+        const requestData: UpdateTaskRequest = { statusId: statusMap[nextStatus] };
+
+        toast.promise(
+            updateTask(taskId, requestData),
+            {
+                loading: '상태 변경 중...',
+                success: () => {
+                    const updateLogic = (prevTasks: EventTask[]) =>
+                        prevTasks.map(t => t.id === taskId ? { ...t, status: nextStatus } : t);
+
+                    setTasks(updateLogic);
+
+                    setEvents(prevEvents => prevEvents.map(event => {
+                        if (event.tasks && event.tasks.some(t => t.id === taskId)) {
+                            return {
+                                ...event,
+                                tasks: event.tasks.map(t => t.id === taskId ? { ...t, status: nextStatus } : t)
+                            };
+                        }
+                        return event;
+                    }));
+
+                    return <b>상태가 변경되었습니다.</b>;
+                },
+                error: <b>상태 변경에 실패했습니다.</b>,
+            }
+        );
     };
 
     const handleAddTask = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && selectedEventId && e.currentTarget.value.trim()) {
             const originalId = (selectedEvent?.extendedProps as ScheduleEvent)?.id || selectedEventId;
-            const newTask: EventTask = { id: Date.now(), eventId: originalId.split('-').slice(0, 3).join('-'), title: e.currentTarget.value.trim(), status: 'TODO', dueDate: null };
+            const eventIdToMatch = originalId.split('-')[0];
+            const newTask: EventTask = { id: Date.now(), eventId: eventIdToMatch, title: e.currentTarget.value.trim(), status: 'TODO', dueDate: null };
             setTasks(prev => [...prev, newTask]);
             e.currentTarget.value = '';
         }

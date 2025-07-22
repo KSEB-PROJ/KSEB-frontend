@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
-import type { Course } from '../types';
+import type { Course } from '../../../../types'; // 경로 수정
 import styles from './UniversityTimetable.module.css';
 
 interface Props {
@@ -23,7 +23,8 @@ const CourseModal: React.FC<Props> = ({ course, onClose, onSave, onDelete }) => 
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => prev ? { ...prev, [name]: value } : null);
+        // prev 파라미터에 타입 명시
+        setFormData((prev: Partial<Course> | null) => prev ? { ...prev, [name]: value } : null);
     };
 
     const handleSave = () => {

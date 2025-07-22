@@ -6,6 +6,10 @@ import type {
     EventUpdateRequest,
     BackendEventResponse,
     GroupListDto,
+    EventTaskCreateRequest,
+    EventCreateResult,
+    EventTaskResponse,
+    EventTask
 } from '../types';
 
 const apiClient = axios.create({
@@ -26,6 +30,15 @@ export const transformToScheduleEvent = (event: BackendEventResponse, groups: Gr
         groupName = group?.name;
     }
 
+    // [수정] 백엔드 tasks를 프론트엔드 EventTask 형식으로 변환
+    const tasks: EventTask[] = event.tasks.map(task => ({
+        id: task.id,
+        eventId: String(event.eventId),
+        title: task.title,
+        status: task.statusCode as 'TODO' | 'DOING' | 'DONE',
+        dueDate: task.dueDatetime,
+    }));
+
     return {
         id: String(event.eventId),
         title: event.title,
@@ -40,10 +53,9 @@ export const transformToScheduleEvent = (event: BackendEventResponse, groups: Gr
         rrule: event.rrule,
         description: event.description,
         participants: event.participants,
-        // isEditable과 createdBy는 API 응답에 없으므로, 필요 시 호출하는 쪽에서 채워야 함
-        // 여기서는 기본값으로 설정
+        tasks: tasks,
         isEditable: true,
-        createdBy: undefined,
+        createdBy: event.createdBy,
     };
 };
 
@@ -63,12 +75,12 @@ export const getGroupEvents = async (groupId: number) => {
 
 // 개인 이벤트 생성
 export const createPersonalEvent = (data: UserEventCreateRequest) => {
-    return apiClient.post('/users/me/events', data);
+    return apiClient.post<EventCreateResult>('/users/me/events', data);
 };
 
 // 그룹 이벤트 생성
 export const createGroupEvent = (groupId: number, data: GroupEventCreateRequest) => {
-    return apiClient.post(`/groups/${groupId}/events`, data);
+    return apiClient.post<EventCreateResult>(`/groups/${groupId}/events`, data);
 };
 
 // 개인 이벤트 수정
@@ -89,4 +101,13 @@ export const deletePersonalEvent = (eventId: number) => {
 // 그룹 이벤트 삭제
 export const deleteGroupEvent = (groupId: number, eventId: number) => {
     return apiClient.delete(`/groups/${groupId}/events/${eventId}`);
+};
+
+/**
+ * 특정 이벤트에 할 일을 추가하는 API
+ * @param eventId - 할 일을 추가할 이벤트의 ID
+ * @param taskData - 생성할 할 일 데이터
+ */
+export const createTaskForEvent = (eventId: number, taskData: EventTaskCreateRequest) => {
+    return apiClient.post<EventTaskResponse>(`/events/${eventId}/tasks`, taskData);
 };

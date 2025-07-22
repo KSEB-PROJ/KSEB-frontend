@@ -13,13 +13,13 @@ import 'dayjs/locale/ko';
 import toast from 'react-hot-toast';
 
 import styles from './SchedulePage.module.css';
-import type { ScheduleEvent, EventTask } from '../../../types';
+import type { ScheduleEvent, EventTask, UpdateTaskRequest, EventTaskCreateRequest } from '../../../types';
 import EventEditorModal from './EventEditorModal/EventEditorModal';
 import UniversityTimetable from './UniversityTimetable/UniversityTimetable';
 
-// [수정] deleteGroupEvent 제거
-import { getMyEvents, createPersonalEvent, updatePersonalEvent, deletePersonalEvent, createGroupEvent, updateGroupEvent, transformToScheduleEvent } from '../../../api/events';
+import { getMyEvents, createPersonalEvent, updatePersonalEvent, deletePersonalEvent, createGroupEvent, updateGroupEvent, deleteGroupEvent, transformToScheduleEvent, createTaskForEvent } from '../../../api/events';
 import { getMyGroups } from '../../../api/groups';
+import { updateTask } from '../../../api/tasks';
 
 
 dayjs.extend(isBetween);
@@ -57,16 +57,18 @@ const SchedulePage: React.FC = () => {
             ]);
             const userGroups = groupsRes.data;
 
+            const allTasks: EventTask[] = [];
             const transformedEvents = eventsRes.map(event => {
                 const scheduleEvent = transformToScheduleEvent(event, userGroups);
-                // [수정] 개인 스케줄 페이지의 권한 설정
-                scheduleEvent.isEditable = event.ownerType === 'USER';
-                if (event.ownerType === 'USER') {
-                    scheduleEvent.createdBy = event.ownerId;
+                scheduleEvent.isEditable = true;
+                scheduleEvent.createdBy = event.createdBy;
+                if (scheduleEvent.tasks) {
+                    allTasks.push(...scheduleEvent.tasks);
                 }
                 return scheduleEvent;
             });
             setEvents(transformedEvents);
+            setTasks(allTasks);
 
         } catch (error) {
             toast.error("일정 정보를 불러오는 데 실패했습니다.");
@@ -94,7 +96,7 @@ const SchedulePage: React.FC = () => {
                 backgroundColor: 'transparent',
                 borderColor: 'transparent',
                 textColor: '#E0E0E0',
-                extendedProps: { ...event } // isEditable 포함
+                extendedProps: { ...event }
             };
 
             if (event.rrule && event.end) {
@@ -118,7 +120,7 @@ const SchedulePage: React.FC = () => {
 
     const renderEventContent = (eventInfo: EventContentArg) => {
         const props = eventInfo.event.extendedProps as ScheduleEvent;
-        const color = props.isEditable ? (props.color || '#888') : '#555'; // 수정 불가능하면 회색
+        const color = props.color || '#888';
         const ownerIcon = props.ownerType === 'USER' ? faUser : faLayerGroup;
 
         return (
@@ -141,11 +143,16 @@ const SchedulePage: React.FC = () => {
         if (clickTimeout.current) {
             clearTimeout(clickTimeout.current);
             clickTimeout.current = null;
+
+            const startDate = dayjs(arg.date);
+            const newEventStart = arg.allDay ? startDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss') : startDate.format('YYYY-MM-DDTHH:mm:ss');
+            const newEventEnd = arg.allDay ? startDate.endOf('day').format('YYYY-MM-DDTHH:mm:ss') : startDate.add(1, 'hour').format('YYYY-MM-DDTHH:mm:ss');
+
             setEditingEvent({
                 id: `temp-${Date.now()}`,
                 title: '',
-                start: arg.dateStr,
-                end: arg.allDay ? dayjs(arg.dateStr).add(1, 'day').format('YYYY-MM-DD') : dayjs(arg.dateStr).add(1, 'hour').toISOString(),
+                start: newEventStart,
+                end: newEventEnd,
                 allDay: arg.allDay,
                 ownerType: 'USER',
                 ownerId: CURRENT_USER_ID,
@@ -175,53 +182,110 @@ const SchedulePage: React.FC = () => {
     }, [openEditorForEvent]);
 
     const handleSaveEvent = (eventData: ScheduleEvent) => {
-        if (!eventData.isEditable) return;
-
         const isNew = String(eventData.id).startsWith('temp-');
-        const startDatetime = eventData.allDay ? dayjs(eventData.start).startOf('day').toISOString() : eventData.start;
-        const endDatetime = eventData.allDay ? dayjs(eventData.start).endOf('day').toISOString() : (eventData.end || eventData.start);
+        const statusMap: { [key in EventTask['status']]: number } = { 'TODO': 1, 'DOING': 2, 'DONE': 3 };
 
-
-        const requestData = {
-            title: eventData.title,
-            description: eventData.description,
-            location: eventData.location,
-            startDatetime: startDatetime,
-            endDatetime: endDatetime,
-            allDay: eventData.allDay,
-            rrule: eventData.rrule,
-            themeColor: eventData.color
-        };
-
-        let promise;
         if (isNew) {
-            promise = eventData.ownerType === 'USER'
-                ? createPersonalEvent(requestData)
-                : createGroupEvent(eventData.ownerId, requestData);
+            const requestData = {
+                title: eventData.title,
+                description: eventData.description,
+                location: eventData.location,
+                startDatetime: dayjs(eventData.start).format('YYYY-MM-DDTHH:mm:ss'),
+                endDatetime: eventData.end ? dayjs(eventData.end).format('YYYY-MM-DDTHH:mm:ss') : dayjs(eventData.start).format('YYYY-MM-DDTHH:mm:ss'),
+                allDay: eventData.allDay,
+                rrule: eventData.rrule,
+                themeColor: eventData.color,
+            };
+
+            const promise = (async () => {
+                const createPromise = eventData.ownerType === 'USER'
+                    ? createPersonalEvent(requestData)
+                    : createGroupEvent(eventData.ownerId, requestData);
+
+                const eventResponse = await createPromise;
+                const newEventId = eventResponse.data.eventId;
+
+                if (eventData.tasks && eventData.tasks.length > 0) {
+                    const taskPromises = eventData.tasks.map(task => {
+                        const taskData: EventTaskCreateRequest = {
+                            title: task.title,
+                            statusId: statusMap[task.status],
+                            assigneeId: eventData.ownerType === 'USER' ? CURRENT_USER_ID : undefined,
+                            dueDatetime: task.dueDate ? dayjs(task.dueDate).format('YYYY-MM-DDTHH:mm:ss') : null,
+                        };
+                        return createTaskForEvent(newEventId, taskData);
+                    });
+                    await Promise.all(taskPromises);
+                }
+            })();
+
+            toast.promise(promise, {
+                loading: '일정 생성 중...',
+                success: () => {
+                    setIsModalOpen(false);
+                    fetchData();
+                    return <b>성공적으로 저장되었습니다.</b>;
+                },
+                error: (err) => {
+                    console.error(err);
+                    return <b>저장에 실패했습니다.</b>;
+                }
+            });
         } else {
             const eventId = parseInt(eventData.id);
-            promise = eventData.ownerType === 'USER'
-                ? updatePersonalEvent(eventId, requestData)
-                : updateGroupEvent(eventData.ownerId, eventId, requestData);
-        }
+            const requestData = {
+                title: eventData.title,
+                description: eventData.description,
+                location: eventData.location,
+                startDatetime: dayjs(eventData.start).format('YYYY-MM-DDTHH:mm:ss'),
+                endDatetime: eventData.end ? dayjs(eventData.end).format('YYYY-MM-DDTHH:mm:ss') : dayjs(eventData.start).format('YYYY-MM-DDTHH:mm:ss'),
+                allDay: eventData.allDay,
+                rrule: eventData.rrule,
+                themeColor: eventData.color
+            };
 
-        toast.promise(promise, {
-            loading: isNew ? '일정 생성 중...' : '일정 업데이트 중...',
-            success: () => {
-                setIsModalOpen(false);
-                fetchData();
-                return <b>성공적으로 저장되었습니다.</b>;
-            },
-            error: <b>저장에 실패했습니다.</b>
-        });
+            const promise = (async () => {
+                const updatePromise = eventData.ownerType === 'USER'
+                    ? updatePersonalEvent(eventId, requestData)
+                    : updateGroupEvent(eventData.ownerId, eventId, requestData);
+                await updatePromise;
+
+                const newTasks = eventData.tasks?.filter(t => t.id > 1000000000000) || [];
+                if (newTasks.length > 0) {
+                    const taskCreationPromises = newTasks.map(task => {
+                        const taskData: EventTaskCreateRequest = {
+                            title: task.title,
+                            statusId: statusMap[task.status],
+                            assigneeId: eventData.ownerType === 'USER' ? CURRENT_USER_ID : undefined,
+                            dueDatetime: task.dueDate ? dayjs(task.dueDate).format('YYYY-MM-DDTHH:mm:ss') : null,
+                        };
+                        return createTaskForEvent(eventId, taskData);
+                    });
+                    await Promise.all(taskCreationPromises);
+                }
+            })();
+
+            toast.promise(promise, {
+                loading: '일정 업데이트 중...',
+                success: () => {
+                    setIsModalOpen(false);
+                    fetchData();
+                    return <b>성공적으로 저장되었습니다.</b>;
+                },
+                error: <b>저장에 실패했습니다.</b>
+            });
+        }
     };
 
-    // [수정] _ownerId로 변경하여 미사용 경고 해결
-    const handleDeleteEvent = (eventId: string, ownerType: 'USER' | 'GROUP', _ownerId: number) => {
-        if (ownerType !== 'USER') return; // 개인 스케줄만 삭제 가능
+    const handleDeleteEvent = (eventId: string, ownerType: 'USER' | 'GROUP', ownerId: number) => {
         const numericEventId = parseInt(eventId);
+        let promise;
 
-        const promise = deletePersonalEvent(numericEventId);
+        if (ownerType === 'USER') {
+            promise = deletePersonalEvent(numericEventId);
+        } else {
+            promise = deleteGroupEvent(ownerId, numericEventId);
+        }
 
         toast.promise(promise, {
             loading: '삭제 중...',
@@ -254,29 +318,50 @@ const SchedulePage: React.FC = () => {
     const selectedEventTasks = useMemo(() => {
         if (!selectedEventId) return [];
         const originalId = (selectedEvent?.extendedProps as ScheduleEvent)?.id || selectedEventId;
-        const eventIdToMatch = originalId.startsWith('event-') ? originalId.split('-').slice(0, 3).join('-') : originalId;
-        return tasks.filter(t => t.eventId === selectedEventId || t.eventId === eventIdToMatch);
+        const eventIdToMatch = originalId.split('-')[0];
+        return tasks.filter(t => t.eventId === eventIdToMatch);
     }, [tasks, selectedEventId, selectedEvent]);
 
-
     const handleToggleTask = (taskId: number) => {
-        setTasks(prev => prev.map(t => {
-            if (t.id === taskId) {
-                const nextStatus: { [key in EventTask['status']]: EventTask['status'] } = {
-                    'TODO': 'DOING',
-                    'DOING': 'DONE',
-                    'DONE': 'TODO'
-                };
-                return { ...t, status: nextStatus[t.status] };
+        const statusMap: { [key in EventTask['status']]: number } = { 'TODO': 1, 'DOING': 2, 'DONE': 3 };
+        const taskToUpdate = tasks.find(t => t.id === taskId);
+        if (!taskToUpdate) return;
+
+        const statusCycle: { [key in EventTask['status']]: EventTask['status'] } = { 'TODO': 'DOING', 'DOING': 'DONE', 'DONE': 'TODO' };
+        const nextStatus = statusCycle[taskToUpdate.status];
+        const requestData: UpdateTaskRequest = { statusId: statusMap[nextStatus] };
+
+        toast.promise(
+            updateTask(taskId, requestData),
+            {
+                loading: '상태 변경 중...',
+                success: () => {
+                    const updateLogic = (prevTasks: EventTask[]) =>
+                        prevTasks.map(t => t.id === taskId ? { ...t, status: nextStatus } : t);
+
+                    setTasks(updateLogic);
+
+                    setEvents(prevEvents => prevEvents.map(event => {
+                        if (event.tasks && event.tasks.some(t => t.id === taskId)) {
+                            return {
+                                ...event,
+                                tasks: event.tasks.map(t => t.id === taskId ? { ...t, status: nextStatus } : t)
+                            };
+                        }
+                        return event;
+                    }));
+
+                    return <b>상태가 변경되었습니다.</b>;
+                },
+                error: <b>상태 변경에 실패했습니다.</b>,
             }
-            return t;
-        }));
+        );
     };
 
     const handleAddTask = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && selectedEventId && e.currentTarget.value.trim()) {
             const originalId = (selectedEvent?.extendedProps as ScheduleEvent)?.id || selectedEventId;
-            const eventIdToMatch = originalId.startsWith('event-') ? originalId.split('-').slice(0, 3).join('-') : originalId;
+            const eventIdToMatch = originalId.split('-')[0];
             const newTask: EventTask = { id: Date.now(), eventId: eventIdToMatch, title: e.currentTarget.value.trim(), status: 'TODO', dueDate: null };
             setTasks(prev => [...prev, newTask]);
             e.currentTarget.value = '';
@@ -376,10 +461,10 @@ const SchedulePage: React.FC = () => {
                                             key={event.id}
                                             className={`${styles.agendaItem} ${selectedEventId === event.id ? styles.selected : ''}`}
                                             onClick={() => setSelectedEventId(event.id!)}
-                                            style={{ '--event-color': (event.extendedProps as ScheduleEvent).isEditable ? ((event.extendedProps as ScheduleEvent).color || '#3788d8') : '#555' } as React.CSSProperties}
+                                            style={{ '--event-color': (event.extendedProps as ScheduleEvent).color || '#3788d8' } as React.CSSProperties}
                                         >
                                             <div className={styles.agendaLeft}>
-                                                <div className={styles.ownerIcon} style={{ backgroundColor: (event.extendedProps as ScheduleEvent).isEditable ? (event.extendedProps as ScheduleEvent).color : '#555' }}>
+                                                <div className={styles.ownerIcon} style={{ backgroundColor: (event.extendedProps as ScheduleEvent).color }}>
                                                     <FontAwesomeIcon icon={(event.extendedProps as ScheduleEvent).ownerType === 'USER' ? faUser : faLayerGroup} />
                                                 </div>
                                                 <div className={styles.agendaInfo}>

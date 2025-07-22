@@ -61,6 +61,7 @@ export interface BackendEventResponse {
     ownerId: number;
     themeColor: string;
     participants: EventParticipant[];
+    tasks: EventTaskResponse[]; // [추가] tasks 필드
     createdBy?: number; // createdBy 필드가 백엔드에 있다고 가정
 }
 
@@ -79,12 +80,11 @@ export interface UserEventCreateRequest {
     themeColor?: string;
 }
 
-// [수정] 빈 인터페이스 대신 타입 별칭 사용
 export type GroupEventCreateRequest = UserEventCreateRequest;
 
 
 export interface EventUpdateRequest extends Partial<UserEventCreateRequest> {
-    tasks?: EventTask[]; // Task 업데이트는 아직 백엔드에 구현되지 않음
+    tasks?: EventTask[];
 }
 
 
@@ -104,4 +104,46 @@ export interface Course {
     location: string;
     color?: string;
     rrule?: string;
+}
+
+/**
+ * @description 할 일(Task) 생성을 위한 요청 타입
+ */
+export interface EventTaskCreateRequest {
+    title: string;
+    assigneeId?: number;
+    statusId: number; // 1: TODO, 2: DOING, 3: DONE
+    dueDatetime?: string | null;
+}
+
+/**
+ * @description 일정 생성 API의 응답 타입
+ */
+export interface EventCreateResult {
+    eventId: number;
+    hasOverlap: boolean;
+}
+
+/**
+ * @description 할 일(Task) 수정을 위한 요청 타입
+ */
+export interface UpdateTaskRequest {
+    title?: string;
+    assigneeId?: number;
+    statusId?: number;
+    dueDatetime?: string | null;
+}
+
+/**
+ * @description 할 일(Task) API 응답 타입
+ */
+export interface EventTaskResponse {
+    id: number;
+    title: string;
+    assigneeId: number;
+    assigneeName: string;
+    statusId: number;
+    statusCode: string;
+    statusName: string;
+    dueDatetime: string;
 }

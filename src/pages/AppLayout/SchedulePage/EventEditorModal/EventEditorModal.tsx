@@ -5,10 +5,13 @@ import {
     faSignature, faPlus, faTrash, faTasks, faLock, faUsers, faCheckCircle,
     faTimesCircle, faQuestionCircle, faPalette, faLayerGroup, faCheck
 } from '@fortawesome/free-solid-svg-icons';
-import type { ScheduleEvent, EventTask, EventParticipant } from '../../../../types';
+import type { ScheduleEvent, EventTask, EventParticipant, UpdateTaskRequest } from '../../../../types';
 import styles from './EventEditorModal.module.css';
 import RecurrenceEditor from '../RecurrenceEditor/RecurrenceEditor';
 import DatePicker from '../../../../components/date-picker/DatePicker';
+import { updateTask, deleteTask } from '../../../../api/tasks';
+import toast from 'react-hot-toast';
+import dayjs from 'dayjs';
 
 const colorPalette = [
     '#8400ff', '#14d6ae', '#ec4899', '#3b82f6',
@@ -19,8 +22,8 @@ const CURRENT_USER_ID = 1;
 
 const TaskItem: React.FC<{
     task: EventTask;
-    onUpdate: (field: keyof EventTask, value: EventTask[keyof EventTask]) => void;
-    onDelete: () => void;
+    onUpdate: (taskId: number, field: keyof EventTask, value: EventTask[keyof EventTask]) => void;
+    onDelete: (taskId: number) => void;
     isEditable: boolean;
 }> = ({ task, onUpdate, onDelete, isEditable }) => {
     const statuses: EventTask['status'][] = ['TODO', 'DOING', 'DONE'];
@@ -42,7 +45,7 @@ const TaskItem: React.FC<{
     const handleBlur = () => {
         setIsEditing(false);
         if (textRef.current) {
-            onUpdate('title', textRef.current.innerText);
+            onUpdate(task.id, 'title', textRef.current.innerText);
         }
     };
 
@@ -54,7 +57,7 @@ const TaskItem: React.FC<{
                         key={status}
                         data-status={status}
                         className={`${styles.statusPill} ${task.status === status ? styles.active : ''}`}
-                        onClick={() => onUpdate('status', status)}
+                        onClick={() => onUpdate(task.id, 'status', status)}
                         disabled={!isEditable}
                     >
                         {status === 'TODO' && '할 일'}
@@ -81,9 +84,9 @@ const TaskItem: React.FC<{
             </div>
 
             <div className={styles.taskDueDate}>
-                <DatePicker value={task.dueDate} onChange={(date) => onUpdate('dueDate', date)} showTime isEditable={isEditable} />
+                <DatePicker value={task.dueDate} onChange={(date) => onUpdate(task.id, 'dueDate', date)} showTime isEditable={isEditable} />
             </div>
-            <button onClick={onDelete} className={styles.deleteTaskButton} title="삭제" disabled={!isEditable}>
+            <button onClick={() => onDelete(task.id)} className={styles.deleteTaskButton} title="삭제" disabled={!isEditable}>
                 <FontAwesomeIcon icon={faTrash} />
             </button>
         </li>
@@ -101,12 +104,13 @@ const EventEditorModal: React.FC<{
     const [isRecurrenceEnabled, setRecurrenceEnabled] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
 
-    // [수정] isEditable을 props로부터 직접 전달받아 사용
     const isEditable = useMemo(() => formData?.isEditable ?? false, [formData]);
     const modalKey = useMemo(() => (event?.id || 'new') + '-' + Date.now(), [event]);
+    const statusMap: { [key in EventTask['status']]: number } = { 'TODO': 1, 'DOING': 2, 'DONE': 3 };
+
 
     useEffect(() => {
-        setFormData(event); // 부모로부터 받은 event 객체를 그대로 상태로 사용
+        setFormData(event);
         setRecurrenceEnabled(!!event?.rrule);
     }, [event]);
 
@@ -122,7 +126,11 @@ const EventEditorModal: React.FC<{
     const handleSave = () => {
         if (!formData) return;
         if (isEditable && !formData.title.trim()) {
-            alert('일정 제목을 입력해주세요.');
+            toast.error('일정 제목을 입력해주세요.');
+            return;
+        }
+        if (isEditable && !formData.color) {
+            toast.error('테마 색상을 선택해주세요.');
             return;
         }
         onSave(formData);
@@ -144,20 +152,49 @@ const EventEditorModal: React.FC<{
 
     const handleAddTask = () => {
         if (!formData || !isEditable) return;
-        const newTask: EventTask = { id: Date.now(), eventId: formData.id, title: '', status: 'TODO', dueDate: null };
+        const newTask: EventTask = { id: Date.now(), eventId: formData.id, title: '새로운 할 일', status: 'TODO', dueDate: null };
         updateFormData('tasks', [...(formData.tasks || []), newTask]);
     };
 
     const handleUpdateTask = (taskId: number, field: keyof EventTask, value: EventTask[keyof EventTask]) => {
         if (!formData || !isEditable) return;
+
         const updatedTasks = formData.tasks?.map(t => t.id === taskId ? { ...t, [field]: value } : t);
         updateFormData('tasks', updatedTasks);
+
+        const isTemporaryTask = taskId > 1000000000000;
+
+        if (!isTemporaryTask) {
+            const requestData: UpdateTaskRequest = {};
+            if (field === 'title') requestData.title = value as string;
+            if (field === 'dueDate') requestData.dueDatetime = value ? dayjs(value).format('YYYY-MM-DDTHH:mm:ss') : null;
+            if (field === 'status') requestData.statusId = statusMap[value as EventTask['status']];
+
+            if (Object.keys(requestData).length > 0) {
+                toast.promise(updateTask(taskId, requestData), {
+                    loading: '업데이트 중...',
+                    success: <b>업데이트 완료!</b>,
+                    error: <b>업데이트 실패.</b>
+                });
+            }
+        }
     };
 
     const handleDeleteTask = (taskId: number) => {
         if (!formData || !isEditable) return;
+        
         const filteredTasks = formData.tasks?.filter(t => t.id !== taskId);
         updateFormData('tasks', filteredTasks);
+        
+        const isTemporaryTask = taskId > 1000000000000;
+
+        if (!isTemporaryTask) {
+             toast.promise(deleteTask(taskId), {
+                loading: '삭제 중...',
+                success: <b>삭제되었습니다.</b>,
+                error: <b>삭제에 실패했습니다.</b>
+            });
+        }
     };
     
     const handleRecurrenceChange = useCallback((rrule: string | undefined) => {
@@ -214,7 +251,6 @@ const EventEditorModal: React.FC<{
                         <label htmlFor='location'><FontAwesomeIcon icon={faMapMarkerAlt} /> 장소 또는 링크</label>
                     </div>
 
-                    {/* [수정] 그룹 일정일 때만 참석자 섹션 표시 */}
                     {formData.ownerType === 'GROUP' && (
                         <>
                             <div className={styles.sectionDivider} />
@@ -347,8 +383,8 @@ const EventEditorModal: React.FC<{
                                     <TaskItem
                                         key={task.id}
                                         task={task}
-                                        onUpdate={(field, value) => handleUpdateTask(task.id, field, value)}
-                                        onDelete={() => handleDeleteTask(task.id)}
+                                        onUpdate={handleUpdateTask}
+                                        onDelete={handleDeleteTask}
                                         isEditable={isEditable}
                                     />
                                 ))}
