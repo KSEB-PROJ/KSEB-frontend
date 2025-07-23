@@ -66,7 +66,7 @@ const SchedulePage: React.FC = () => {
             const allTasks: EventTask[] = [];
             const transformedEvents = eventsRes.map(event => {
                 const scheduleEvent = transformToScheduleEvent(event, userGroups);
-                scheduleEvent.isEditable = true;
+                scheduleEvent.isEditable = event.ownerType === 'USER'; 
                 scheduleEvent.createdBy = event.createdBy;
                 if (scheduleEvent.tasks) {
                     allTasks.push(...scheduleEvent.tasks);

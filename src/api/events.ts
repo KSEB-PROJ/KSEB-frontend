@@ -54,7 +54,6 @@ export const transformToScheduleEvent = (event: BackendEventResponse, groups: Gr
         description: event.description,
         participants: event.participants,
         tasks: tasks,
-        isEditable: true,
         createdBy: event.createdBy,
     };
 };

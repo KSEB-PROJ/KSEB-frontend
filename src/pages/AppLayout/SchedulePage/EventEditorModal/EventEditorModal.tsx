@@ -182,21 +182,21 @@ const EventEditorModal: React.FC<{
 
     const handleDeleteTask = (taskId: number) => {
         if (!formData || !isEditable) return;
-        
+
         const filteredTasks = formData.tasks?.filter(t => t.id !== taskId);
         updateFormData('tasks', filteredTasks);
-        
+
         const isTemporaryTask = taskId > 1000000000000;
 
         if (!isTemporaryTask) {
-             toast.promise(deleteTask(taskId), {
+            toast.promise(deleteTask(taskId), {
                 loading: '삭제 중...',
                 success: <b>삭제되었습니다.</b>,
                 error: <b>삭제에 실패했습니다.</b>
             });
         }
     };
-    
+
     const handleRecurrenceChange = useCallback((rrule: string | undefined) => {
         updateFormData('rrule', rrule);
     }, [updateFormData]);
@@ -409,18 +409,29 @@ const EventEditorModal: React.FC<{
                 </main>
 
                 <footer className={styles.footer}>
-                    {(isEditable && !String(formData.id).startsWith('temp-')) ? (
-                        <button onClick={handleDelete} className={styles.deleteButton}>삭제</button>
-                    ) : <div></div>}
-                    <div style={{ flexGrow: 1 }} />
-                    <div className={styles.actionButtons}>
-                        <button onClick={handleClose} className={`${styles.button} ${styles.cancelButton}`}>
-                            취소
-                        </button>
-                        {isEditable && (
-                            <button onClick={handleSave} className={`${styles.button} ${styles.saveButton}`}>저장</button>
-                        )}
-                    </div>
+                    {isEditable ? (
+                        <>
+                            {!String(formData.id).startsWith('temp-') ? (
+                                <button onClick={handleDelete} className={styles.deleteButton}>삭제</button>
+                            ) : <div />}
+                            <div style={{ flexGrow: 1 }} />
+                            <div className={styles.actionButtons}>
+                                <button onClick={handleClose} className={`${styles.button} ${styles.cancelButton}`}>
+                                    취소
+                                </button>
+                                <button onClick={handleSave} className={`${styles.button} ${styles.saveButton}`}>저장</button>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div style={{ flexGrow: 1 }} />
+                            <div className={styles.actionButtons}>
+                                <button onClick={handleClose} className={`${styles.button} ${styles.cancelButton}`}>
+                                    닫기
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </footer>
             </div>
         </div>
