@@ -1,0 +1,82 @@
+.container {
+    padding: 2rem;
+    color: #E0E0E0;
+    display: flex;
+    flex-direction: column;
+}
+
+.top {
+    /* 타이틀 밑줄 색상은 그룹 색상을 유지 */
+    border-bottom: 1px solid #a0a0a0;
+    padding-bottom: 0.5rem;
+}
+
+.title {
+    font-size: 2.5rem;
+    transition: border-color 0.4s ease;
+}
+
+.description {
+    font-size: 1.2rem;
+    color: #a0a0a0;
+    padding: 0 2rem;
+
+}
+
+.timestamp {
+    position: absolute;
+    top: -1.5rem;
+    right: 0;
+    font-size: 0.875rem;
+    color: #888;
+}
+
+.videoupload {
+    width: 100%;
+    height: 300px;
+    border: 2px #ccc;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background-color: #a0a0a0;
+}
+
+.videoupload:hover .uploadIcon{
+    transform: scale(1.5);
+}
+
+.uploadIcon {
+    font-size: 100px;
+    color: #888;
+}
+
+.thumbnailWrapper {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+.playButton {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: none;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    border-radius: 50%;
+    padding: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
