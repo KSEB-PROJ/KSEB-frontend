@@ -9,7 +9,8 @@ import type {
     EventTaskCreateRequest,
     EventCreateResult,
     EventTaskResponse,
-    EventTask
+    EventTask,
+    ParticipantStatusUpdateRequest
 } from '../types';
 
 const apiClient = axios.create({
@@ -109,4 +110,14 @@ export const deleteGroupEvent = (groupId: number, eventId: number) => {
  */
 export const createTaskForEvent = (eventId: number, taskData: EventTaskCreateRequest) => {
     return apiClient.post<EventTaskResponse>(`/events/${eventId}/tasks`, taskData);
+};
+
+/**
+ * [추가] 그룹 이벤트 참가 상태 업데이트 API
+ * @param groupId - 그룹 ID
+ * @param eventId - 이벤트 ID
+ * @param data - 변경할 상태 정보 { status: 'ACCEPTED' | 'DECLINED' | 'TENTATIVE' }
+ */
+export const updateParticipantStatus = (groupId: number, eventId: number, data: ParticipantStatusUpdateRequest) => {
+    return apiClient.put(`/groups/${groupId}/events/${eventId}/participants/me/status`, data);
 };

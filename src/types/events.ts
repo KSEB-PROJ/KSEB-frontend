@@ -147,3 +147,10 @@ export interface EventTaskResponse {
     statusName: string;
     dueDatetime: string;
 }
+
+/**
+ *  참가자 상태 업데이트 요청 타입
+ */
+export interface ParticipantStatusUpdateRequest {
+    status: 'ACCEPTED' | 'DECLINED' | 'TENTATIVE';
+}

@@ -17,7 +17,7 @@ import type { ScheduleEvent, EventTask, UpdateTaskRequest, EventTaskCreateReques
 import EventEditorModal from './EventEditorModal/EventEditorModal';
 import UniversityTimetable from './UniversityTimetable/UniversityTimetable';
 
-import { getMyEvents, createPersonalEvent, updatePersonalEvent, deletePersonalEvent, createGroupEvent, updateGroupEvent, deleteGroupEvent, transformToScheduleEvent, createTaskForEvent } from '../../../api/events';
+import { getMyEvents, createPersonalEvent, updatePersonalEvent, deletePersonalEvent, createGroupEvent, updateGroupEvent, deleteGroupEvent, transformToScheduleEvent, createTaskForEvent, updateParticipantStatus } from '../../../api/events';
 import { getMyGroups } from '../../../api/groups';
 import { updateTask } from '../../../api/tasks';
 
@@ -66,7 +66,7 @@ const SchedulePage: React.FC = () => {
             const allTasks: EventTask[] = [];
             const transformedEvents = eventsRes.map(event => {
                 const scheduleEvent = transformToScheduleEvent(event, userGroups);
-                scheduleEvent.isEditable = event.ownerType === 'USER'; 
+                scheduleEvent.isEditable = event.ownerType === 'USER' || event.createdBy === CURRENT_USER_ID;
                 scheduleEvent.createdBy = event.createdBy;
                 if (scheduleEvent.tasks) {
                     allTasks.push(...scheduleEvent.tasks);
@@ -190,7 +190,7 @@ const SchedulePage: React.FC = () => {
     const handleSaveEvent = (eventData: ScheduleEvent) => {
         const isNew = String(eventData.id).startsWith('temp-');
         const statusMap: { [key in EventTask['status']]: number } = { 'TODO': 1, 'DOING': 2, 'DONE': 3 };
-
+    
         if (isNew) {
             const requestData = {
                 title: eventData.title,
@@ -202,15 +202,15 @@ const SchedulePage: React.FC = () => {
                 rrule: eventData.rrule,
                 themeColor: eventData.color,
             };
-
+    
             const promise = (async () => {
                 const createPromise = eventData.ownerType === 'USER'
                     ? createPersonalEvent(requestData)
                     : createGroupEvent(eventData.ownerId, requestData);
-
+    
                 const eventResponse = await createPromise;
                 const newEventId = eventResponse.data.eventId;
-
+    
                 if (eventData.tasks && eventData.tasks.length > 0) {
                     const taskPromises = eventData.tasks.map(task => {
                         const taskData: EventTaskCreateRequest = {
@@ -224,7 +224,7 @@ const SchedulePage: React.FC = () => {
                     await Promise.all(taskPromises);
                 }
             })();
-
+    
             toast.promise(promise, {
                 loading: '일정 생성 중...',
                 success: () => {
@@ -239,39 +239,40 @@ const SchedulePage: React.FC = () => {
             });
         } else {
             const eventId = parseInt(eventData.id);
+            const originalEvent = editingEvent;
+            const promises = [];
+    
             const requestData = {
-                title: eventData.title,
-                description: eventData.description,
-                location: eventData.location,
+                title: eventData.title, description: eventData.description, location: eventData.location,
                 startDatetime: dayjs(eventData.start).format('YYYY-MM-DDTHH:mm:ss'),
                 endDatetime: eventData.end ? dayjs(eventData.end).format('YYYY-MM-DDTHH:mm:ss') : dayjs(eventData.start).format('YYYY-MM-DDTHH:mm:ss'),
-                allDay: eventData.allDay,
-                rrule: eventData.rrule,
-                themeColor: eventData.color
+                allDay: eventData.allDay, rrule: eventData.rrule, themeColor: eventData.color
             };
-
-            const promise = (async () => {
-                const updatePromise = eventData.ownerType === 'USER'
-                    ? updatePersonalEvent(eventId, requestData)
-                    : updateGroupEvent(eventData.ownerId, eventId, requestData);
-                await updatePromise;
-
-                const newTasks = eventData.tasks?.filter(t => t.id > 1000000000000) || [];
-                if (newTasks.length > 0) {
-                    const taskCreationPromises = newTasks.map(task => {
-                        const taskData: EventTaskCreateRequest = {
-                            title: task.title,
-                            statusId: statusMap[task.status],
-                            assigneeId: eventData.ownerType === 'USER' ? CURRENT_USER_ID : undefined,
-                            dueDatetime: task.dueDate ? dayjs(task.dueDate).format('YYYY-MM-DDTHH:mm:ss') : null,
-                        };
-                        return createTaskForEvent(eventId, taskData);
-                    });
-                    await Promise.all(taskCreationPromises);
-                }
-            })();
-
-            toast.promise(promise, {
+            const eventUpdatePromise = eventData.ownerType === 'USER'
+                ? updatePersonalEvent(eventId, requestData)
+                : updateGroupEvent(eventData.ownerId, eventId, requestData);
+            promises.push(eventUpdatePromise);
+    
+            const originalStatus = originalEvent?.participants?.find(p => p.userId === CURRENT_USER_ID)?.status;
+            const newStatus = eventData.participants?.find(p => p.userId === CURRENT_USER_ID)?.status;
+            if (originalStatus && newStatus && originalStatus !== newStatus && eventData.ownerType === 'GROUP') {
+                promises.push(updateParticipantStatus(eventData.ownerId, eventId, { status: newStatus }));
+            }
+    
+            const newTasks = eventData.tasks?.filter(t => t.id > 1000000000000) || [];
+            if (newTasks.length > 0) {
+                const taskCreationPromises = newTasks.map(task => {
+                    const taskData: EventTaskCreateRequest = {
+                        title: task.title, statusId: statusMap[task.status],
+                        assigneeId: eventData.ownerType === 'USER' ? CURRENT_USER_ID : undefined,
+                        dueDatetime: task.dueDate ? dayjs(task.dueDate).format('YYYY-MM-DDTHH:mm:ss') : null,
+                    };
+                    return createTaskForEvent(eventId, taskData);
+                });
+                promises.push(...taskCreationPromises);
+            }
+    
+            toast.promise(Promise.all(promises), {
                 loading: '일정 업데이트 중...',
                 success: () => {
                     setIsModalOpen(false);
@@ -335,7 +336,6 @@ const SchedulePage: React.FC = () => {
 
         const statusCycle: { [key in EventTask['status']]: EventTask['status'] } = { 'TODO': 'DOING', 'DOING': 'DONE', 'DONE': 'TODO' };
         const nextStatus = statusCycle[taskToUpdate.status];
-        // ✨ [수정] UpdateRequest를 올바른 이름인 UpdateTaskRequest로 변경합니다.
         const requestData: UpdateTaskRequest = { statusId: statusMap[nextStatus] };
 
         toast.promise(
@@ -523,7 +523,12 @@ const SchedulePage: React.FC = () => {
                 </div>
             </div>
 
-            {isModalOpen && <EventEditorModal event={editingEvent} onClose={() => setIsModalOpen(false)} onSave={handleSaveEvent} onDelete={handleDeleteEvent} />}
+            {isModalOpen && <EventEditorModal 
+                event={editingEvent} 
+                onClose={() => setIsModalOpen(false)} 
+                onSave={handleSaveEvent} 
+                onDelete={handleDeleteEvent}
+            />}
 
         </>
     );

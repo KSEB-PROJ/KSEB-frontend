@@ -144,6 +144,7 @@ const EventEditorModal: React.FC<{
 
     const handleParticipantStatusChange = (newStatus: EventParticipant['status']) => {
         if (!formData) return;
+        
         const updatedParticipants = formData.participants?.map(p =>
             p.userId === CURRENT_USER_ID ? { ...p, status: newStatus } : p
         );

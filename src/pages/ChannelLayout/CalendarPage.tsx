@@ -17,7 +17,7 @@ import schedulePageStyles from '../AppLayout/SchedulePage/SchedulePage.module.cs
 import type { ScheduleEvent, EventTask, EventParticipant, UpdateTaskRequest, EventTaskCreateRequest } from '../../types';
 import EventEditorModal from '../AppLayout/SchedulePage/EventEditorModal/EventEditorModal';
 
-import { getGroupEvents, createGroupEvent, updateGroupEvent, deleteGroupEvent, transformToScheduleEvent, createTaskForEvent } from '../../api/events';
+import { getGroupEvents, createGroupEvent, updateGroupEvent, deleteGroupEvent, transformToScheduleEvent, createTaskForEvent, updateParticipantStatus } from '../../api/events';
 import { getGroupDetail } from '../../api/groups';
 import { updateTask } from '../../api/tasks';
 
@@ -56,6 +56,7 @@ const CalendarPage: React.FC = () => {
             const numericGroupId = parseInt(groupId, 10);
             const [groupDetailRes, eventsRes] = await Promise.all([
                 getGroupDetail(numericGroupId),
+                
                 getGroupEvents(numericGroupId)
             ]);
             const groupDetail = groupDetailRes.data;
@@ -67,7 +68,7 @@ const CalendarPage: React.FC = () => {
             const groupForTransform = [{ id: numericGroupId, name: groupDetail.name, code: '', themeColor: '' }];
             const transformedEvents = eventsRes.map(event => {
                 const scheduleEvent = transformToScheduleEvent(event, groupForTransform);
-                scheduleEvent.isEditable = true;
+                scheduleEvent.isEditable = true; 
                 scheduleEvent.createdBy = event.createdBy;
                 if (scheduleEvent.tasks) {
                     allTasks.push(...scheduleEvent.tasks);
@@ -96,7 +97,6 @@ const CalendarPage: React.FC = () => {
         const viewEnd = dayjs(viewRange.end).endOf('day');
 
         events.forEach(event => {
-            const isEditable = true;
             const eventStyleOptions = {
                 ...event,
                 display: 'block',
@@ -104,7 +104,7 @@ const CalendarPage: React.FC = () => {
                 backgroundColor: 'transparent',
                 borderColor: 'transparent',
                 textColor: '#E0E0E0',
-                extendedProps: { ...event, isEditable }
+                extendedProps: { ...event, isEditable: true }
             };
 
             if (event.rrule && event.end) {
@@ -208,7 +208,7 @@ const CalendarPage: React.FC = () => {
                         const taskData: EventTaskCreateRequest = {
                             title: task.title,
                             statusId: statusMap[task.status],
-                            assigneeId: undefined, // 그룹 이벤트는 담당자 지정 로직이 필요하면 추가
+                            assigneeId: undefined, 
                             dueDatetime: task.dueDate ? dayjs(task.dueDate).format('YYYY-MM-DDTHH:mm:ss') : null,
                         };
                         return createTaskForEvent(newEventId, taskData);
@@ -232,36 +232,36 @@ const CalendarPage: React.FC = () => {
 
         } else {
             const eventId = parseInt(eventData.id);
+            const originalEvent = editingEvent;
+            const promises = [];
+
             const requestData = {
-                title: eventData.title,
-                description: eventData.description,
-                location: eventData.location,
+                title: eventData.title, description: eventData.description, location: eventData.location,
                 startDatetime: dayjs(eventData.start).format('YYYY-MM-DDTHH:mm:ss'),
                 endDatetime: eventData.end ? dayjs(eventData.end).format('YYYY-MM-DDTHH:mm:ss') : dayjs(eventData.start).format('YYYY-MM-DDTHH:mm:ss'),
-                allDay: eventData.allDay,
-                rrule: eventData.rrule,
-                themeColor: eventData.color
+                allDay: eventData.allDay, rrule: eventData.rrule, themeColor: eventData.color
             };
+            promises.push(updateGroupEvent(numericGroupId, eventId, requestData));
 
-            const promise = (async () => {
-                await updateGroupEvent(numericGroupId, eventId, requestData);
+            const originalStatus = originalEvent?.participants?.find(p => p.userId === CURRENT_USER_ID)?.status;
+            const newStatus = eventData.participants?.find(p => p.userId === CURRENT_USER_ID)?.status;
+            if (originalStatus && newStatus && originalStatus !== newStatus) {
+                promises.push(updateParticipantStatus(numericGroupId, eventId, { status: newStatus }));
+            }
 
-                const newTasks = eventData.tasks?.filter(t => t.id > 1000000000000) || [];
-                if (newTasks.length > 0) {
-                    const taskCreationPromises = newTasks.map(task => {
-                        const taskData: EventTaskCreateRequest = {
-                            title: task.title,
-                            statusId: statusMap[task.status],
-                            assigneeId: undefined,
-                            dueDatetime: task.dueDate ? dayjs(task.dueDate).format('YYYY-MM-DDTHH:mm:ss') : null,
-                        };
-                        return createTaskForEvent(eventId, taskData);
-                    });
-                    await Promise.all(taskCreationPromises);
-                }
-            })();
+            const newTasks = eventData.tasks?.filter(t => t.id > 1000000000000) || [];
+            if (newTasks.length > 0) {
+                const taskCreationPromises = newTasks.map(task => {
+                    const taskData: EventTaskCreateRequest = {
+                        title: task.title, statusId: statusMap[task.status], assigneeId: undefined,
+                        dueDatetime: task.dueDate ? dayjs(task.dueDate).format('YYYY-MM-DDTHH:mm:ss') : null,
+                    };
+                    return createTaskForEvent(eventId, taskData);
+                });
+                promises.push(...taskCreationPromises);
+            }
 
-            toast.promise(promise, {
+            toast.promise(Promise.all(promises), {
                 loading: '일정 업데이트 중...',
                 success: () => {
                     setIsModalOpen(false);
@@ -290,8 +290,7 @@ const CalendarPage: React.FC = () => {
             error: <b>삭제에 실패했습니다.</b>
         });
     };
-
-
+    
     const todaysEvents = useMemo(() =>
         processedEvents
             .filter(e => dayjs(e.start as string).isSame(agendaDate, 'day'))
@@ -459,7 +458,12 @@ const CalendarPage: React.FC = () => {
                     </div>
                 </div>
             </div>
-            {isModalOpen && <EventEditorModal event={editingEvent} onClose={() => setIsModalOpen(false)} onSave={handleSaveEvent} onDelete={handleDeleteEvent} />}
+            {isModalOpen && <EventEditorModal 
+                event={editingEvent} 
+                onClose={() => setIsModalOpen(false)} 
+                onSave={handleSaveEvent} 
+                onDelete={handleDeleteEvent} 
+            />}
         </>
     );
 };
