@@ -30,7 +30,7 @@ export const transformToScheduleEvent = (event: BackendEventResponse, groups: Gr
         groupName = group?.name;
     }
 
-    // [수정] 백엔드 tasks를 프론트엔드 EventTask 형식으로 변환
+    // 백엔드 tasks를 프론트엔드 EventTask 형식으로 변환
     const tasks: EventTask[] = event.tasks.map(task => ({
         id: task.id,
         eventId: String(event.eventId),

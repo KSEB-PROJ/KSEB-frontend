@@ -25,8 +25,14 @@ import { updateTask } from '../../../api/tasks';
 dayjs.extend(isBetween);
 dayjs.locale('ko');
 
-// 이 값은 실제 로그인된 사용자 ID로 대체되어야 합니다.
 const CURRENT_USER_ID = 1;
+
+const formatColorForCSS = (colorString?: string): string => {
+    if (!colorString) return '#3788d8';
+    if (colorString.startsWith('#')) return colorString;
+    if (colorString.includes(',')) return `rgb(${colorString})`;
+    return colorString;
+};
 
 const getEventInstanceId = (event: ScheduleEvent, date: Date | string): string => {
     if (!event.rrule) return event.id;
@@ -120,7 +126,7 @@ const SchedulePage: React.FC = () => {
 
     const renderEventContent = (eventInfo: EventContentArg) => {
         const props = eventInfo.event.extendedProps as ScheduleEvent;
-        const color = props.color || '#888';
+        const color = formatColorForCSS(props.color);
         const ownerIcon = props.ownerType === 'USER' ? faUser : faLayerGroup;
 
         return (
@@ -329,6 +335,7 @@ const SchedulePage: React.FC = () => {
 
         const statusCycle: { [key in EventTask['status']]: EventTask['status'] } = { 'TODO': 'DOING', 'DOING': 'DONE', 'DONE': 'TODO' };
         const nextStatus = statusCycle[taskToUpdate.status];
+        // ✨ [수정] UpdateRequest를 올바른 이름인 UpdateTaskRequest로 변경합니다.
         const requestData: UpdateTaskRequest = { statusId: statusMap[nextStatus] };
 
         toast.promise(
@@ -445,7 +452,7 @@ const SchedulePage: React.FC = () => {
                             />
                         </div>
                     </div>
-                    <UniversityTimetable />
+                    <UniversityTimetable onTimetableUpdate={fetchData} />
                 </div>
                 <div className={styles.rightColumn} key={dayjs(agendaDate).format('YYYYMMDD')}>
                     <div className={`${styles.panel} ${styles.agendaContainer} ${styles.animatedCard}`}>
@@ -456,26 +463,29 @@ const SchedulePage: React.FC = () => {
                         <div className={styles.scrollableContent}>
                             {todaysEvents.length > 0 ? (
                                 <ul className={styles.agendaList}>
-                                    {todaysEvents.map(event => (
-                                        <li
-                                            key={event.id}
-                                            className={`${styles.agendaItem} ${selectedEventId === event.id ? styles.selected : ''}`}
-                                            onClick={() => setSelectedEventId(event.id!)}
-                                            style={{ '--event-color': (event.extendedProps as ScheduleEvent).color || '#3788d8' } as React.CSSProperties}
-                                        >
-                                            <div className={styles.agendaLeft}>
-                                                <div className={styles.ownerIcon} style={{ backgroundColor: (event.extendedProps as ScheduleEvent).color }}>
-                                                    <FontAwesomeIcon icon={(event.extendedProps as ScheduleEvent).ownerType === 'USER' ? faUser : faLayerGroup} />
+                                    {todaysEvents.map(event => {
+                                        const eventColor = formatColorForCSS((event.extendedProps as ScheduleEvent).color);
+                                        return (
+                                            <li
+                                                key={event.id}
+                                                className={`${styles.agendaItem} ${selectedEventId === event.id ? styles.selected : ''}`}
+                                                onClick={() => setSelectedEventId(event.id!)}
+                                                style={{ '--event-color': eventColor } as React.CSSProperties}
+                                            >
+                                                <div className={styles.agendaLeft}>
+                                                    <div className={styles.ownerIcon} style={{ backgroundColor: eventColor }}>
+                                                        <FontAwesomeIcon icon={(event.extendedProps as ScheduleEvent).ownerType === 'USER' ? faUser : faLayerGroup} />
+                                                    </div>
+                                                    <div className={styles.agendaInfo}>
+                                                        <span className={styles.agendaTitle}>{event.title}</span>
+                                                        <span className={styles.agendaTime}>
+                                                            {event.allDay ? '하루 종일' : `${dayjs(event.start as string).format('HH:mm')} - ${dayjs(event.end as string).format('HH:mm')}`}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <div className={styles.agendaInfo}>
-                                                    <span className={styles.agendaTitle}>{event.title}</span>
-                                                    <span className={styles.agendaTime}>
-                                                        {event.allDay ? '하루 종일' : `${dayjs(event.start as string).format('HH:mm')} - ${dayjs(event.end as string).format('HH:mm')}`}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </li>
-                                    ))}
+                                            </li>
+                                        );
+                                    })}
                                 </ul>
                             ) : (<div className={styles.noItems}>오늘 등록된 일정이 없습니다.</div>)}
                         </div>

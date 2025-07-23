@@ -90,19 +90,19 @@ export interface EventUpdateRequest extends Partial<UserEventCreateRequest> {
 
 /**
  * @typedef Course
- * @description 대학 시간표의 강의 정보 타입
+ * @description 대학 시간표의 강의 정보 타입 (백엔드 DTO와 동기화됨)
  */
 export interface Course {
     id: number;
-    course_code: string;
-    course_name: string;
+    courseCode: string;
+    courseName: string;
     professor: string;
     semester: string;
-    day_of_week: 'MO' | 'TU' | 'WE' | 'TH' | 'FR' | 'SA' | 'SU';
-    start_time: string;
-    end_time: string;
+    dayOfWeek: 'MO' | 'TU' | 'WE' | 'TH' | 'FR' | 'SA' | 'SU';
+    startTime: string;
+    endTime: string;
     location: string;
-    color?: string;
+    themeColor: string;
     rrule?: string;
 }
 
