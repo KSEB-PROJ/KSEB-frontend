@@ -10,6 +10,7 @@ import styles from './EventEditorModal.module.css';
 import RecurrenceEditor from '../RecurrenceEditor/RecurrenceEditor';
 import DatePicker from '../../../../components/date-picker/DatePicker';
 import { updateTask, deleteTask } from '../../../../api/tasks';
+import { updateParticipantStatus } from '../../../../api/events'; // API 함수 import
 import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
 
@@ -99,7 +100,8 @@ const EventEditorModal: React.FC<{
     onClose: () => void;
     onSave: (event: ScheduleEvent) => void;
     onDelete: (eventId: string, ownerType: 'USER' | 'GROUP', ownerId: number) => void;
-}> = ({ event, onClose, onSave, onDelete }) => {
+    onDataRefresh: () => Promise<void>;
+}> = ({ event, onClose, onSave, onDelete, onDataRefresh }) => {
     const [formData, setFormData] = useState<ScheduleEvent | null>(null);
     const [isRecurrenceEnabled, setRecurrenceEnabled] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
@@ -111,7 +113,9 @@ const EventEditorModal: React.FC<{
 
     useEffect(() => {
         setFormData(event);
-        setRecurrenceEnabled(!!event?.rrule);
+        if (event) {
+            setRecurrenceEnabled(!!event.rrule);
+        }
     }, [event]);
 
     const handleClose = useCallback(() => {
@@ -142,13 +146,21 @@ const EventEditorModal: React.FC<{
     };
 
 
-    const handleParticipantStatusChange = (newStatus: EventParticipant['status']) => {
-        if (!formData) return;
-        
-        const updatedParticipants = formData.participants?.map(p =>
-            p.userId === CURRENT_USER_ID ? { ...p, status: newStatus } : p
-        );
-        updateFormData('participants', updatedParticipants);
+    const handleParticipantStatusChange = async (newStatus: EventParticipant['status']) => {
+        if (!formData || formData.ownerType !== 'GROUP' || String(formData.id).startsWith('temp-')) return;
+
+        const currentStatus = formData.participants?.find(p => p.userId === CURRENT_USER_ID)?.status;
+        if (currentStatus === newStatus) return;
+
+        const toastId = toast.loading('상태 업데이트 중...');
+        try {
+            await updateParticipantStatus(formData.ownerId, parseInt(formData.id), { status: newStatus });
+            await onDataRefresh(); // 부모 컴포넌트 데이터 새로고침
+            toast.success('참석 상태가 변경되었습니다.', { id: toastId });
+        } catch (error) {
+            console.error(error);
+            toast.error('상태 변경에 실패했습니다.', { id: toastId });
+        }
     };
 
     const handleAddTask = () => {
@@ -267,6 +279,7 @@ const EventEditorModal: React.FC<{
                                             onClick={() => handleParticipantStatusChange('ACCEPTED')}
                                             data-status="accepted"
                                             title="참석"
+                                            disabled={String(formData.id).startsWith('temp-')}
                                         >
                                             <FontAwesomeIcon icon={faCheckCircle} />
                                         </button>
@@ -275,6 +288,7 @@ const EventEditorModal: React.FC<{
                                             onClick={() => handleParticipantStatusChange('TENTATIVE')}
                                             data-status="tentative"
                                             title="미정"
+                                            disabled={String(formData.id).startsWith('temp-')}
                                         >
                                             <FontAwesomeIcon icon={faQuestionCircle} />
                                         </button>
@@ -283,6 +297,7 @@ const EventEditorModal: React.FC<{
                                             onClick={() => handleParticipantStatusChange('DECLINED')}
                                             data-status="declined"
                                             title="거절"
+                                            disabled={String(formData.id).startsWith('temp-')}
                                         >
                                             <FontAwesomeIcon icon={faTimesCircle} />
                                         </button>

@@ -17,7 +17,7 @@ import schedulePageStyles from '../AppLayout/SchedulePage/SchedulePage.module.cs
 import type { ScheduleEvent, EventTask, EventParticipant, UpdateTaskRequest, EventTaskCreateRequest } from '../../types';
 import EventEditorModal from '../AppLayout/SchedulePage/EventEditorModal/EventEditorModal';
 
-import { getGroupEvents, createGroupEvent, updateGroupEvent, deleteGroupEvent, transformToScheduleEvent, createTaskForEvent, updateParticipantStatus } from '../../api/events';
+import { getGroupEvents, createGroupEvent, updateGroupEvent, deleteGroupEvent, transformToScheduleEvent, createTaskForEvent } from '../../api/events';
 import { getGroupDetail } from '../../api/groups';
 import { updateTask } from '../../api/tasks';
 
@@ -49,14 +49,14 @@ const CalendarPage: React.FC = () => {
     const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const fetchData = useCallback(async () => {
+    const fetchData = useCallback(async (eventIdToUpdate?: string) => {
         if (!groupId) return;
         setIsLoading(true);
         try {
             const numericGroupId = parseInt(groupId, 10);
             const [groupDetailRes, eventsRes] = await Promise.all([
                 getGroupDetail(numericGroupId),
-                
+
                 getGroupEvents(numericGroupId)
             ]);
             const groupDetail = groupDetailRes.data;
@@ -68,7 +68,7 @@ const CalendarPage: React.FC = () => {
             const groupForTransform = [{ id: numericGroupId, name: groupDetail.name, code: '', themeColor: '' }];
             const transformedEvents = eventsRes.map(event => {
                 const scheduleEvent = transformToScheduleEvent(event, groupForTransform);
-                scheduleEvent.isEditable = true; 
+                scheduleEvent.isEditable = true;
                 scheduleEvent.createdBy = event.createdBy;
                 if (scheduleEvent.tasks) {
                     allTasks.push(...scheduleEvent.tasks);
@@ -77,6 +77,13 @@ const CalendarPage: React.FC = () => {
             });
             setEvents(transformedEvents);
             setTasks(allTasks);
+
+            if (eventIdToUpdate) {
+                const updatedEvent = transformedEvents.find(e => e.id === eventIdToUpdate);
+                if (updatedEvent) {
+                    setEditingEvent(updatedEvent);
+                }
+            }
 
         } catch (error) {
             toast.error("그룹 일정 정보를 불러오는 데 실패했습니다.");
@@ -208,7 +215,7 @@ const CalendarPage: React.FC = () => {
                         const taskData: EventTaskCreateRequest = {
                             title: task.title,
                             statusId: statusMap[task.status],
-                            assigneeId: undefined, 
+                            assigneeId: undefined,
                             dueDatetime: task.dueDate ? dayjs(task.dueDate).format('YYYY-MM-DDTHH:mm:ss') : null,
                         };
                         return createTaskForEvent(newEventId, taskData);
@@ -232,7 +239,6 @@ const CalendarPage: React.FC = () => {
 
         } else {
             const eventId = parseInt(eventData.id);
-            const originalEvent = editingEvent;
             const promises = [];
 
             const requestData = {
@@ -242,12 +248,6 @@ const CalendarPage: React.FC = () => {
                 allDay: eventData.allDay, rrule: eventData.rrule, themeColor: eventData.color
             };
             promises.push(updateGroupEvent(numericGroupId, eventId, requestData));
-
-            const originalStatus = originalEvent?.participants?.find(p => p.userId === CURRENT_USER_ID)?.status;
-            const newStatus = eventData.participants?.find(p => p.userId === CURRENT_USER_ID)?.status;
-            if (originalStatus && newStatus && originalStatus !== newStatus) {
-                promises.push(updateParticipantStatus(numericGroupId, eventId, { status: newStatus }));
-            }
 
             const newTasks = eventData.tasks?.filter(t => t.id > 1000000000000) || [];
             if (newTasks.length > 0) {
@@ -290,7 +290,7 @@ const CalendarPage: React.FC = () => {
             error: <b>삭제에 실패했습니다.</b>
         });
     };
-    
+
     const todaysEvents = useMemo(() =>
         processedEvents
             .filter(e => dayjs(e.start as string).isSame(agendaDate, 'day'))
@@ -458,11 +458,12 @@ const CalendarPage: React.FC = () => {
                     </div>
                 </div>
             </div>
-            {isModalOpen && <EventEditorModal 
-                event={editingEvent} 
-                onClose={() => setIsModalOpen(false)} 
-                onSave={handleSaveEvent} 
-                onDelete={handleDeleteEvent} 
+            {isModalOpen && <EventEditorModal
+                event={editingEvent}
+                onClose={() => setIsModalOpen(false)}
+                onSave={handleSaveEvent}
+                onDelete={handleDeleteEvent}
+                onDataRefresh={() => fetchData(editingEvent?.id)}
             />}
         </>
     );
