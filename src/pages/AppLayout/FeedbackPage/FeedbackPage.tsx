@@ -1,12 +1,12 @@
 import React, { useRef, useState } from 'react';
-import { Chart as ChartJS,  CategoryScale,  LinearScale,  BarElement,  Title,  Tooltip,  Legend} from 'chart.js';
+import { Chart as ChartJS,  CategoryScale,  LinearScale,  BarElement,  Tooltip} from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import styles from './FeedbackPage.module.css';
 import dayjs from 'dayjs';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {faUpload, faPlay} from '@fortawesome/free-solid-svg-icons';
+import {faUpload, faPlay, faRobot} from '@fortawesome/free-solid-svg-icons';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
 
 const FeedbackPage: React.FC = () => {
     const inputRef = useRef<HTMLInputElement>(null);
@@ -15,6 +15,22 @@ const FeedbackPage: React.FC = () => {
     const [uploadTime, setUploadTime] = useState<Date | null>(null);
     const [videoURL, setVideoURL] = useState<string | null>(null);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
+    const scores = [10, 60, 85];
+    const getGradientColor = (score: number) => {
+        if (score < 50) {
+            const ratio = score / 50;
+            const r = 255;
+            const g = Math.round(255 * ratio);
+            const b = 0;
+            return `rgb(${r}, ${g}, ${b})`;
+        } else {
+            const ratio = (score - 50) / 50;
+            const r = Math.round(255 * (1 - ratio));
+            const g = Math.round(255 - 127 * ratio);
+            const b = 0;
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+    };
     const options = {
         indexAxis: 'y' as const,  // 가로 바 차트 모드 설정
         responsive: true,         // 반응형 지원
@@ -30,7 +46,8 @@ const FeedbackPage: React.FC = () => {
         labels,
         datasets: [
             {
-            data: [75, 60, 85], borderRadius: 4, barThickness: 20,                   
+            data: scores, borderRadius: 4, barThickness: 20,
+            backgroundColor: scores.map(score => getGradientColor(score)),                   
             },
         ],
         };
@@ -112,7 +129,10 @@ const FeedbackPage: React.FC = () => {
                 </div>
                 {/* 지피티 피드백 영역 */}
                 <div className={styles.feedbackfield}>
+                    <FontAwesomeIcon icon={faRobot} className={styles.playIcon} />
+                    <box className={styles.feedback}>
                     피드백 내용
+                    </box>
                 </div>
             </div>
         </div>

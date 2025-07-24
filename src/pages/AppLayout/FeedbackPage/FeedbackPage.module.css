@@ -44,6 +44,8 @@
 }
 
 .feedbackfield{
+    display: flex;
+    flex-direction: row;
     width: 60%;
     border-radius: 12px;
     word-break: break-word;
@@ -69,8 +71,7 @@
     align-items: center;
     justify-content: center;
     position: relative;
-    background-color: #a0a0a0;
-    padding-right: 1rem;
+    background-color: #111;
 }
 .videoupload:hover {
     border-color: rgb(var(--group-color));
@@ -91,9 +92,10 @@
 }
 
 .thumbnail {
-    width: 100%;
+    width: auto;
     height: 100%;
-    object-fit: cover;
+    max-width: 100%;
+    object-fit: contain;
     border-radius: 12px;
 }
 
@@ -116,5 +118,10 @@
 .chart{
     margin-top: 1rem;
     padding-right: 1rem;
-    height: 200px;
+    height: 180px;
+}
+
+.feedback{
+    margin-left: 1rem;
+    
 }
