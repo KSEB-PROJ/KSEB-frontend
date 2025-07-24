@@ -1,11 +1,5 @@
-import apiClient from './index'; // ⭐ 변경: axios 대신 중앙 apiClient import
+import apiClient from './index';
 import type { UserUpdateRequest, PasswordChangeRequest, UserResponse } from '../types';
-
-/**
- * API 클라이언트 설정
- * ⭐ 삭제: 중앙 apiClient (src/api/index.ts)로 이동했으므로 삭제합니다.
- */
-// const apiClient = axios.create({ ... });
 
 /**
  * 사용자 프로필 정보(이름)와 이미지 파일을 함께 업데이트하는 API

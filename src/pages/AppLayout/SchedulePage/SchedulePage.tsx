@@ -305,7 +305,7 @@ const SchedulePage: React.FC = () => {
         });
     };
 
-    // ⭐ 모달에서 데이터가 변경되었을 때 호출될 함수
+    // 모달에서 데이터가 변경되었을 때 호출될 함수
     const handleEventUpdate = (updatedEvent: ScheduleEvent) => {
         // 전체 이벤트 목록 업데이트
         setEvents(prevEvents =>

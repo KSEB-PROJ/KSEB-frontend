@@ -292,14 +292,14 @@ const CalendarPage: React.FC = () => {
         });
     };
     
-    // ⭐ 추가: 모달에서 변경된 이벤트 데이터를 받아 메인 events 상태를 업데이트하는 함수
+    // 모달에서 변경된 이벤트 데이터를 받아 메인 events 상태를 업데이트하는 함수
     const handleEventUpdate = (updatedEvent: ScheduleEvent) => {
         setEvents(prevEvents => 
             prevEvents.map(event => 
                 event.id === updatedEvent.id ? updatedEvent : event
             )
         );
-        // ⭐ 편집 중인 이벤트 상태도 함께 업데이트
+        // 편집 중인 이벤트 상태도 함께 업데이트
         setEditingEvent(updatedEvent);
     };
 

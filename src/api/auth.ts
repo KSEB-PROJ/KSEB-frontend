@@ -1,4 +1,3 @@
-//axios로 연결
 import apiClient from './index'; // 중앙 관리 apiClient import
 // 데이터 타입
 import type { UserLoginRequest, UserRegisterRequest } from '../types';

@@ -1,11 +1,5 @@
-import apiClient from './index'; // ⭐ 변경: axios 대신 중앙 apiClient import
+import apiClient from './index';
 import type { ChatMessageResponse, ChatMessageRequest } from '../types';
-
-/**
- * API 클라이언트 설정
- * ⭐ 삭제: 중앙 apiClient (src/api/index.ts)로 이동했으므로 삭제합니다.
- */
-// const apiClient = axios.create({ ... });
 
 /**
  * 특정 채널의 메시지 목록을 가져오는 API
