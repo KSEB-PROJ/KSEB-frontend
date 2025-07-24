@@ -123,5 +123,12 @@
 
 .feedback{
     margin-left: 1rem;
-    
+    border: 2px solid rgb(var(--group-color));
+    border-radius: 12px;
+    padding: 0.5rem;
+    width: fit-content;
+    max-height: 480px;
+    overflow-y: scroll;
+    white-space: pre-wrap;
+    line-height: 1.6;
 }
