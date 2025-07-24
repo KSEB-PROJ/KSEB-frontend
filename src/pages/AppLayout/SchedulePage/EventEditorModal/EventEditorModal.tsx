@@ -9,11 +9,12 @@ import type { ScheduleEvent, EventTask, EventParticipant, UpdateTaskRequest } fr
 import styles from './EventEditorModal.module.css';
 import RecurrenceEditor from '../RecurrenceEditor/RecurrenceEditor';
 import DatePicker from '../../../../components/date-picker/DatePicker';
-import { updateTask, deleteTask } from '../../../../api/tasks';
-import { updateParticipantStatus } from '../../../../api/events'; // API 함수 import
+// ⭐ 변경: updateTask, deleteTask와 함께 updateParticipantStatus를 import 합니다.
+import { updateTask, deleteTask, updateParticipantStatus } from '../../../../api/tasks';
 import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
 
+// ... (TaskItem, colorPalette, CURRENT_USER_ID 등 상단 코드는 동일)
 const colorPalette = [
     '#8400ff', '#14d6ae', '#ec4899', '#3b82f6',
     '#f97316', '#22c55e', '#eab308', '#06b6d4',
@@ -94,14 +95,12 @@ const TaskItem: React.FC<{
     );
 };
 
-
 const EventEditorModal: React.FC<{
     event: ScheduleEvent | null;
     onClose: () => void;
     onSave: (event: ScheduleEvent) => void;
     onDelete: (eventId: string, ownerType: 'USER' | 'GROUP', ownerId: number) => void;
-    onDataRefresh: () => Promise<void>;
-}> = ({ event, onClose, onSave, onDelete, onDataRefresh }) => {
+}> = ({ event, onClose, onSave, onDelete }) => {
     const [formData, setFormData] = useState<ScheduleEvent | null>(null);
     const [isRecurrenceEnabled, setRecurrenceEnabled] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
@@ -113,9 +112,7 @@ const EventEditorModal: React.FC<{
 
     useEffect(() => {
         setFormData(event);
-        if (event) {
-            setRecurrenceEnabled(!!event.rrule);
-        }
+        setRecurrenceEnabled(!!event?.rrule);
     }, [event]);
 
     const handleClose = useCallback(() => {
@@ -126,7 +123,8 @@ const EventEditorModal: React.FC<{
     const updateFormData = useCallback((field: keyof ScheduleEvent, value: ScheduleEvent[keyof ScheduleEvent]) => {
         setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
     }, []);
-
+    
+    // ... (handleSave, handleDelete, handleAddTask, handleUpdateTask, handleDeleteTask, handleRecurrenceChange, ParticipantStatusIcon 등 다른 함수는 동일)
     const handleSave = () => {
         if (!formData) return;
         if (isEditable && !formData.title.trim()) {
@@ -144,23 +142,32 @@ const EventEditorModal: React.FC<{
         if (!isEditable || !formData) return;
         onDelete(formData.id, formData.ownerType, formData.ownerId);
     };
+    
+    // ⭐ 변경: handleParticipantStatusChange 함수를 API 호출 로직으로 수정
+    const handleParticipantStatusChange = (newStatus: EventParticipant['status']) => {
+        if (!formData || formData.ownerType !== 'GROUP') return;
 
+        const originalParticipants = formData.participants; // 실패 시 복구를 위한 원본 데이터
+        
+        // 1. UI를 먼저 낙관적으로 업데이트
+        const updatedParticipants = formData.participants?.map(p =>
+            p.userId === CURRENT_USER_ID ? { ...p, status: newStatus } : p
+        );
+        updateFormData('participants', updatedParticipants);
 
-    const handleParticipantStatusChange = async (newStatus: EventParticipant['status']) => {
-        if (!formData || formData.ownerType !== 'GROUP' || String(formData.id).startsWith('temp-')) return;
-
-        const currentStatus = formData.participants?.find(p => p.userId === CURRENT_USER_ID)?.status;
-        if (currentStatus === newStatus) return;
-
-        const toastId = toast.loading('상태 업데이트 중...');
-        try {
-            await updateParticipantStatus(formData.ownerId, parseInt(formData.id), { status: newStatus });
-            await onDataRefresh(); // 부모 컴포넌트 데이터 새로고침
-            toast.success('참석 상태가 변경되었습니다.', { id: toastId });
-        } catch (error) {
-            console.error(error);
-            toast.error('상태 변경에 실패했습니다.', { id: toastId });
-        }
+        // 2. API 호출
+        const eventId = parseInt(formData.id);
+        const promise = updateParticipantStatus(formData.ownerId, eventId, newStatus);
+        
+        toast.promise(promise, {
+            loading: '상태 업데이트 중...',
+            success: '참여 상태가 변경되었습니다.',
+            error: (err) => {
+                // 3. API 호출 실패 시, UI를 원래 상태로 복구
+                updateFormData('participants', originalParticipants);
+                return '상태 변경에 실패했습니다.';
+            }
+        });
     };
 
     const handleAddTask = () => {
@@ -223,7 +230,8 @@ const EventEditorModal: React.FC<{
         const { icon, className, title } = iconMap[status];
         return <FontAwesomeIcon icon={icon} className={className} title={title} />;
     };
-
+    
+    // ... (나머지 JSX 렌더링 코드는 동일)
     if (!formData) return null;
 
     const currentUserStatus = formData.participants?.find(p => p.userId === CURRENT_USER_ID)?.status;
@@ -279,7 +287,6 @@ const EventEditorModal: React.FC<{
                                             onClick={() => handleParticipantStatusChange('ACCEPTED')}
                                             data-status="accepted"
                                             title="참석"
-                                            disabled={String(formData.id).startsWith('temp-')}
                                         >
                                             <FontAwesomeIcon icon={faCheckCircle} />
                                         </button>
@@ -288,7 +295,6 @@ const EventEditorModal: React.FC<{
                                             onClick={() => handleParticipantStatusChange('TENTATIVE')}
                                             data-status="tentative"
                                             title="미정"
-                                            disabled={String(formData.id).startsWith('temp-')}
                                         >
                                             <FontAwesomeIcon icon={faQuestionCircle} />
                                         </button>
@@ -297,7 +303,6 @@ const EventEditorModal: React.FC<{
                                             onClick={() => handleParticipantStatusChange('DECLINED')}
                                             data-status="declined"
                                             title="거절"
-                                            disabled={String(formData.id).startsWith('temp-')}
                                         >
                                             <FontAwesomeIcon icon={faTimesCircle} />
                                         </button>
@@ -453,5 +458,4 @@ const EventEditorModal: React.FC<{
         </div>
     );
 };
-
 export default EventEditorModal;

@@ -1,13 +1,11 @@
-import axios from 'axios';
+import apiClient from './index'; // ⭐ 변경: axios 대신 중앙 apiClient import
 import type { Group, GroupListDto } from '../types'; // 아래에서 생성할 타입
 
 /**
  * API 클라이언트 설정
+ * ⭐ 삭제: 중앙 apiClient (src/api/index.ts)로 이동했으므로 삭제합니다.
  */
-const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL,
-    withCredentials: true,
-});
+// const apiClient = axios.create({ ... });
 
 /**
  * 내가 속한 모든 그룹 목록을 가져오는 API

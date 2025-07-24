@@ -1,10 +1,11 @@
-import axios from 'axios';
+import apiClient from './index'; // ⭐ 변경: axios 대신 중앙 apiClient import
 import type { ChannelListDto, ChannelCreateRequest, Channel } from '../types';
 
-const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL,
-    withCredentials: true,
-});
+/**
+ * API 클라이언트 설정
+ * ⭐ 삭제: 중앙 apiClient (src/api/index.ts)로 이동했으므로 삭제합니다.
+ */
+// const apiClient = axios.create({ ... });
 
 /**
  * 특정 그룹의 모든 채널 목록을 가져오는 API

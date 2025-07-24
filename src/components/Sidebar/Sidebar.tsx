@@ -30,12 +30,11 @@ import CreateChannelModal from '../CreateChannelModal/CreateChannelModal';
 import CreateGroupModal from '../CreateGroupModal/CreateGroupModal';
 import { getMyGroups } from '../../api/groups';
 import type { Group, GroupListDto } from '../../types/group';
-import { logout } from '../../api/auth';
+// import { logout } from '../../api/auth'; // api/auth의 logout 대신 스토어 사용
 import { getChannelsByGroup, createChannel } from '../../api/channels';
 import type { ChannelListDto } from '../../types/channel';
 import { getCurrentUser } from '../../api/users';
-import type { UserResponse } from '../../types';
-
+import { useAuthStore } from '../../stores/authStore';
 
 // 메뉴 아이템 타입 정의
 type MenuItemLink = {
@@ -110,13 +109,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
     const [hoveredId, setHoveredId] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isChannelLoading, setIsChannelLoading] = useState(false);
-    const [currentUser, setCurrentUser] = useState<UserResponse | null>(null);
-
+    
+    // ⭐ 변경: 로컬 state 대신 Zustand 스토어 사용
+    const { user, setUser, logout } = useAuthStore();
+    
     const mainmenuRefs = useRef<(HTMLLIElement | null)[]>([]);
     const channelRefs = useRef<(HTMLLIElement | null)[]>([]);
     const profileMenuRef = useRef<HTMLDivElement>(null);
     const timelineRef = useRef<HTMLDivElement>(null);
-
+    
+    // ... (fetchGroups, handleGroupUpdate, useEffects 등 대부분의 로직은 동일)
     const fetchGroups = useCallback(async () => {
         setIsLoading(true);
         try {
@@ -222,35 +224,34 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
-
+    
+    // currentUser state 대신 스토어의 user 사용
     useEffect(() => {
         const fetchCurrentUser = async () => {
             try {
-                const response = await getCurrentUser();
-                setCurrentUser(response.data);
+                if (!user) { // 스토어에 유저 정보가 없을 때만 API 호출
+                    const response = await getCurrentUser();
+                    setUser(response.data); // 스토어에 저장
+                }
             } catch (error) {
                 console.error("Failed to fetch user data:", error);
+                logout(); // 에러 발생 시(예: 토큰 만료) 로그아웃 처리
+                navigate('/login');
             }
         };
 
         fetchCurrentUser();
-    }, []);
+    }, [user, setUser, logout, navigate]);
 
-    const handleLogout = async () => {
-        await toast.promise(
-            logout(),
-            {
-                loading: '로그아웃 중...',
-                success: () => {
-                    navigate('/login');
-                    return <b>안전하게 로그아웃되었습니다.</b>;
-                },
-                error: '로그아웃에 실패했습니다. 다시 시도해주세요.',
-            }
-        );
+    // 로그아웃 로직을 스토어 액션으로 대체
+    const handleLogout = () => {
+        logout(); // 스토어의 토큰과 유저 정보 초기화
+        toast.success('안전하게 로그아웃되었습니다.');
+        navigate('/login'); // 로그인 페이지로 리디렉션
     };
-
-    const handleDragEnd = (event: DragEndEvent) => {
+    
+    // ... (handleDragEnd, handleCreateChannel, handleSelectGroup, copyCodeToClipboard 등 나머지 함수는 동일)
+     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         if (over && active.id !== over.id) {
             const oldIndex = groupChannels.findIndex(c => c.id === active.id);
@@ -294,7 +295,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
             toast.success(`'${code}' 코드가 복사되었습니다.`);
         });
     };
-
+    
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
     return (
@@ -309,6 +310,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
             )}
 
             <nav className={`${styles.menu} ${isOpen ? styles.open : ''}`}>
+                {/* ... (actionBar, groupOverlay 등 상단 JSX는 동일) ... */}
                 <div className={styles.actionBar}>
                     {isLoading ? (
                         <div className={styles.groupDisplay}>
@@ -447,7 +449,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
                         <span className={`${styles.menuText} ${isOpen ? styles.openText : ''}`}>Collapse</span>
                     </button>
                 </div>
-
+                
+                {/* currentUser를 스토어의 user로 교체 */}
                 <div className={styles.profileSection} ref={profileMenuRef}>
                     <div
                         className={`${styles.profileLink} ${location.pathname === '/app/profile' ? styles.profileActive : ''}`}
@@ -455,14 +458,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
                     >
                         <div className={styles.profileDetails}>
                             <img
-                                src={currentUser?.profileImg ? `${import.meta.env.VITE_API_BASE_URL.replace('/api', '')}${currentUser.profileImg}` : `https://i.imgur.com/5cLDeXy.png`}
+                                src={user?.profileImg ? `${import.meta.env.VITE_API_BASE_URL.replace('/api', '')}${user.profileImg}` : `https://i.imgur.com/5cLDeXy.png`}
                                 alt="profile"
                                 className={styles.profileIcon}
                                 style={{ borderRadius: '50%', objectFit: 'cover', padding: 0 }}
                             />
                             <div className={`${styles.profileTextContainer} ${isOpen ? styles.openText : ''}`}>
-                                <span className={styles.profileName}>{currentUser?.name || 'User Name'}</span>
-                                <span className={styles.profileRole}>{currentUser?.email || 'email@example.com'}</span>                            </div>
+                                <span className={styles.profileName}>{user?.name || 'User Name'}</span>
+                                <span className={styles.profileRole}>{user?.email || 'email@example.com'}</span>
+                            </div>
                         </div>
                     </div>
                     {isProfileMenuOpen && (

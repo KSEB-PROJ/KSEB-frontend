@@ -5,6 +5,7 @@ import styles from './LoginForm.module.css';   // CSS 모듈 import (컴포넌�
 import { Link } from 'react-router-dom';
 import { login } from '../../api/auth';
 import { AxiosError } from 'axios';
+import { useAuthStore } from '../../stores/authStore';
 
 const LoginForm: React.FC = () => {
     // 입력값을 저장할 곳. 내가 입력하는 값이 바로 이 변수에 저장됨.
@@ -12,6 +13,7 @@ const LoginForm: React.FC = () => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false); // 비밀번호 표시 여부(토글)
     const navigate = useNavigate(); // 리액트 라우터의 페이지 이동 함수
+    const { setToken } = useAuthStore(); // 스토어에서 setToken 액션 가져오기
 
     /*
      * 로그인 폼 제출 이벤트 핸들러 (버튼 클릭하면 백엔드에 진짜 로그인 요청 보내는 부분)
@@ -26,7 +28,9 @@ const LoginForm: React.FC = () => {
             login({ email, password }), // API 함수에 입력값 전달
             {
                 loading: '로그인 중...',
-                success: () => {
+                success: (res) => { // 성공 시 응답(res) 처리
+                    const { token } = res.data.data; // 응답 데이터에서 토큰 추출
+                    setToken(token); // Zustand 스토어에 토큰 저장
                     navigate('/app'); // 성공 시 페이지 이동
                     return <b>로그인 성공! 환영합니다.</b>; // 성공 알림 메시지
                 },
