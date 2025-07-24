@@ -5,25 +5,26 @@ import {
     faSignature, faPlus, faTrash, faTasks, faLock, faUsers, faCheckCircle,
     faTimesCircle, faQuestionCircle, faPalette, faLayerGroup, faCheck
 } from '@fortawesome/free-solid-svg-icons';
-import type { ScheduleEvent, EventTask, EventParticipant } from '../types';
+import type { ScheduleEvent, EventTask, EventParticipant, UpdateTaskRequest } from '../../../../types';
 import styles from './EventEditorModal.module.css';
 import RecurrenceEditor from '../RecurrenceEditor/RecurrenceEditor';
 import DatePicker from '../../../../components/date-picker/DatePicker';
+import { updateTask, deleteTask } from '../../../../api/tasks';
+import { updateParticipantStatus } from '../../../../api/events'; // API 함수 import
+import toast from 'react-hot-toast';
+import dayjs from 'dayjs';
 
-// --- 색상 팔레트 옵션 ---
 const colorPalette = [
     '#8400ff', '#14d6ae', '#ec4899', '#3b82f6',
     '#f97316', '#22c55e', '#eab308', '#06b6d4',
     '#ef4444', '#6366f1', '#a855f7', '#10b981'
 ];
-// [추가] 현재 사용자 ID (임시 Mock 데이터)
-const CURRENT_USER_ID = 123;
+const CURRENT_USER_ID = 1;
 
-// TaskItem 컴포넌트 로직
 const TaskItem: React.FC<{
     task: EventTask;
-    onUpdate: (field: keyof EventTask, value: EventTask[keyof EventTask]) => void;
-    onDelete: () => void;
+    onUpdate: (taskId: number, field: keyof EventTask, value: EventTask[keyof EventTask]) => void;
+    onDelete: (taskId: number) => void;
     isEditable: boolean;
 }> = ({ task, onUpdate, onDelete, isEditable }) => {
     const statuses: EventTask['status'][] = ['TODO', 'DOING', 'DONE'];
@@ -45,7 +46,7 @@ const TaskItem: React.FC<{
     const handleBlur = () => {
         setIsEditing(false);
         if (textRef.current) {
-            onUpdate('title', textRef.current.innerText);
+            onUpdate(task.id, 'title', textRef.current.innerText);
         }
     };
 
@@ -57,7 +58,7 @@ const TaskItem: React.FC<{
                         key={status}
                         data-status={status}
                         className={`${styles.statusPill} ${task.status === status ? styles.active : ''}`}
-                        onClick={() => onUpdate('status', status)}
+                        onClick={() => onUpdate(task.id, 'status', status)}
                         disabled={!isEditable}
                     >
                         {status === 'TODO' && '할 일'}
@@ -84,9 +85,9 @@ const TaskItem: React.FC<{
             </div>
 
             <div className={styles.taskDueDate}>
-                <DatePicker value={task.dueDate} onChange={(date) => onUpdate('dueDate', date)} showTime isEditable={isEditable} />
+                <DatePicker value={task.dueDate} onChange={(date) => onUpdate(task.id, 'dueDate', date)} showTime isEditable={isEditable} />
             </div>
-            <button onClick={onDelete} className={styles.deleteTaskButton} title="삭제" disabled={!isEditable}>
+            <button onClick={() => onDelete(task.id)} className={styles.deleteTaskButton} title="삭제" disabled={!isEditable}>
                 <FontAwesomeIcon icon={faTrash} />
             </button>
         </li>
@@ -94,27 +95,27 @@ const TaskItem: React.FC<{
 };
 
 
-// 메인 모달 컴포넌트
 const EventEditorModal: React.FC<{
     event: ScheduleEvent | null;
     onClose: () => void;
     onSave: (event: ScheduleEvent) => void;
-    onDelete: (eventId: string) => void;
-}> = ({ event, onClose, onSave, onDelete }) => {
+    onDelete: (eventId: string, ownerType: 'USER' | 'GROUP', ownerId: number) => void;
+    onDataRefresh: () => Promise<void>;
+}> = ({ event, onClose, onSave, onDelete, onDataRefresh }) => {
     const [formData, setFormData] = useState<ScheduleEvent | null>(null);
     const [isRecurrenceEnabled, setRecurrenceEnabled] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
 
     const isEditable = useMemo(() => formData?.isEditable ?? false, [formData]);
     const modalKey = useMemo(() => (event?.id || 'new') + '-' + Date.now(), [event]);
+    const statusMap: { [key in EventTask['status']]: number } = { 'TODO': 1, 'DOING': 2, 'DONE': 3 };
+
 
     useEffect(() => {
+        setFormData(event);
         if (event) {
-            setFormData({ ...event, color: event.color || colorPalette[0] });
-        } else {
-            setFormData(null);
+            setRecurrenceEnabled(!!event.rrule);
         }
-        setRecurrenceEnabled(!!event?.rrule);
     }, [event]);
 
     const handleClose = useCallback(() => {
@@ -129,7 +130,11 @@ const EventEditorModal: React.FC<{
     const handleSave = () => {
         if (!formData) return;
         if (isEditable && !formData.title.trim()) {
-            alert('일정 제목을 입력해주세요.');
+            toast.error('일정 제목을 입력해주세요.');
+            return;
+        }
+        if (isEditable && !formData.color) {
+            toast.error('테마 색상을 선택해주세요.');
             return;
         }
         onSave(formData);
@@ -137,35 +142,77 @@ const EventEditorModal: React.FC<{
 
     const handleDelete = () => {
         if (!isEditable || !formData) return;
-        const originalId = formData.id.startsWith('event-') ? formData.id.split('-').slice(0, 3).join('-') : formData.id;
-        onDelete(originalId);
+        onDelete(formData.id, formData.ownerType, formData.ownerId);
     };
 
-    const handleParticipantStatusChange = (newStatus: EventParticipant['status']) => {
-        if (!formData || !isEditable) return;
-        const updatedParticipants = formData.participants?.map(p =>
-            p.userId === CURRENT_USER_ID ? { ...p, status: newStatus } : p
-        );
-        updateFormData('participants', updatedParticipants);
+
+    const handleParticipantStatusChange = async (newStatus: EventParticipant['status']) => {
+        if (!formData || formData.ownerType !== 'GROUP' || String(formData.id).startsWith('temp-')) return;
+
+        const currentStatus = formData.participants?.find(p => p.userId === CURRENT_USER_ID)?.status;
+        if (currentStatus === newStatus) return;
+
+        const toastId = toast.loading('상태 업데이트 중...');
+        try {
+            await updateParticipantStatus(formData.ownerId, parseInt(formData.id), { status: newStatus });
+            await onDataRefresh(); // 부모 컴포넌트 데이터 새로고침
+            toast.success('참석 상태가 변경되었습니다.', { id: toastId });
+        } catch (error) {
+            console.error(error);
+            toast.error('상태 변경에 실패했습니다.', { id: toastId });
+        }
     };
 
     const handleAddTask = () => {
         if (!formData || !isEditable) return;
-        const newTask: EventTask = { id: Date.now(), eventId: formData.id, title: '', status: 'TODO', dueDate: null };
+        const newTask: EventTask = { id: Date.now(), eventId: formData.id, title: '새로운 할 일', status: 'TODO', dueDate: null };
         updateFormData('tasks', [...(formData.tasks || []), newTask]);
     };
 
     const handleUpdateTask = (taskId: number, field: keyof EventTask, value: EventTask[keyof EventTask]) => {
         if (!formData || !isEditable) return;
+
         const updatedTasks = formData.tasks?.map(t => t.id === taskId ? { ...t, [field]: value } : t);
         updateFormData('tasks', updatedTasks);
+
+        const isTemporaryTask = taskId > 1000000000000;
+
+        if (!isTemporaryTask) {
+            const requestData: UpdateTaskRequest = {};
+            if (field === 'title') requestData.title = value as string;
+            if (field === 'dueDate') requestData.dueDatetime = value ? dayjs(value).format('YYYY-MM-DDTHH:mm:ss') : null;
+            if (field === 'status') requestData.statusId = statusMap[value as EventTask['status']];
+
+            if (Object.keys(requestData).length > 0) {
+                toast.promise(updateTask(taskId, requestData), {
+                    loading: '업데이트 중...',
+                    success: <b>업데이트 완료!</b>,
+                    error: <b>업데이트 실패.</b>
+                });
+            }
+        }
     };
 
     const handleDeleteTask = (taskId: number) => {
         if (!formData || !isEditable) return;
+
         const filteredTasks = formData.tasks?.filter(t => t.id !== taskId);
         updateFormData('tasks', filteredTasks);
+
+        const isTemporaryTask = taskId > 1000000000000;
+
+        if (!isTemporaryTask) {
+            toast.promise(deleteTask(taskId), {
+                loading: '삭제 중...',
+                success: <b>삭제되었습니다.</b>,
+                error: <b>삭제에 실패했습니다.</b>
+            });
+        }
     };
+
+    const handleRecurrenceChange = useCallback((rrule: string | undefined) => {
+        updateFormData('rrule', rrule);
+    }, [updateFormData]);
 
     const ParticipantStatusIcon = ({ status }: { status: EventParticipant['status'] }) => {
         const iconMap = {
@@ -230,27 +277,27 @@ const EventEditorModal: React.FC<{
                                         <button
                                             className={`${styles.statusIconButton} ${currentUserStatus === 'ACCEPTED' ? styles.active : ''}`}
                                             onClick={() => handleParticipantStatusChange('ACCEPTED')}
-                                            disabled={!isEditable}
                                             data-status="accepted"
                                             title="참석"
+                                            disabled={String(formData.id).startsWith('temp-')}
                                         >
                                             <FontAwesomeIcon icon={faCheckCircle} />
                                         </button>
                                         <button
                                             className={`${styles.statusIconButton} ${currentUserStatus === 'TENTATIVE' ? styles.active : ''}`}
                                             onClick={() => handleParticipantStatusChange('TENTATIVE')}
-                                            disabled={!isEditable}
                                             data-status="tentative"
                                             title="미정"
+                                            disabled={String(formData.id).startsWith('temp-')}
                                         >
                                             <FontAwesomeIcon icon={faQuestionCircle} />
                                         </button>
                                         <button
                                             className={`${styles.statusIconButton} ${currentUserStatus === 'DECLINED' ? styles.active : ''}`}
                                             onClick={() => handleParticipantStatusChange('DECLINED')}
-                                            disabled={!isEditable}
                                             data-status="declined"
                                             title="거절"
+                                            disabled={String(formData.id).startsWith('temp-')}
                                         >
                                             <FontAwesomeIcon icon={faTimesCircle} />
                                         </button>
@@ -311,7 +358,7 @@ const EventEditorModal: React.FC<{
                         </div>
                         {isRecurrenceEnabled && (
                             <div className={styles.recurrenceEditorWrapper}>
-                                <RecurrenceEditor rruleString={formData.rrule} onChange={(rrule) => updateFormData('rrule', rrule)} startDate={formData.start} modalKey={modalKey} isEditable={isEditable} />
+                                <RecurrenceEditor rruleString={formData.rrule} onChange={handleRecurrenceChange} startDate={formData.start} modalKey={modalKey} isEditable={isEditable} />
                             </div>
                         )}
                     </div>
@@ -352,8 +399,8 @@ const EventEditorModal: React.FC<{
                                     <TaskItem
                                         key={task.id}
                                         task={task}
-                                        onUpdate={(field, value) => handleUpdateTask(task.id, field, value)}
-                                        onDelete={() => handleDeleteTask(task.id)}
+                                        onUpdate={handleUpdateTask}
+                                        onDelete={handleDeleteTask}
                                         isEditable={isEditable}
                                     />
                                 ))}
@@ -378,18 +425,29 @@ const EventEditorModal: React.FC<{
                 </main>
 
                 <footer className={styles.footer}>
-                    {(isEditable && !String(formData.id).startsWith('temp-')) ? (
-                        <button onClick={handleDelete} className={styles.deleteButton}>삭제</button>
-                    ) : <div></div>}
-                    <div style={{ flexGrow: 1 }} />
-                    <div className={styles.actionButtons}>
-                        <button onClick={handleClose} className={`${styles.button} ${styles.cancelButton}`}>
-                            취소
-                        </button>
-                        {isEditable && (
-                            <button onClick={handleSave} className={`${styles.button} ${styles.saveButton}`}>저장</button>
-                        )}
-                    </div>
+                    {isEditable ? (
+                        <>
+                            {!String(formData.id).startsWith('temp-') ? (
+                                <button onClick={handleDelete} className={styles.deleteButton}>삭제</button>
+                            ) : <div />}
+                            <div style={{ flexGrow: 1 }} />
+                            <div className={styles.actionButtons}>
+                                <button onClick={handleClose} className={`${styles.button} ${styles.cancelButton}`}>
+                                    취소
+                                </button>
+                                <button onClick={handleSave} className={`${styles.button} ${styles.saveButton}`}>저장</button>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div style={{ flexGrow: 1 }} />
+                            <div className={styles.actionButtons}>
+                                <button onClick={handleClose} className={`${styles.button} ${styles.cancelButton}`}>
+                                    닫기
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </footer>
             </div>
         </div>

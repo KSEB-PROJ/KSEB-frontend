@@ -708,6 +708,16 @@
   color: #fff;
 }
 
+.statusIconButton[data-status="accepted"]:hover {
+    background-color: var(--status-color);
+}
+.statusIconButton[data-status="tentative"]:hover {
+    background-color: var(--status-color);
+}
+.statusIconButton[data-status="declined"]:hover {
+    background-color: var(--status-color);
+}
+
 .statusIconButton:disabled {
   color: #555;
   cursor: not-allowed;

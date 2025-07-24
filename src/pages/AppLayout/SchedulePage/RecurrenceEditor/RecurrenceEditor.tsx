@@ -1,5 +1,3 @@
-// kdae/src - front/pages/SchedulePage/RecurrenceEditor.tsx
-
 import React, { useState, useEffect, useRef } from 'react';
 import { RRule, rrulestr } from 'rrule';
 import dayjs from 'dayjs';
@@ -11,10 +9,9 @@ interface Props {
   onChange: (rrule: string | undefined) => void;
   startDate: string;
   modalKey?: string;
-  isEditable?: boolean; // [추가]
+  isEditable?: boolean;
 }
 
-// ... 나머지 코드는 이전과 동일하나, isEditable prop을 사용하도록 수정 ...
 const RRuleWeekdays = [RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR, RRule.SA, RRule.SU];
 const weekdayMap = [{ value: 0, label: '월' }, { value: 1, label: '화' }, { value: 2, label: '수' }, { value: 3, label: '목' }, { value: 4, label: '금' }, { value: 5, label: '토' }, { value: 6, label: '일' }];
 
@@ -36,16 +33,16 @@ const RecurrenceEditor: React.FC<Props> = ({ rruleString, onChange, startDate, m
       return;
     }
     try {
-      const rule = rrulestr(rruleString);
+      const rule = rrulestr(`DTSTART:${dayjs(startDate).format('YYYYMMDDTHHmmss')}Z\nRRULE:${rruleString}`);
       setFreq(String(rule.options.freq));
-      // ... 파싱 로직 ...
+      setByweekday(rule.options.byweekday || []);
       setUntil(rule.options.until ? dayjs(rule.options.until).toISOString() : null);
       didInit.current = true;
     } catch {
       setFreq('NONE'); setByweekday([]); setUntil(null);
       didInit.current = true;
     }
-  }, [rruleString]);
+  }, [rruleString, startDate]);
 
   useEffect(() => {
     if (!didInit.current || !isEditable) return;
@@ -54,18 +51,25 @@ const RecurrenceEditor: React.FC<Props> = ({ rruleString, onChange, startDate, m
       return;
     }
     const selectedWeekdays = byweekday.map((i) => RRuleWeekdays[i]);
-    const opts = {
+    const opts: Partial<RRule.Options> = {
       freq: Number(freq),
-      dtstart: dayjs(startDate).startOf('day').toDate(),
-      wkst: 0,
+      wkst: RRule.MO,
       ...(selectedWeekdays.length > 0 ? { byweekday: selectedWeekdays } : {}),
       ...(until && dayjs(until).isValid()
         ? { until: dayjs(until).endOf('day').toDate() }
         : {}),
     };
+    
     const rule = new RRule(opts as RRule.Options);
-    onChange(rule.toString());
-  }, [freq, byweekday, until, startDate, onChange, isEditable]);
+    // [수정] "RRULE:" 접두사를 제거하고 순수 규칙만 전달
+    const ruleString = rule.toString();
+    const finalRruleString = ruleString.startsWith('RRULE:') ? ruleString.substring(6) : ruleString;
+
+    if (finalRruleString !== rruleString) {
+        onChange(finalRruleString);
+    }
+
+  }, [freq, byweekday, until, startDate, onChange, rruleString, isEditable]);
 
   const handleFreqChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const v = e.target.value;

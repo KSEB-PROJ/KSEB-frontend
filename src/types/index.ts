@@ -5,3 +5,4 @@ export * from './channel';
 export * from './chat';
 export * from './notice';
 export * from './users';
+export * from './events';
