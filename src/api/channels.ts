@@ -1,10 +1,6 @@
-import axios from 'axios';
+import apiClient from './index';
 import type { ChannelListDto, ChannelCreateRequest, Channel } from '../types';
 
-const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL,
-    withCredentials: true,
-});
 
 /**
  * 특정 그룹의 모든 채널 목록을 가져오는 API

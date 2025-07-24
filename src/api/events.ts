@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from './index';
 import type {
     ScheduleEvent,
     UserEventCreateRequest,
@@ -10,13 +10,8 @@ import type {
     EventCreateResult,
     EventTaskResponse,
     EventTask,
-    ParticipantStatusUpdateRequest
+    EventParticipant
 } from '../types';
-
-const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL,
-    withCredentials: true,
-});
 
 /**
  * 백엔드 EventResponse를 프론트엔드 ScheduleEvent로 변환
@@ -113,11 +108,11 @@ export const createTaskForEvent = (eventId: number, taskData: EventTaskCreateReq
 };
 
 /**
- * [추가] 그룹 이벤트 참가 상태 업데이트 API
- * @param groupId - 그룹 ID
- * @param eventId - 이벤트 ID
- * @param data - 변경할 상태 정보 { status: 'ACCEPTED' | 'DECLINED' | 'TENTATIVE' }
+ * 그룹 이벤트에 대한 나의 참여 상태를 업데이트하는 API
+ * @param groupId 그룹 ID
+ * @param eventId 이벤트 ID
+ * @param status 새로운 참여 상태 ('ACCEPTED', 'DECLINED', 'TENTATIVE')
  */
-export const updateParticipantStatus = (groupId: number, eventId: number, data: ParticipantStatusUpdateRequest) => {
-    return apiClient.put(`/groups/${groupId}/events/${eventId}/participants/me/status`, data);
+export const updateParticipantStatus = (groupId: number, eventId: number, status: EventParticipant['status']) => {
+    return apiClient.put(`/groups/${groupId}/events/${eventId}/participants/me/status`, { status });
 };

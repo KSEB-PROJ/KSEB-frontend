@@ -1,13 +1,6 @@
-import axios from 'axios';
+import apiClient from './index';
 import type { Notice, NoticeCreateRequest, NoticeUpdateRequest, NoticePinRequest, NoticePromoteRequest } from '../types/notice';
 
-/**
- * API 클라이언트 설정
- */
-const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL,
-    withCredentials: true,
-});
 
 /**
  * 특정 그룹의 모든 공지 목록을 가져오는 API

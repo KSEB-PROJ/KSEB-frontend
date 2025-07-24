@@ -10,7 +10,7 @@ import styles from './EventEditorModal.module.css';
 import RecurrenceEditor from '../RecurrenceEditor/RecurrenceEditor';
 import DatePicker from '../../../../components/date-picker/DatePicker';
 import { updateTask, deleteTask } from '../../../../api/tasks';
-import { updateParticipantStatus } from '../../../../api/events'; // API 함수 import
+import { updateParticipantStatus } from '../../../../api/events';
 import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
 
@@ -100,8 +100,8 @@ const EventEditorModal: React.FC<{
     onClose: () => void;
     onSave: (event: ScheduleEvent) => void;
     onDelete: (eventId: string, ownerType: 'USER' | 'GROUP', ownerId: number) => void;
-    onDataRefresh: () => Promise<void>;
-}> = ({ event, onClose, onSave, onDelete, onDataRefresh }) => {
+    onEventUpdate: (updatedEvent: ScheduleEvent) => void; // ⭐ onDataRefresh -> onEventUpdate
+}> = ({ event, onClose, onSave, onDelete, onEventUpdate }) => {
     const [formData, setFormData] = useState<ScheduleEvent | null>(null);
     const [isRecurrenceEnabled, setRecurrenceEnabled] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
@@ -146,21 +146,36 @@ const EventEditorModal: React.FC<{
     };
 
 
-    const handleParticipantStatusChange = async (newStatus: EventParticipant['status']) => {
+    const handleParticipantStatusChange = (newStatus: EventParticipant['status']) => {
         if (!formData || formData.ownerType !== 'GROUP' || String(formData.id).startsWith('temp-')) return;
+        
+        const originalParticipants = formData.participants; // 실패 시 복구를 위한 원본 데이터
+        
+        // 1. UI를 먼저 낙관적으로 업데이트
+        const updatedParticipants = formData.participants?.map(p =>
+            p.userId === CURRENT_USER_ID ? { ...p, status: newStatus } : p
+        ) || [];
 
-        const currentStatus = formData.participants?.find(p => p.userId === CURRENT_USER_ID)?.status;
-        if (currentStatus === newStatus) return;
+        const updatedFormData = { ...formData, participants: updatedParticipants };
+        setFormData(updatedFormData);
 
-        const toastId = toast.loading('상태 업데이트 중...');
-        try {
-            await updateParticipantStatus(formData.ownerId, parseInt(formData.id), { status: newStatus });
-            await onDataRefresh(); // 부모 컴포넌트 데이터 새로고침
-            toast.success('참석 상태가 변경되었습니다.', { id: toastId });
-        } catch (error) {
-            console.error(error);
-            toast.error('상태 변경에 실패했습니다.', { id: toastId });
-        }
+        const eventId = parseInt(formData.id);
+        const promise = updateParticipantStatus(formData.ownerId, eventId, newStatus);
+        
+        toast.promise(promise, {
+            loading: '상태 업데이트 중...',
+            success: () => {
+                // 2. API 호출 성공 시, 부모 컴포넌트에 변경된 전체 이벤트 데이터를 전달해 상태를 동기화
+                onEventUpdate(updatedFormData);
+                return '참여 상태가 변경되었습니다.';
+            },
+            error: (err) => {
+                // 3. API 호출 실패 시, UI를 원래 상태로 복구
+                setFormData(prev => prev ? { ...prev, participants: originalParticipants } : null);
+                console.error("상태 변경 실패:", err);
+                return '상태 변경에 실패했습니다.';
+            }
+        });
     };
 
     const handleAddTask = () => {
@@ -453,5 +468,4 @@ const EventEditorModal: React.FC<{
         </div>
     );
 };
-
 export default EventEditorModal;

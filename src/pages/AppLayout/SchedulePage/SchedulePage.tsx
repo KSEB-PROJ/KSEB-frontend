@@ -305,6 +305,18 @@ const SchedulePage: React.FC = () => {
         });
     };
 
+    // 모달에서 데이터가 변경되었을 때 호출될 함수
+    const handleEventUpdate = (updatedEvent: ScheduleEvent) => {
+        // 전체 이벤트 목록 업데이트
+        setEvents(prevEvents =>
+            prevEvents.map(event =>
+                event.id === updatedEvent.id ? updatedEvent : event
+            )
+        );
+        // 현재 편집 중인 이벤트 상태도 업데이트하여 모달에 즉시 반영
+        setEditingEvent(updatedEvent);
+    };
+
 
     const todaysEvents = useMemo(() =>
         processedEvents
@@ -528,7 +540,7 @@ const SchedulePage: React.FC = () => {
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleSaveEvent}
                 onDelete={handleDeleteEvent}
-                onDataRefresh={() => fetchData(editingEvent?.id)}
+                onEventUpdate={handleEventUpdate}
             />}
 
         </>

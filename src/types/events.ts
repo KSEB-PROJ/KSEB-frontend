@@ -154,3 +154,4 @@ export interface EventTaskResponse {
 export interface ParticipantStatusUpdateRequest {
     status: 'ACCEPTED' | 'DECLINED' | 'TENTATIVE';
 }
+

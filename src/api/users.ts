@@ -1,11 +1,5 @@
-import axios from 'axios';
+import apiClient from './index';
 import type { UserUpdateRequest, PasswordChangeRequest, UserResponse } from '../types';
-
-const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL,
-     // 로그인 시 받은 쿠키를 모든 요청에 자동으로 첨부.
-    withCredentials: true,
-});
 
 /**
  * 사용자 프로필 정보(이름)와 이미지 파일을 함께 업데이트하는 API

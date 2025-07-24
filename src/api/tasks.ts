@@ -1,10 +1,6 @@
-import axios from 'axios';
+import apiClient from './index';
 import type { EventTaskResponse, UpdateTaskRequest } from '../types';
 
-const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL,
-    withCredentials: true,
-});
 
 /**
  * 할 일(Task) 수정 API
