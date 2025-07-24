@@ -1,18 +1,14 @@
 /**
- * CreateChannelModal 컴포넌트
- *
- * 사용자가 새로운 채팅 채널을 생성할 수 있는 모달
- * - ESC 키 또는 오버레이 클릭 시 모달 닫기(onClose)
- * - 폼 제출 시 입력한 채널 이름(onCreate)을 부모로 전달
- * - 이벤트 전파 방지(stopPropagation)로 불필요한 닫기 방지
- *
- * 사용된 기술 스택:
- * - React: 함수형 컴포넌트, useState, useEffect 훅
- * - TypeScript: Props 및 이벤트 타입 정의
- * - CSS Modules: 스타일 모듈 (CreateChannelModal.module.css)
+ * @file CreateChannelModal.tsx
+ * @description 새롭게 디자인된 채널 생성 모달 컴포넌트입니다.
+ * - 세련된 UI와 애니메이션을 적용하여 사용자 경험을 향상시켰습니다.
+ * - FontAwesome 아이콘을 추가하여 시각적 인지를 돕습니다.
+ * - 기존의 기능(onClose, onCreate)은 그대로 유지하며 재사용성을 높였습니다.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styles from './CreateChannelModal.module.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTimes, faHashtag, faArrowRight } from '@fortawesome/free-solid-svg-icons';
 
 interface Props {
     /** 모달을 닫을 때 호출되는 콜백 함수 */
@@ -24,11 +20,19 @@ interface Props {
 const CreateChannelModal: React.FC<Props> = ({ onClose, onCreate }) => {
     // 사용자가 입력한 채널 이름 상태 관리
     const [channelName, setChannelName] = useState('');
+    // 닫힘 애니메이션을 위한 상태
+    const [isClosing, setIsClosing] = useState(false);
+
+    /**
+     * 모달 닫기 핸들러 (애니메이션 포함)
+     */
+    const handleClose = useCallback(() => {
+        setIsClosing(true);
+        setTimeout(() => onClose(), 300); // 애니메이션 시간(0.3s) 후 onClose 호출
+    }, [onClose]);
 
     /**
      * 폼 제출 핸들러
-     * - 기본 이벤트 방지
-     * - 공백 제거 후 onCreate 호출
      */
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -39,56 +43,63 @@ const CreateChannelModal: React.FC<Props> = ({ onClose, onCreate }) => {
     };
 
     /**
-     * ESC 키 입력 시 모달 닫기 기능
-     * - 컴포넌트 마운트 시 이벤트 리스너 등록
-     * - 언마운트 시 해제
+     * ESC 키 입력 시 모달 닫기
      */
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
-                onClose();
+                handleClose();
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [onClose]);
+    }, [handleClose]);
 
     return (
-        /** 전체 화면 오버레이: 클릭 시 모달 닫기 */
-        <div className={styles.modalOverlay} onClick={onClose}>
-            {/* 오버레이 클릭 전파 차단: 모달 내부 클릭 시 닫기 방지 */}
-            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-                {/* 헤더: 제목 및 설명 */}
+        <div
+            className={`${styles.modalOverlay} ${isClosing ? styles.closing : ''}`}
+            onClick={handleClose}
+        >
+            <div
+                className={`${styles.modalContent} ${isClosing ? styles.closing : ''}`}
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* 오른쪽 상단 닫기 버튼 */}
+                <button onClick={handleClose} className={styles.closeButton}>
+                    <FontAwesomeIcon icon={faTimes} />
+                </button>
+
+                {/* 헤더: 아이콘, 제목, 설명 */}
                 <div className={styles.modalHeader}>
+                    <div className={styles.headerIcon}>
+                        <FontAwesomeIcon icon={faHashtag} />
+                    </div>
                     <h2>새로운 채널 생성</h2>
-                    <p>팀원들과 소통할 채널의 이름을 입력하세요.</p>
+                    <p>팀원들과 아이디어를 나눌 공간의 이름을 정해주세요.</p>
                 </div>
 
                 {/* 채널 생성 폼 */}
                 <form onSubmit={handleSubmit} className={styles.form}>
-                    {/* 채널 이름 입력 필드 */}
-                    <input
-                        type="text"
-                        value={channelName}
-                        onChange={(e) => setChannelName(e.target.value)}
-                        placeholder="예: 프론트엔드 이야기"
-                        className={styles.input}
-                        autoFocus
-                    />
-
-                    {/* 버튼 그룹: 취소 및 생성 */}
-                    <div className={styles.buttonGroup}>
-                        {/* 취소 버튼: 클릭 시 onClose 호출 */}
-                        <button type="button" onClick={onClose} className={styles.button}>
-                            취소
-                        </button>
-                        {/* 생성 버튼: 폼 제출 트리거 */}
-                        <button type="submit" className={`${styles.button} ${styles.createButton}`}>
-                            생성
-                        </button>
+                    <div className={styles.inputGroup}>
+                        <input
+                            type="text"
+                            id="channelName"
+                            value={channelName}
+                            onChange={(e) => setChannelName(e.target.value)}
+                            className={styles.input}
+                            autoFocus
+                            // placeholder는 비워야함.
+                            placeholder=" "
+                        />
+                        <label htmlFor="channelName" className={styles.label}>채널 이름</label>
                     </div>
+
+                    <button type="submit" className={styles.createButton} disabled={!channelName.trim()}>
+                        <span>채널 만들기</span>
+                        <FontAwesomeIcon icon={faArrowRight} />
+                    </button>
                 </form>
             </div>
         </div>

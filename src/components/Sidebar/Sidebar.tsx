@@ -1,8 +1,3 @@
-/**
- * @file Sidebar.tsx
- * @description Zustand 스토어를 사용하여 리팩토링된 사이드바 컴포넌트입니다.
- */
-
 import React from 'react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, useLocation, Link, useNavigate } from 'react-router-dom';

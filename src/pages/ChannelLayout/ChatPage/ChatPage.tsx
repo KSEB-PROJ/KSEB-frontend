@@ -440,7 +440,7 @@ const ChatPage: React.FC = () => {
                                             ) : (
                                                 /* 기본 액션 버튼 */
                                                 <>
-                                                    {/* [수정] 텍스트 메시지만 공지 등록 가능하도록 조건 추가 */}
+                                                    {/* 텍스트 메시지만 공지 등록 가능하도록 조건 추가 */}
                                                     {msg.messageType === 'TEXT' && (
                                                         <button title="공지로 등록" onClick={() => handlePromoteToNotice(msg.id)}>
                                                             <FontAwesomeIcon icon={faThumbTack} />
