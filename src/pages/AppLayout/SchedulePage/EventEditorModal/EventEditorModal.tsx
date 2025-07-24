@@ -9,12 +9,11 @@ import type { ScheduleEvent, EventTask, EventParticipant, UpdateTaskRequest } fr
 import styles from './EventEditorModal.module.css';
 import RecurrenceEditor from '../RecurrenceEditor/RecurrenceEditor';
 import DatePicker from '../../../../components/date-picker/DatePicker';
-// ⭐ 변경: updateTask, deleteTask와 함께 updateParticipantStatus를 import 합니다.
-import { updateTask, deleteTask, updateParticipantStatus } from '../../../../api/tasks';
+import { updateTask, deleteTask } from '../../../../api/tasks';
+import { updateParticipantStatus } from '../../../../api/events'; // ⭐ 수정: import 경로를 events.ts로 변경
 import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
 
-// ... (TaskItem, colorPalette, CURRENT_USER_ID 등 상단 코드는 동일)
 const colorPalette = [
     '#8400ff', '#14d6ae', '#ec4899', '#3b82f6',
     '#f97316', '#22c55e', '#eab308', '#06b6d4',
@@ -95,12 +94,14 @@ const TaskItem: React.FC<{
     );
 };
 
+
 const EventEditorModal: React.FC<{
     event: ScheduleEvent | null;
     onClose: () => void;
     onSave: (event: ScheduleEvent) => void;
     onDelete: (eventId: string, ownerType: 'USER' | 'GROUP', ownerId: number) => void;
-}> = ({ event, onClose, onSave, onDelete }) => {
+    onEventUpdate: (updatedEvent: ScheduleEvent) => void; // Props 통일
+}> = ({ event, onClose, onSave, onDelete, onEventUpdate }) => {
     const [formData, setFormData] = useState<ScheduleEvent | null>(null);
     const [isRecurrenceEnabled, setRecurrenceEnabled] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
@@ -123,8 +124,7 @@ const EventEditorModal: React.FC<{
     const updateFormData = useCallback((field: keyof ScheduleEvent, value: ScheduleEvent[keyof ScheduleEvent]) => {
         setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
     }, []);
-    
-    // ... (handleSave, handleDelete, handleAddTask, handleUpdateTask, handleDeleteTask, handleRecurrenceChange, ParticipantStatusIcon 등 다른 함수는 동일)
+
     const handleSave = () => {
         if (!formData) return;
         if (isEditable && !formData.title.trim()) {
@@ -142,8 +142,8 @@ const EventEditorModal: React.FC<{
         if (!isEditable || !formData) return;
         onDelete(formData.id, formData.ownerType, formData.ownerId);
     };
-    
-    // ⭐ 변경: handleParticipantStatusChange 함수를 API 호출 로직으로 수정
+
+
     const handleParticipantStatusChange = (newStatus: EventParticipant['status']) => {
         if (!formData || formData.ownerType !== 'GROUP') return;
 
@@ -152,19 +152,25 @@ const EventEditorModal: React.FC<{
         // 1. UI를 먼저 낙관적으로 업데이트
         const updatedParticipants = formData.participants?.map(p =>
             p.userId === CURRENT_USER_ID ? { ...p, status: newStatus } : p
-        );
-        updateFormData('participants', updatedParticipants);
+        ) || [];
 
-        // 2. API 호출
+        const updatedFormData = { ...formData, participants: updatedParticipants };
+        setFormData(updatedFormData);
+
         const eventId = parseInt(formData.id);
         const promise = updateParticipantStatus(formData.ownerId, eventId, newStatus);
         
         toast.promise(promise, {
             loading: '상태 업데이트 중...',
-            success: '참여 상태가 변경되었습니다.',
-            error: (err) => {
+            success: () => {
+                // 2. API 호출 성공 시, 부모 컴포넌트에 변경된 전체 이벤트 데이터를 전달
+                onEventUpdate(updatedFormData);
+                return '참여 상태가 변경되었습니다.';
+            },
+            error: (err) => { // err 파라미터 추가
                 // 3. API 호출 실패 시, UI를 원래 상태로 복구
-                updateFormData('participants', originalParticipants);
+                setFormData(prev => prev ? { ...prev, participants: originalParticipants } : null);
+                console.error("상태 변경 실패:", err);
                 return '상태 변경에 실패했습니다.';
             }
         });
@@ -230,8 +236,7 @@ const EventEditorModal: React.FC<{
         const { icon, className, title } = iconMap[status];
         return <FontAwesomeIcon icon={icon} className={className} title={title} />;
     };
-    
-    // ... (나머지 JSX 렌더링 코드는 동일)
+
     if (!formData) return null;
 
     const currentUserStatus = formData.participants?.find(p => p.userId === CURRENT_USER_ID)?.status;

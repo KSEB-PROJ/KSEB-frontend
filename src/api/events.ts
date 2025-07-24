@@ -1,4 +1,4 @@
-import apiClient from './index'; // ⭐ 변경: axios 대신 중앙 apiClient import
+import apiClient from './index';
 import type {
     ScheduleEvent,
     UserEventCreateRequest,
@@ -9,14 +9,9 @@ import type {
     EventTaskCreateRequest,
     EventCreateResult,
     EventTaskResponse,
-    EventTask
+    EventTask,
+    EventParticipant
 } from '../types';
-
-/**
- * API 클라이언트 설정
- * ⭐ 삭제: 중앙 apiClient (src/api/index.ts)로 이동했으므로 삭제합니다.
- */
-// const apiClient = axios.create({ ... });
 
 /**
  * 백엔드 EventResponse를 프론트엔드 ScheduleEvent로 변환

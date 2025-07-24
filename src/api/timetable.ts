@@ -1,13 +1,11 @@
-import axios from 'axios';
+import apiClient from './index'; // ⭐ axios 대신 공용 apiClient import
 import type { Course } from '../types';
 
-const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL,
-    withCredentials: true,
-});
+// const apiClient = axios.create({ ... }); //  স্বতন্ত্র axios 인스턴스 삭제
 
 // 전체 강의 조회
 export const getCourses = (semester: string) => {
+    // 이제 모든 요청에 자동으로 JWT 토큰이 포함됩니다.
     return apiClient.get<Course[]>('/timetable', { params: { semester } });
 };
 

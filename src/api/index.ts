@@ -9,7 +9,7 @@ const apiClient = axios.create({
 // Axios 요청 인터셉터
 apiClient.interceptors.request.use(
     (config) => {
-        // Zustand 스토어에서 토큰을 가져옵니다.
+        // Zustand 스토어에서 토큰을 가져옴
         const { token } = useAuthStore.getState();
         if (token) {
             // 토큰이 있으면 Authorization 헤더에 'Bearer' 형식으로 추가합니다.

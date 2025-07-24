@@ -49,14 +49,14 @@ const CalendarPage: React.FC = () => {
     const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const fetchData = useCallback(async (eventIdToUpdate?: string) => {
+    const fetchData = useCallback(async () => {
         if (!groupId) return;
         setIsLoading(true);
         try {
             const numericGroupId = parseInt(groupId, 10);
             const [groupDetailRes, eventsRes] = await Promise.all([
                 getGroupDetail(numericGroupId),
-
+                
                 getGroupEvents(numericGroupId)
             ]);
             const groupDetail = groupDetailRes.data;
@@ -78,13 +78,6 @@ const CalendarPage: React.FC = () => {
             setEvents(transformedEvents);
             setTasks(allTasks);
 
-            if (eventIdToUpdate) {
-                const updatedEvent = transformedEvents.find(e => e.id === eventIdToUpdate);
-                if (updatedEvent) {
-                    setEditingEvent(updatedEvent);
-                }
-            }
-
         } catch (error) {
             toast.error("그룹 일정 정보를 불러오는 데 실패했습니다.");
             console.error(error);
@@ -104,6 +97,7 @@ const CalendarPage: React.FC = () => {
         const viewEnd = dayjs(viewRange.end).endOf('day');
 
         events.forEach(event => {
+            const isEditable = true;
             const eventStyleOptions = {
                 ...event,
                 display: 'block',
@@ -111,7 +105,7 @@ const CalendarPage: React.FC = () => {
                 backgroundColor: 'transparent',
                 borderColor: 'transparent',
                 textColor: '#E0E0E0',
-                extendedProps: { ...event, isEditable: true }
+                extendedProps: { ...event, isEditable }
             };
 
             if (event.rrule && event.end) {
@@ -215,7 +209,7 @@ const CalendarPage: React.FC = () => {
                         const taskData: EventTaskCreateRequest = {
                             title: task.title,
                             statusId: statusMap[task.status],
-                            assigneeId: undefined,
+                            assigneeId: undefined, // 그룹 이벤트는 담당자 지정 로직이 필요하면 추가
                             dueDatetime: task.dueDate ? dayjs(task.dueDate).format('YYYY-MM-DDTHH:mm:ss') : null,
                         };
                         return createTaskForEvent(newEventId, taskData);
@@ -239,29 +233,36 @@ const CalendarPage: React.FC = () => {
 
         } else {
             const eventId = parseInt(eventData.id);
-            const promises = [];
-
             const requestData = {
-                title: eventData.title, description: eventData.description, location: eventData.location,
+                title: eventData.title,
+                description: eventData.description,
+                location: eventData.location,
                 startDatetime: dayjs(eventData.start).format('YYYY-MM-DDTHH:mm:ss'),
                 endDatetime: eventData.end ? dayjs(eventData.end).format('YYYY-MM-DDTHH:mm:ss') : dayjs(eventData.start).format('YYYY-MM-DDTHH:mm:ss'),
-                allDay: eventData.allDay, rrule: eventData.rrule, themeColor: eventData.color
+                allDay: eventData.allDay,
+                rrule: eventData.rrule,
+                themeColor: eventData.color
             };
-            promises.push(updateGroupEvent(numericGroupId, eventId, requestData));
 
-            const newTasks = eventData.tasks?.filter(t => t.id > 1000000000000) || [];
-            if (newTasks.length > 0) {
-                const taskCreationPromises = newTasks.map(task => {
-                    const taskData: EventTaskCreateRequest = {
-                        title: task.title, statusId: statusMap[task.status], assigneeId: undefined,
-                        dueDatetime: task.dueDate ? dayjs(task.dueDate).format('YYYY-MM-DDTHH:mm:ss') : null,
-                    };
-                    return createTaskForEvent(eventId, taskData);
-                });
-                promises.push(...taskCreationPromises);
-            }
+            const promise = (async () => {
+                await updateGroupEvent(numericGroupId, eventId, requestData);
 
-            toast.promise(Promise.all(promises), {
+                const newTasks = eventData.tasks?.filter(t => t.id > 1000000000000) || [];
+                if (newTasks.length > 0) {
+                    const taskCreationPromises = newTasks.map(task => {
+                        const taskData: EventTaskCreateRequest = {
+                            title: task.title,
+                            statusId: statusMap[task.status],
+                            assigneeId: undefined,
+                            dueDatetime: task.dueDate ? dayjs(task.dueDate).format('YYYY-MM-DDTHH:mm:ss') : null,
+                        };
+                        return createTaskForEvent(eventId, taskData);
+                    });
+                    await Promise.all(taskCreationPromises);
+                }
+            })();
+
+            toast.promise(promise, {
                 loading: '일정 업데이트 중...',
                 success: () => {
                     setIsModalOpen(false);
@@ -289,6 +290,17 @@ const CalendarPage: React.FC = () => {
             },
             error: <b>삭제에 실패했습니다.</b>
         });
+    };
+    
+    // ⭐ 추가: 모달에서 변경된 이벤트 데이터를 받아 메인 events 상태를 업데이트하는 함수
+    const handleEventUpdate = (updatedEvent: ScheduleEvent) => {
+        setEvents(prevEvents => 
+            prevEvents.map(event => 
+                event.id === updatedEvent.id ? updatedEvent : event
+            )
+        );
+        // ⭐ 편집 중인 이벤트 상태도 함께 업데이트
+        setEditingEvent(updatedEvent);
     };
 
     const todaysEvents = useMemo(() =>
@@ -458,13 +470,15 @@ const CalendarPage: React.FC = () => {
                     </div>
                 </div>
             </div>
-            {isModalOpen && <EventEditorModal
-                event={editingEvent}
-                onClose={() => setIsModalOpen(false)}
-                onSave={handleSaveEvent}
-                onDelete={handleDeleteEvent}
-                onDataRefresh={() => fetchData(editingEvent?.id)}
-            />}
+            {isModalOpen && 
+                <EventEditorModal 
+                    event={editingEvent} 
+                    onClose={() => setIsModalOpen(false)} 
+                    onSave={handleSaveEvent} 
+                    onDelete={handleDeleteEvent} 
+                    onEventUpdate={handleEventUpdate}
+                />
+            }
         </>
     );
 };
