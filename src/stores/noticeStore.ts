@@ -14,9 +14,9 @@ interface NoticeState {
     notices: Notice[];
     isLoading: boolean;
     fetchNotices: (groupId: number) => Promise<void>;
-    createNotice: (groupId: number, noticeData: NoticeCreateRequest) => Promise<void>;
-    updateNotice: (groupId: number, noticeId: number, noticeData: NoticeUpdateRequest) => Promise<void>;
-    deleteNotice: (groupId: number, noticeId: number) => Promise<void>;
+    createNotice: (groupId: number, noticeData: NoticeCreateRequest) => Promise<boolean>;
+    updateNotice: (groupId: number, noticeId: number, noticeData: NoticeUpdateRequest) => Promise<boolean>;
+    deleteNotice: (groupId: number, noticeId: number) => Promise<boolean>;
     promoteToNotice: (groupId: number, channelId: number, messageId: number) => Promise<void>;
     reset: () => void;
 }
@@ -34,11 +34,10 @@ export const useNoticeStore = create<NoticeState>()(
                 set({ isLoading: true });
                 try {
                     const response = await getNotices(groupId);
-                    set({ notices: response.data });
+                    set({ notices: response.data, isLoading: false });
                 } catch (error) {
                     toast.error("공지 목록을 불러오는 데 실패했습니다.");
                     console.error("공지 조회 실패:", error);
-                } finally {
                     set({ isLoading: false });
                 }
             },
@@ -47,38 +46,73 @@ export const useNoticeStore = create<NoticeState>()(
              * 새로운 공지 생성.
              */
             createNotice: async (groupId: number, noticeData: NoticeCreateRequest) => {
-                await toast.promise(createNotice(groupId, noticeData), {
-                    loading: '공지 생성 중...',
-                    success: '공지가 등록되었습니다.',
-                    error: '공지 등록에 실패했습니다.',
-                });
-                await get().fetchNotices(groupId); // 데이터 새로고침
+                let success = false;
+                await toast.promise(
+                    createNotice(groupId, noticeData),
+                    {
+                        loading: '공지 생성 중...',
+                        success: () => {
+                            success = true;
+                            return '공지가 등록되었습니다.';
+                        },
+                        error: '공지 등록에 실패했습니다.',
+                    }
+                );
+                if (success) {
+                    await get().fetchNotices(groupId); // 생성 후에는 목록을 다시 불러옵니다.
+                }
+                return success;
             },
 
             /**
-             * 기존 공지 수정.
+             * [수정됨] 기존 공지 수정.
+             * API 성공 시, 전체 목록을 다시 fetch하는 대신 로컬 상태를 직접 업데이트하여 즉각적인 UI 반응을 제공합니다.
              */
-            updateNotice: async (groupId: number, noticeId: number, noticeData: NoticeUpdateRequest) => {
-                await toast.promise(updateNotice(groupId, noticeId, noticeData), {
-                    loading: '수정 중...',
-                    success: '수정되었습니다.',
-                    error: '수정에 실패했습니다.',
-                });
-                await get().fetchNotices(groupId);
+            updateNotice: async (groupId, noticeId, noticeData) => {
+                let success = false;
+                await toast.promise(
+                    updateNotice(groupId, noticeId, noticeData).then(response => {
+                        set(state => {
+                            // 완전히 새 배열로 할당!
+                            const newNotices = state.notices.map(n => n.id === noticeId ? response.data : n);
+                            return { notices: [...newNotices] };
+                        });
+                    }),
+                    {
+                        loading: '수정 중...',
+                        success: () => {
+                            success = true;
+                            return '수정되었습니다.';
+                        },
+                        error: '수정에 실패했습니다.',
+                    }
+                );
+                return success;
             },
+
 
             /**
              * 공지 삭제.
              */
             deleteNotice: async (groupId: number, noticeId: number) => {
-                await toast.promise(deleteNotice(groupId, noticeId), {
-                    loading: '삭제 중...',
-                    success: '삭제되었습니다.',
-                    error: '삭제에 실패했습니다.',
-                });
-                set(state => ({
-                    notices: state.notices.filter(n => n.id !== noticeId)
-                }));
+                let success = false;
+                await toast.promise(
+                    deleteNotice(groupId, noticeId),
+                    {
+                        loading: '삭제 중...',
+                        success: () => {
+                            success = true;
+                            return '삭제되었습니다.';
+                        },
+                        error: '삭제에 실패했습니다.',
+                    }
+                );
+                if (success) {
+                    set(state => ({
+                        notices: state.notices.filter(n => n.id !== noticeId)
+                    }));
+                }
+                return success;
             },
 
             /**
