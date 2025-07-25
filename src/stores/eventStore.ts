@@ -1,6 +1,6 @@
 /**
  * @file eventStore.ts
- * @description 개인 및 그룹의 모든 일정(Event)과 할 일(Task)을 관리하는 Zustand 스토어입니다.
+ * @description 개인 및 그룹의 모든 일정(Event)과 할 일(Task)을 관리하는 Zustand 스토어.
  */
 
 import { create } from 'zustand';

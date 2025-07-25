@@ -1,26 +1,39 @@
+/**
+ * @file EventEditorModal.tsx
+ * @description 개인 또는 그룹 일정을 생성하거나 편집하기 위한 모달 컴포넌트입니다.
+ * - 사용자는 이 모달을 통4해 일정의 제목, 시간, 장소, 반복 규칙, 색상, 설명, 할 일 등 모든 세부 정보를 관리할 수 있습니다.
+ * - 그룹 일정의 경우, 참여자 목록과 자신의 참여 상태(참석/미정/거절)를 변경할 수 있습니다.
+ * - 일정 데이터 자체는 부모 컴포넌트로부터 `event` prop으로 전달받고, 변경된 결과는 `onSave`, `onDelete` 콜백을 통해 부모에게 알립니다.
+ * - 일부 데이터(참여 상태 등) 변경 후에는 `onEventUpdate` 콜백을 호출하여 부모의 전체 데이터 새로고침을 유도합니다.
+ */
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import type { IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import {
     faClock, faSync, faMapMarkerAlt, faAlignLeft, faCalendarDay, faTimes,
     faSignature, faPlus, faTrash, faTasks, faLock, faUsers, faCheckCircle,
     faTimesCircle, faQuestionCircle, faPalette, faLayerGroup, faCheck
 } from '@fortawesome/free-solid-svg-icons';
-import type { ScheduleEvent, EventTask, EventParticipant, UpdateTaskRequest } from '../../../../types';
+import type { ScheduleEvent, EventTask, EventParticipant, UpdateTaskRequest } from '../../../../types'; // ✅ 경로 수정
 import styles from './EventEditorModal.module.css';
 import RecurrenceEditor from '../RecurrenceEditor/RecurrenceEditor';
-import DatePicker from '../../../../components/date-picker/DatePicker';
-import { updateTask, deleteTask } from '../../../../api/tasks';
-import { updateParticipantStatus } from '../../../../api/events';
+import DatePicker from '../../../../components/date-picker/DatePicker'; // ✅ 경로 수정
+import { updateTask, deleteTask } from '../../../../api/tasks'; // ✅ 경로 수정
+import { updateParticipantStatus } from '../../../../api/events'; // ✅ 경로 수정
 import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
+import { useAuthStore } from '../../../../stores/authStore'; // ✅ 경로 수정
 
 const colorPalette = [
     '#8400ff', '#14d6ae', '#ec4899', '#3b82f6',
     '#f97316', '#22c55e', '#eab308', '#06b6d4',
     '#ef4444', '#6366f1', '#a855f7', '#10b981'
 ];
-const CURRENT_USER_ID = 1;
+const statusMap: { [key in EventTask['status']]: number } = { 'TODO': 1, 'DOING': 2, 'DONE': 3 };
 
+/**
+ * @description 이벤트에 종속된 개별 할 일(Task) 항목을 렌더링하는 내부 컴포넌트
+ */
 const TaskItem: React.FC<{
     task: EventTask;
     onUpdate: (taskId: number, field: keyof EventTask, value: EventTask[keyof EventTask]) => void;
@@ -73,7 +86,7 @@ const TaskItem: React.FC<{
                 contentEditable={isEditable}
                 onClick={() => isEditable && setIsEditing(true)}
                 onBlur={handleBlur}
-                onKeyDown={(e) => {
+                onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
                         e.currentTarget.blur();
@@ -85,7 +98,7 @@ const TaskItem: React.FC<{
             </div>
 
             <div className={styles.taskDueDate}>
-                <DatePicker value={task.dueDate} onChange={(date) => onUpdate(task.id, 'dueDate', date)} showTime isEditable={isEditable} />
+                <DatePicker value={task.dueDate} onChange={(date: string | null) => onUpdate(task.id, 'dueDate', date)} showTime isEditable={isEditable} />
             </div>
             <button onClick={() => onDelete(task.id)} className={styles.deleteTaskButton} title="삭제" disabled={!isEditable}>
                 <FontAwesomeIcon icon={faTrash} />
@@ -95,22 +108,22 @@ const TaskItem: React.FC<{
 };
 
 
+// 메인 모달 컴포넌트
 const EventEditorModal: React.FC<{
     event: ScheduleEvent | null;
     onClose: () => void;
     onSave: (event: ScheduleEvent) => void;
-    onDelete: (eventId: string, ownerType: 'USER' | 'GROUP', ownerId: number) => void;
-    onEventUpdate: (updatedEvent: ScheduleEvent) => void; // ⭐ onDataRefresh -> onEventUpdate
+    onDelete: (eventId: string) => void;
+    onEventUpdate: () => void;
 }> = ({ event, onClose, onSave, onDelete, onEventUpdate }) => {
     const [formData, setFormData] = useState<ScheduleEvent | null>(null);
     const [isRecurrenceEnabled, setRecurrenceEnabled] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
+    const { user: currentUser } = useAuthStore();
 
     const isEditable = useMemo(() => formData?.isEditable ?? false, [formData]);
     const modalKey = useMemo(() => (event?.id || 'new') + '-' + Date.now(), [event]);
-    const statusMap: { [key in EventTask['status']]: number } = { 'TODO': 1, 'DOING': 2, 'DONE': 3 };
-
-
+    
     useEffect(() => {
         setFormData(event);
         if (event) {
@@ -124,7 +137,7 @@ const EventEditorModal: React.FC<{
     }, [onClose]);
 
     const updateFormData = useCallback((field: keyof ScheduleEvent, value: ScheduleEvent[keyof ScheduleEvent]) => {
-        setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
+        setFormData((prev: ScheduleEvent | null) => (prev ? { ...prev, [field]: value } : null));
     }, []);
 
     const handleSave = () => {
@@ -142,18 +155,16 @@ const EventEditorModal: React.FC<{
 
     const handleDelete = () => {
         if (!isEditable || !formData) return;
-        onDelete(formData.id, formData.ownerType, formData.ownerId);
+        onDelete(formData.id);
     };
 
-
     const handleParticipantStatusChange = (newStatus: EventParticipant['status']) => {
-        if (!formData || formData.ownerType !== 'GROUP' || String(formData.id).startsWith('temp-')) return;
+        if (!formData || !currentUser || formData.ownerType !== 'GROUP' || String(formData.id).startsWith('temp-')) return;
         
-        const originalParticipants = formData.participants; // 실패 시 복구를 위한 원본 데이터
+        const originalParticipants = formData.participants;
         
-        // 1. UI를 먼저 낙관적으로 업데이트
-        const updatedParticipants = formData.participants?.map(p =>
-            p.userId === CURRENT_USER_ID ? { ...p, status: newStatus } : p
+        const updatedParticipants = formData.participants?.map((p: EventParticipant) =>
+            p.userId === currentUser.id ? { ...p, status: newStatus } : p
         ) || [];
 
         const updatedFormData = { ...formData, participants: updatedParticipants };
@@ -165,13 +176,11 @@ const EventEditorModal: React.FC<{
         toast.promise(promise, {
             loading: '상태 업데이트 중...',
             success: () => {
-                // 2. API 호출 성공 시, 부모 컴포넌트에 변경된 전체 이벤트 데이터를 전달해 상태를 동기화
-                onEventUpdate(updatedFormData);
+                onEventUpdate();
                 return '참여 상태가 변경되었습니다.';
             },
             error: (err) => {
-                // 3. API 호출 실패 시, UI를 원래 상태로 복구
-                setFormData(prev => prev ? { ...prev, participants: originalParticipants } : null);
+                setFormData((prev: ScheduleEvent | null) => prev ? { ...prev, participants: originalParticipants } : null);
                 console.error("상태 변경 실패:", err);
                 return '상태 변경에 실패했습니다.';
             }
@@ -187,7 +196,7 @@ const EventEditorModal: React.FC<{
     const handleUpdateTask = (taskId: number, field: keyof EventTask, value: EventTask[keyof EventTask]) => {
         if (!formData || !isEditable) return;
 
-        const updatedTasks = formData.tasks?.map(t => t.id === taskId ? { ...t, [field]: value } : t);
+        const updatedTasks = formData.tasks?.map((t: EventTask) => t.id === taskId ? { ...t, [field]: value } : t);
         updateFormData('tasks', updatedTasks);
 
         const isTemporaryTask = taskId > 1000000000000;
@@ -195,7 +204,7 @@ const EventEditorModal: React.FC<{
         if (!isTemporaryTask) {
             const requestData: UpdateTaskRequest = {};
             if (field === 'title') requestData.title = value as string;
-            if (field === 'dueDate') requestData.dueDatetime = value ? dayjs(value).format('YYYY-MM-DDTHH:mm:ss') : null;
+            if (field === 'dueDate') requestData.dueDatetime = value ? dayjs(value as string).format('YYYY-MM-DDTHH:mm:ss') : null;
             if (field === 'status') requestData.statusId = statusMap[value as EventTask['status']];
 
             if (Object.keys(requestData).length > 0) {
@@ -211,7 +220,7 @@ const EventEditorModal: React.FC<{
     const handleDeleteTask = (taskId: number) => {
         if (!formData || !isEditable) return;
 
-        const filteredTasks = formData.tasks?.filter(t => t.id !== taskId);
+        const filteredTasks = formData.tasks?.filter((t: EventTask) => t.id !== taskId);
         updateFormData('tasks', filteredTasks);
 
         const isTemporaryTask = taskId > 1000000000000;
@@ -229,25 +238,30 @@ const EventEditorModal: React.FC<{
         updateFormData('rrule', rrule);
     }, [updateFormData]);
 
+    /**
+     * @description 참여자의 상태(참석/거절/미정)에 따라 아이콘을 반환하는 컴포넌트
+     */
     const ParticipantStatusIcon = ({ status }: { status: EventParticipant['status'] }) => {
-        const iconMap = {
+        // ✅ Record 유틸리티 타입을 사용하여 iconMap의 타입을 명확히 함
+        const iconMap: Record<EventParticipant['status'], { icon: IconDefinition; className: string; title: string; }> = {
             'ACCEPTED': { icon: faCheckCircle, className: styles.statusAccepted, title: "참석" },
             'DECLINED': { icon: faTimesCircle, className: styles.statusDeclined, title: "거절" },
             'TENTATIVE': { icon: faQuestionCircle, className: styles.statusTentative, title: "미정" }
         };
+        // ✅ iconMap[status]가 항상 유효하다고 TypeScript에 알려줌
         const { icon, className, title } = iconMap[status];
         return <FontAwesomeIcon icon={icon} className={className} title={title} />;
     };
 
     if (!formData) return null;
 
-    const currentUserStatus = formData.participants?.find(p => p.userId === CURRENT_USER_ID)?.status;
+    const currentUserStatus = formData.participants?.find((p: EventParticipant) => p.userId === currentUser?.id)?.status;
 
     return (
         <div className={`${styles.overlay} ${isClosing ? styles.closing : ''}`} onClick={handleClose}>
             <div
                 className={`${styles.modalContainer} ${isClosing ? styles.closing : ''}`}
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 style={{ '--event-theme-color': formData.color } as React.CSSProperties}
             >
                 <header className={styles.header}>
@@ -271,11 +285,11 @@ const EventEditorModal: React.FC<{
 
                 <main className={styles.content}>
                     <div className={styles.inputGroup}>
-                        <input id="title" type="text" value={formData.title} onChange={(e) => updateFormData('title', e.target.value)} placeholder=" " autoFocus disabled={!isEditable} />
+                        <input id="title" type="text" value={formData.title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('title', e.target.value)} placeholder=" " autoFocus disabled={!isEditable} />
                         <label htmlFor="title"><FontAwesomeIcon icon={faSignature} /> 일정 제목</label>
                     </div>
                     <div className={styles.inputGroup}>
-                        <input id="location" type="text" value={formData.location || ''} onChange={(e) => updateFormData('location', e.target.value)} placeholder=" " disabled={!isEditable} />
+                        <input id="location" type="text" value={formData.location || ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('location', e.target.value)} placeholder=" " disabled={!isEditable} />
                         <label htmlFor='location'><FontAwesomeIcon icon={faMapMarkerAlt} /> 장소 또는 링크</label>
                     </div>
 
@@ -319,7 +333,7 @@ const EventEditorModal: React.FC<{
                                     </div>
                                 </div>
                                 <ul className={styles.participantList}>
-                                    {formData.participants?.map(p => (
+                                    {formData.participants?.map((p: EventParticipant) => (
                                         <li key={p.userId}>
                                             <ParticipantStatusIcon status={p.status} />
                                             <span>{p.userName}</span>
@@ -338,9 +352,9 @@ const EventEditorModal: React.FC<{
                             <div className={styles.controlLabel}><FontAwesomeIcon icon={faClock} />시간</div>
                             <div className={styles.controlContent}>
                                 <div className={styles.datePickerGroup}>
-                                    <DatePicker value={formData.start} onChange={(iso) => updateFormData('start', iso || '')} showTime={!formData.allDay} isEditable={isEditable} />
+                                    <DatePicker value={formData.start} onChange={(iso: string | null) => updateFormData('start', iso || '')} showTime={!formData.allDay} isEditable={isEditable} />
                                     {!formData.allDay && formData.end && <span className={styles.timeSeparator}>~</span>}
-                                    {!formData.allDay && formData.end && <DatePicker value={formData.end} onChange={(iso) => updateFormData('end', iso || '')} showTime={true} isEditable={isEditable} />}
+                                    {!formData.allDay && formData.end && <DatePicker value={formData.end} onChange={(iso: string | null) => updateFormData('end', iso || '')} showTime={true} isEditable={isEditable} />}
                                 </div>
                             </div>
                         </div>
@@ -349,7 +363,7 @@ const EventEditorModal: React.FC<{
                             <div className={styles.controlContent}>
                                 <div className={styles.switchControl}>
                                     <label className={styles.switch}>
-                                        <input type="checkbox" checked={!!formData.allDay} onChange={e => updateFormData('allDay', e.target.checked)} disabled={!isEditable} />
+                                        <input type="checkbox" checked={!!formData.allDay} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('allDay', e.target.checked)} disabled={!isEditable} />
                                         <span className={styles.slider}></span>
                                     </label>
                                 </div>
@@ -365,7 +379,7 @@ const EventEditorModal: React.FC<{
                             <div className={styles.controlContent}>
                                 <div className={styles.switchControl}>
                                     <label className={styles.switch}>
-                                        <input type="checkbox" checked={isRecurrenceEnabled} onChange={e => isEditable && setRecurrenceEnabled(e.target.checked)} disabled={!isEditable} />
+                                        <input type="checkbox" checked={isRecurrenceEnabled} onChange={(e: React.ChangeEvent<HTMLInputElement>) => isEditable && setRecurrenceEnabled(e.target.checked)} disabled={!isEditable} />
                                         <span className={styles.slider}></span>
                                     </label>
                                 </div>
@@ -410,7 +424,7 @@ const EventEditorModal: React.FC<{
                         </div>
                         <div className={styles.todoListContainer}>
                             <ul className={styles.todoList}>
-                                {(formData.tasks || []).map(task => (
+                                {(formData.tasks || []).map((task: EventTask) => (
                                     <TaskItem
                                         key={task.id}
                                         task={task}
@@ -435,7 +449,7 @@ const EventEditorModal: React.FC<{
                             <FontAwesomeIcon icon={faAlignLeft} />
                             <span>설명</span>
                         </label>
-                        <textarea id="description" value={formData.description || ''} onChange={(e) => updateFormData('description', e.target.value)} className={styles.textarea} placeholder="설명 및 메모 추가..." disabled={!isEditable} />
+                        <textarea id="description" value={formData.description || ''} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateFormData('description', e.target.value)} className={styles.textarea} placeholder="설명 및 메모 추가..." disabled={!isEditable} />
                     </div>
                 </main>
 

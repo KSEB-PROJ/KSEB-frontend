@@ -132,7 +132,7 @@ const Marker: React.FC<{ notice: Notice; isHovered: boolean }> = ({
 };
 
 
-/* NoticeItem: 공지 개별 항목  */
+/* NoticeItem: 공지 개별 항목 */
 /**
  * @description
  * 개별 공지 카드 렌더링 (수정/삭제/더보기 등)

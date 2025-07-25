@@ -1,3 +1,12 @@
+/**
+ * @file SchedulePage.tsx
+ * @description 개인 스케줄과 대학 시간표를 통합하여 보여주는 메인 스케줄 관리 페이지입니다.
+ * - FullCalendar 라이브러리를 사용하여 전체 일정을 시각적으로 표시합니다.
+ * - Zustand의 `useEventStore`를 통해 모든 일정 데이터를 관리합니다.
+ * - 오늘의 안건(Agenda)과 선택된 일정의 할 일(To-Do) 목록을 우측에 표시합니다.
+ * - 사용자는 이 페이지에서 새 일정을 추가하거나 기존 일정을 수정/삭제할 수 있습니다.
+ */
+
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import type { EventClickArg, EventInput, EventContentArg, MoreLinkArg, EventApi } from '@fullcalendar/core';
@@ -10,22 +19,21 @@ import isBetween from 'dayjs/plugin/isBetween';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faLayerGroup, faUser, faCalendarDays, faChevronLeft, faChevronRight, faCircle, faCircleHalfStroke, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 import 'dayjs/locale/ko';
-import toast from 'react-hot-toast';
 
 import styles from './SchedulePage.module.css';
-import type { ScheduleEvent, EventTask, UpdateTaskRequest, EventTaskCreateRequest } from '../../../types';
+import type { ScheduleEvent, EventTask } from '../../../types';
 import EventEditorModal from './EventEditorModal/EventEditorModal';
 import UniversityTimetable from './UniversityTimetable/UniversityTimetable';
 
-import { getMyEvents, createPersonalEvent, updatePersonalEvent, deletePersonalEvent, createGroupEvent, updateGroupEvent, deleteGroupEvent, transformToScheduleEvent, createTaskForEvent } from '../../../api/events';
-import { getMyGroups } from '../../../api/groups';
-import { updateTask } from '../../../api/tasks';
-
+// Zustand 스토어 import
+import { useEventStore } from '../../../stores/eventStore';
+import { useAuthStore } from '../../../stores/authStore';
 
 dayjs.extend(isBetween);
 dayjs.locale('ko');
 
-const CURRENT_USER_ID = 1;
+// 할 일 상태 ID 맵
+const statusMap: { [key in EventTask['status']]: number } = { 'TODO': 1, 'DOING': 2, 'DONE': 3 };
 
 const formatColorForCSS = (colorString?: string): string => {
     if (!colorString) return '#3788d8';
@@ -42,59 +50,22 @@ const getEventInstanceId = (event: ScheduleEvent, date: Date | string): string =
 const SchedulePage: React.FC = () => {
     const calendarRef = useRef<FullCalendar>(null);
     const clickTimeout = useRef<number | null>(null);
+
+    const { events, tasks, isLoading, fetchEvents, saveEvent, deleteEvent, updateTask, addTask } = useEventStore();
+    const { user: currentUser } = useAuthStore();
+
     const [currentTitle, setCurrentTitle] = useState('');
     const [viewType, setViewType] = useState('dayGridMonth');
     const [expandedDate, setExpandedDate] = useState<string | null>(null);
-    const [events, setEvents] = useState<ScheduleEvent[]>([]);
-    const [tasks, setTasks] = useState<EventTask[]>([]);
     const [agendaDate, setAgendaDate] = useState(new Date());
     const [viewRange, setViewRange] = useState({ start: new Date(), end: new Date() });
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    const fetchData = useCallback(async (eventIdToUpdate?: string) => {
-        setIsLoading(true);
-        try {
-            const [groupsRes, eventsRes] = await Promise.all([
-                getMyGroups(),
-                getMyEvents()
-            ]);
-            const userGroups = groupsRes.data;
-
-            const allTasks: EventTask[] = [];
-            const transformedEvents = eventsRes.map(event => {
-                const scheduleEvent = transformToScheduleEvent(event, userGroups);
-                scheduleEvent.isEditable = event.ownerType === 'USER' || event.createdBy === CURRENT_USER_ID;
-                scheduleEvent.createdBy = event.createdBy;
-                if (scheduleEvent.tasks) {
-                    allTasks.push(...scheduleEvent.tasks);
-                }
-                return scheduleEvent;
-            });
-            setEvents(transformedEvents);
-            setTasks(allTasks);
-
-            if (eventIdToUpdate) {
-                const updatedEvent = transformedEvents.find(e => e.id === eventIdToUpdate);
-                if (updatedEvent) {
-                    setEditingEvent(updatedEvent);
-                }
-            }
-
-        } catch (error) {
-            toast.error("일정 정보를 불러오는 데 실패했습니다.");
-            console.error(error);
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
 
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
-
+        fetchEvents();
+    }, [fetchEvents]);
 
     const processedEvents = useMemo((): EventInput[] => {
         const calendarEvents: EventInput[] = [];
@@ -153,6 +124,8 @@ const SchedulePage: React.FC = () => {
     };
 
     const handleDateClick = (arg: DateClickArg) => {
+        if (!currentUser) return;
+
         if (clickTimeout.current) {
             clearTimeout(clickTimeout.current);
             clickTimeout.current = null;
@@ -168,11 +141,11 @@ const SchedulePage: React.FC = () => {
                 end: newEventEnd,
                 allDay: arg.allDay,
                 ownerType: 'USER',
-                ownerId: CURRENT_USER_ID,
+                ownerId: currentUser.id,
                 tasks: [],
-                participants: [{ userId: CURRENT_USER_ID, userName: "Me", status: 'ACCEPTED' }],
+                participants: [{ userId: currentUser.id, userName: currentUser.name, status: 'ACCEPTED' }],
                 isEditable: true,
-                createdBy: CURRENT_USER_ID
+                createdBy: currentUser.id
             });
             setIsModalOpen(true);
         } else {
@@ -182,7 +155,7 @@ const SchedulePage: React.FC = () => {
             }, 250);
         }
     };
-
+    
     const openEditorForEvent = useCallback((event: EventApi | EventInput) => {
         const props = event.extendedProps as ScheduleEvent;
         setEditingEvent(props);
@@ -194,129 +167,29 @@ const SchedulePage: React.FC = () => {
         openEditorForEvent(arg.event);
     }, [openEditorForEvent]);
 
-    const handleSaveEvent = (eventData: ScheduleEvent) => {
-        const isNew = String(eventData.id).startsWith('temp-');
-        const statusMap: { [key in EventTask['status']]: number } = { 'TODO': 1, 'DOING': 2, 'DONE': 3 };
-
-        if (isNew) {
-            const requestData = {
-                title: eventData.title,
-                description: eventData.description,
-                location: eventData.location,
-                startDatetime: dayjs(eventData.start).format('YYYY-MM-DDTHH:mm:ss'),
-                endDatetime: eventData.end ? dayjs(eventData.end).format('YYYY-MM-DDTHH:mm:ss') : dayjs(eventData.start).format('YYYY-MM-DDTHH:mm:ss'),
-                allDay: eventData.allDay,
-                rrule: eventData.rrule,
-                themeColor: eventData.color,
-            };
-
-            const promise = (async () => {
-                const createPromise = eventData.ownerType === 'USER'
-                    ? createPersonalEvent(requestData)
-                    : createGroupEvent(eventData.ownerId, requestData);
-
-                const eventResponse = await createPromise;
-                const newEventId = eventResponse.data.eventId;
-
-                if (eventData.tasks && eventData.tasks.length > 0) {
-                    const taskPromises = eventData.tasks.map(task => {
-                        const taskData: EventTaskCreateRequest = {
-                            title: task.title,
-                            statusId: statusMap[task.status],
-                            assigneeId: eventData.ownerType === 'USER' ? CURRENT_USER_ID : undefined,
-                            dueDatetime: task.dueDate ? dayjs(task.dueDate).format('YYYY-MM-DDTHH:mm:ss') : null,
-                        };
-                        return createTaskForEvent(newEventId, taskData);
-                    });
-                    await Promise.all(taskPromises);
-                }
-            })();
-
-            toast.promise(promise, {
-                loading: '일정 생성 중...',
-                success: () => {
-                    setIsModalOpen(false);
-                    fetchData();
-                    return <b>성공적으로 저장되었습니다.</b>;
-                },
-                error: (err) => {
-                    console.error(err);
-                    return <b>저장에 실패했습니다.</b>;
-                }
-            });
-        } else {
-            const eventId = parseInt(eventData.id);
-            const promises = [];
-
-            const requestData = {
-                title: eventData.title, description: eventData.description, location: eventData.location,
-                startDatetime: dayjs(eventData.start).format('YYYY-MM-DDTHH:mm:ss'),
-                endDatetime: eventData.end ? dayjs(eventData.end).format('YYYY-MM-DDTHH:mm:ss') : dayjs(eventData.start).format('YYYY-MM-DDTHH:mm:ss'),
-                allDay: eventData.allDay, rrule: eventData.rrule, themeColor: eventData.color
-            };
-            const eventUpdatePromise = eventData.ownerType === 'USER'
-                ? updatePersonalEvent(eventId, requestData)
-                : updateGroupEvent(eventData.ownerId, eventId, requestData);
-            promises.push(eventUpdatePromise);
-
-            const newTasks = eventData.tasks?.filter(t => t.id > 1000000000000) || [];
-            if (newTasks.length > 0) {
-                const taskCreationPromises = newTasks.map(task => {
-                    const taskData: EventTaskCreateRequest = {
-                        title: task.title, statusId: statusMap[task.status],
-                        assigneeId: eventData.ownerType === 'USER' ? CURRENT_USER_ID : undefined,
-                        dueDatetime: task.dueDate ? dayjs(task.dueDate).format('YYYY-MM-DDTHH:mm:ss') : null,
-                    };
-                    return createTaskForEvent(eventId, taskData);
-                });
-                promises.push(...taskCreationPromises);
-            }
-
-            toast.promise(Promise.all(promises), {
-                loading: '일정 업데이트 중...',
-                success: () => {
-                    setIsModalOpen(false);
-                    fetchData();
-                    return <b>성공적으로 저장되었습니다.</b>;
-                },
-                error: <b>저장에 실패했습니다.</b>
-            });
+    const handleSaveEvent = async (eventData: ScheduleEvent) => {
+        const success = await saveEvent(eventData);
+        if (success) {
+            setIsModalOpen(false);
         }
     };
 
-    const handleDeleteEvent = (eventId: string, ownerType: 'USER' | 'GROUP', ownerId: number) => {
-        const numericEventId = parseInt(eventId);
-        let promise;
-
-        if (ownerType === 'USER') {
-            promise = deletePersonalEvent(numericEventId);
-        } else {
-            promise = deleteGroupEvent(ownerId, numericEventId);
+    /**
+     * @description 이벤트 편집 모달에서 '삭제' 버튼을 눌렀을 때 실행됩니다.
+     * - ✅ 수정: 이제 eventId만 인자로 받습니다.
+     */
+    const handleDeleteEvent = async (eventId: string) => {
+        const originalEventId = eventId.split('-')[0];
+        const eventToDelete = events.find(e => e.id === originalEventId);
+        if (eventToDelete) {
+            await deleteEvent(eventToDelete);
+            setIsModalOpen(false);
         }
-
-        toast.promise(promise, {
-            loading: '삭제 중...',
-            success: () => {
-                setIsModalOpen(false);
-                setEvents(prev => prev.filter(e => e.id !== eventId));
-                return <b>삭제되었습니다.</b>;
-            },
-            error: <b>삭제에 실패했습니다.</b>
-        });
     };
 
-    // 모달에서 데이터가 변경되었을 때 호출될 함수
-    const handleEventUpdate = (updatedEvent: ScheduleEvent) => {
-        // 전체 이벤트 목록 업데이트
-        setEvents(prevEvents =>
-            prevEvents.map(event =>
-                event.id === updatedEvent.id ? updatedEvent : event
-            )
-        );
-        // 현재 편집 중인 이벤트 상태도 업데이트하여 모달에 즉시 반영
-        setEditingEvent(updatedEvent);
+    const handleEventUpdate = () => {
+        fetchEvents();
     };
-
 
     const todaysEvents = useMemo(() =>
         processedEvents
@@ -333,60 +206,36 @@ const SchedulePage: React.FC = () => {
         processedEvents.find(e => e.id === selectedEventId),
         [processedEvents, selectedEventId]
     );
-
+    
     const selectedEventTasks = useMemo(() => {
         if (!selectedEventId) return [];
         const originalId = (selectedEvent?.extendedProps as ScheduleEvent)?.id || selectedEventId;
         const eventIdToMatch = originalId.split('-')[0];
         return tasks.filter(t => t.eventId === eventIdToMatch);
     }, [tasks, selectedEventId, selectedEvent]);
-
+    
     const handleToggleTask = (taskId: number) => {
-        const statusMap: { [key in EventTask['status']]: number } = { 'TODO': 1, 'DOING': 2, 'DONE': 3 };
         const taskToUpdate = tasks.find(t => t.id === taskId);
         if (!taskToUpdate) return;
-
         const statusCycle: { [key in EventTask['status']]: EventTask['status'] } = { 'TODO': 'DOING', 'DOING': 'DONE', 'DONE': 'TODO' };
         const nextStatus = statusCycle[taskToUpdate.status];
-        const requestData: UpdateTaskRequest = { statusId: statusMap[nextStatus] };
-
-        toast.promise(
-            updateTask(taskId, requestData),
-            {
-                loading: '상태 변경 중...',
-                success: () => {
-                    const updateLogic = (prevTasks: EventTask[]) =>
-                        prevTasks.map(t => t.id === taskId ? { ...t, status: nextStatus } : t);
-
-                    setTasks(updateLogic);
-
-                    setEvents(prevEvents => prevEvents.map(event => {
-                        if (event.tasks && event.tasks.some(t => t.id === taskId)) {
-                            return {
-                                ...event,
-                                tasks: event.tasks.map(t => t.id === taskId ? { ...t, status: nextStatus } : t)
-                            };
-                        }
-                        return event;
-                    }));
-
-                    return <b>상태가 변경되었습니다.</b>;
-                },
-                error: <b>상태 변경에 실패했습니다.</b>,
-            }
-        );
+        updateTask(taskId, { statusId: statusMap[nextStatus] });
     };
 
     const handleAddTask = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && selectedEventId && e.currentTarget.value.trim()) {
             const originalId = (selectedEvent?.extendedProps as ScheduleEvent)?.id || selectedEventId;
-            const eventIdToMatch = originalId.split('-')[0];
-            const newTask: EventTask = { id: Date.now(), eventId: eventIdToMatch, title: e.currentTarget.value.trim(), status: 'TODO', dueDate: null };
-            setTasks(prev => [...prev, newTask]);
+            const eventIdToMatch = parseInt(originalId.split('-')[0], 10);
+            const newTaskData: Omit<EventTask, 'id' | 'eventId'> = { 
+                title: e.currentTarget.value.trim(), 
+                status: 'TODO', 
+                dueDate: null 
+            };
+            addTask(eventIdToMatch, newTaskData); 
             e.currentTarget.value = '';
         }
     };
-
+    
     useEffect(() => {
         if (todaysEvents.length > 0 && !todaysEvents.some(e => e.id === selectedEventId)) {
             setSelectedEventId(todaysEvents[0].id!);
@@ -401,7 +250,7 @@ const SchedulePage: React.FC = () => {
             setAgendaDate(new Date());
         }
     };
-
+    
     useEffect(() => {
         if (calendarRef.current) {
             setCurrentTitle(calendarRef.current.getApi().view.title);
@@ -416,9 +265,11 @@ const SchedulePage: React.FC = () => {
             default: return null;
         }
     };
+
     if (isLoading) {
         return <div className={styles.pageContainer}><h1>로딩 중...</h1></div>;
     }
+
     return (
         <>
             <div className={styles.pageContainer}>
@@ -464,7 +315,7 @@ const SchedulePage: React.FC = () => {
                             />
                         </div>
                     </div>
-                    <UniversityTimetable onTimetableUpdate={fetchData} />
+                    <UniversityTimetable onTimetableUpdate={fetchEvents} />
                 </div>
                 <div className={styles.rightColumn} key={dayjs(agendaDate).format('YYYYMMDD')}>
                     <div className={`${styles.panel} ${styles.agendaContainer} ${styles.animatedCard}`}>
@@ -542,7 +393,6 @@ const SchedulePage: React.FC = () => {
                 onDelete={handleDeleteEvent}
                 onEventUpdate={handleEventUpdate}
             />}
-
         </>
     );
 };
