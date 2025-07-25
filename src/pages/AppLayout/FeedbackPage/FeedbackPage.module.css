@@ -28,6 +28,32 @@
     padding-left: 0.5rem;
 }
 
+.pwrapper{
+    top: 15px;
+    margin-left: 0.5rem;
+    position: relative;
+}
+.plus{
+    font-size: 25px;
+    transition: transform 0.2s ease;
+}
+.plus:hover{
+    transform: scale(1.15);
+    color: rgb(var(--group-color));
+}
+
+.pdescription{
+    font-size: 13px;
+    color: #a0a0a0;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden; 
+}
+.plus:hover + .pdescription{
+    visibility: visible;
+    opacity: 1;
+}
+
 .timestamp {
     margin-top: 0.5rem;
     position: absolute;
@@ -131,4 +157,26 @@
     overflow-y: scroll;
     white-space: pre-wrap;
     line-height: 1.6;
+}
+.bottom{
+    position: relative;
+    height: 90px;
+    width: 100%;
+}
+
+.line{
+    width: 100%;
+    background-color: #333;
+    position: relative;
+    top: 80%;
+    transform: translateY(-80%); 
+    height: 3px;
+}
+.arrowIcon{
+    position: absolute;
+    right: -3px;
+    top: 8px;
+    transform: translateY(-80%);
+    color: #333;
+    font-size: 20px;
 }
