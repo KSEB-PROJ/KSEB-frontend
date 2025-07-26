@@ -461,3 +461,26 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+/* ---  FullCalendar '더보기' 팝업 다크테마 스타일 --- */
+:global(.fc-popover) {
+    background-color: #27272A !important;
+    border: 1px solid #52525b !important;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+    border-radius: 8px;
+}
+
+:global(.fc-popover .fc-popover-header) {
+    background-color: #3f3f46 !important;
+    color: #f4f4f5;
+    font-weight: 600;
+}
+
+:global(.fc-popover .fc-popover-body) {
+    padding: 0.5rem;
+}
+
+/* 팝업 내 이벤트 아이템에도 호버 효과 적용 */
+:global(.fc-popover .fc-daygrid-event:hover) {
+    background-color: rgba(255, 255, 255, 0.1);
+}
