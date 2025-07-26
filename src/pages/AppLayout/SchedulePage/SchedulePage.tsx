@@ -1,15 +1,11 @@
 /**
  * @file SchedulePage.tsx
- * @description 개인 스케줄과 대학 시간표를 통합하여 보여주는 메인 스케줄 관리 페이지입니다.
- * - FullCalendar 라이브러리를 사용하여 전체 일정을 시각적으로 표시합니다.
- * - Zustand의 `useEventStore`를 통해 모든 일정 데이터를 관리합니다.
- * - 오늘의 안건(Agenda)과 선택된 일정의 할 일(To-Do) 목록을 우측에 표시합니다.
- * - 사용자는 이 페이지에서 새 일정을 추가하거나 기존 일정을 수정/삭제할 수 있습니다.
+ * @description 개인 스케줄과 대학 시간표를 통합하여 보여주는 메인 스케줄 관리 페이지.
  */
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import FullCalendar from '@fullcalendar/react';
-import type { EventClickArg, EventInput, EventContentArg, MoreLinkArg, EventApi } from '@fullcalendar/core';
+import type { EventClickArg, EventInput, EventContentArg, EventApi } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin, { type DateClickArg } from '@fullcalendar/interaction';
@@ -21,7 +17,7 @@ import { faPlus, faLayerGroup, faUser, faCalendarDays, faChevronLeft, faChevronR
 import 'dayjs/locale/ko';
 
 import styles from './SchedulePage.module.css';
-import type { ScheduleEvent, EventTask } from '../../../types';
+import type { ScheduleEvent, EventTask, EventTaskCreateRequest } from '../../../types';
 import EventEditorModal from './EventEditorModal/EventEditorModal';
 import UniversityTimetable from './UniversityTimetable/UniversityTimetable';
 
@@ -32,41 +28,41 @@ import { useAuthStore } from '../../../stores/authStore';
 dayjs.extend(isBetween);
 dayjs.locale('ko');
 
-// 할 일 상태 ID 맵
+// --- 상수 및 헬퍼 함수 ---
 const statusMap: { [key in EventTask['status']]: number } = { 'TODO': 1, 'DOING': 2, 'DONE': 3 };
-
-const formatColorForCSS = (colorString?: string): string => {
-    if (!colorString) return '#3788d8';
-    if (colorString.startsWith('#')) return colorString;
-    if (colorString.includes(',')) return `rgb(${colorString})`;
-    return colorString;
-};
 
 const getEventInstanceId = (event: ScheduleEvent, date: Date | string): string => {
     if (!event.rrule) return event.id;
     return `${event.id}-${dayjs(date).format('YYYYMMDD')}`;
 };
 
+// --- 메인 컴포넌트 ---
 const SchedulePage: React.FC = () => {
+    // --- Refs ---
     const calendarRef = useRef<FullCalendar>(null);
     const clickTimeout = useRef<number | null>(null);
 
-    const { events, tasks, isLoading, fetchEvents, saveEvent, deleteEvent, updateTask, addTask } = useEventStore();
+    // --- 스토어 상태 및 액션 ---
+    const { events, tasks, isLoading, fetchEvents, saveEvent, deleteEvent, addTask, updateTask } = useEventStore();
     const { user: currentUser } = useAuthStore();
 
+    // --- 컴포넌트 상태 ---
     const [currentTitle, setCurrentTitle] = useState('');
-    const [viewType, setViewType] = useState('dayGridMonth');
-    const [expandedDate, setExpandedDate] = useState<string | null>(null);
     const [agendaDate, setAgendaDate] = useState(new Date());
     const [viewRange, setViewRange] = useState({ start: new Date(), end: new Date() });
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
 
+    // --- 데이터 로딩 ---
     useEffect(() => {
+        // 개인 스케줄 페이지에서는 그룹 컨텍스트가 없으므로 인자 없이 호출
         fetchEvents();
     }, [fetchEvents]);
 
+    // --- 메모이제이션된 데이터 ---
+
+    // 캘린더에 표시할 이벤트 목록 가공
     const processedEvents = useMemo((): EventInput[] => {
         const calendarEvents: EventInput[] = [];
         const viewStart = dayjs(viewRange.start).startOf('day');
@@ -101,96 +97,8 @@ const SchedulePage: React.FC = () => {
         });
         return calendarEvents;
     }, [events, viewRange]);
-
-    const renderEventContent = (eventInfo: EventContentArg) => {
-        const props = eventInfo.event.extendedProps as ScheduleEvent;
-        const color = formatColorForCSS(props.color);
-        const ownerIcon = props.ownerType === 'USER' ? faUser : faLayerGroup;
-
-        return (
-            <div
-                className={`${styles.eventContent} ${eventInfo.event.allDay ? styles.allDayStyle : styles.timedStyle}`}
-                style={{ '--event-theme-color': color } as React.CSSProperties}
-            >
-                <FontAwesomeIcon icon={ownerIcon} className={styles.eventIcon} />
-                <span className={styles.eventTitle}>{eventInfo.event.title}</span>
-            </div>
-        );
-    };
-
-    const handleMoreLinkClick = (arg: MoreLinkArg) => {
-        const dateStr = dayjs(arg.date).format('YYYY-MM-DD');
-        setExpandedDate(prev => (prev === dateStr ? null : dateStr));
-    };
-
-    const handleDateClick = (arg: DateClickArg) => {
-        if (!currentUser) return;
-
-        if (clickTimeout.current) {
-            clearTimeout(clickTimeout.current);
-            clickTimeout.current = null;
-
-            const startDate = dayjs(arg.date);
-            const newEventStart = arg.allDay ? startDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss') : startDate.format('YYYY-MM-DDTHH:mm:ss');
-            const newEventEnd = arg.allDay ? startDate.endOf('day').format('YYYY-MM-DDTHH:mm:ss') : startDate.add(1, 'hour').format('YYYY-MM-DDTHH:mm:ss');
-
-            setEditingEvent({
-                id: `temp-${Date.now()}`,
-                title: '',
-                start: newEventStart,
-                end: newEventEnd,
-                allDay: arg.allDay,
-                ownerType: 'USER',
-                ownerId: currentUser.id,
-                tasks: [],
-                participants: [{ userId: currentUser.id, userName: currentUser.name, status: 'ACCEPTED' }],
-                isEditable: true,
-                createdBy: currentUser.id
-            });
-            setIsModalOpen(true);
-        } else {
-            clickTimeout.current = window.setTimeout(() => {
-                setAgendaDate(arg.date);
-                clickTimeout.current = null;
-            }, 250);
-        }
-    };
     
-    const openEditorForEvent = useCallback((event: EventApi | EventInput) => {
-        const props = event.extendedProps as ScheduleEvent;
-        setEditingEvent(props);
-        setIsModalOpen(true);
-        setSelectedEventId(event.id as string);
-    }, []);
-
-    const handleEventClick = useCallback((arg: EventClickArg) => {
-        openEditorForEvent(arg.event);
-    }, [openEditorForEvent]);
-
-    const handleSaveEvent = async (eventData: ScheduleEvent) => {
-        const success = await saveEvent(eventData);
-        if (success) {
-            setIsModalOpen(false);
-        }
-    };
-
-    /**
-     * @description 이벤트 편집 모달에서 '삭제' 버튼을 눌렀을 때 실행됩니다.
-     * - ✅ 수정: 이제 eventId만 인자로 받습니다.
-     */
-    const handleDeleteEvent = async (eventId: string) => {
-        const originalEventId = eventId.split('-')[0];
-        const eventToDelete = events.find(e => e.id === originalEventId);
-        if (eventToDelete) {
-            await deleteEvent(eventToDelete);
-            setIsModalOpen(false);
-        }
-    };
-
-    const handleEventUpdate = () => {
-        fetchEvents();
-    };
-
+    // 오늘 날짜(agendaDate)에 해당하는 이벤트 목록
     const todaysEvents = useMemo(() =>
         processedEvents
             .filter(e => dayjs(e.start as string).isSame(agendaDate, 'day'))
@@ -202,11 +110,13 @@ const SchedulePage: React.FC = () => {
         [processedEvents, agendaDate]
     );
 
+    // 현재 선택된 이벤트 객체
     const selectedEvent = useMemo(() =>
         processedEvents.find(e => e.id === selectedEventId),
         [processedEvents, selectedEventId]
     );
     
+    // 선택된 이벤트에 연결된 할 일 목록
     const selectedEventTasks = useMemo(() => {
         if (!selectedEventId) return [];
         const originalId = (selectedEvent?.extendedProps as ScheduleEvent)?.id || selectedEventId;
@@ -214,36 +124,93 @@ const SchedulePage: React.FC = () => {
         return tasks.filter(t => t.eventId === eventIdToMatch);
     }, [tasks, selectedEventId, selectedEvent]);
     
-    const handleToggleTask = (taskId: number) => {
-        const taskToUpdate = tasks.find(t => t.id === taskId);
-        if (!taskToUpdate) return;
-        const statusCycle: { [key in EventTask['status']]: EventTask['status'] } = { 'TODO': 'DOING', 'DOING': 'DONE', 'DONE': 'TODO' };
-        const nextStatus = statusCycle[taskToUpdate.status];
-        updateTask(taskId, { statusId: statusMap[nextStatus] });
+    // --- 핸들러 함수 ---
+
+    // 일정 편집 모달을 여는 공통 함수
+    const openEditorForEvent = useCallback((event: EventApi | EventInput | Partial<ScheduleEvent>) => {
+        setEditingEvent(event as ScheduleEvent);
+        setIsModalOpen(true);
+        if (event.id) {
+            setSelectedEventId(event.id as string);
+        }
+    }, []);
+
+    // 날짜 클릭: 새 일정 생성 모드
+    const handleDateClick = (arg: DateClickArg) => {
+        if (!currentUser) return;
+
+        if (clickTimeout.current) {
+            clearTimeout(clickTimeout.current);
+            clickTimeout.current = null;
+
+            const newEvent: Partial<ScheduleEvent> = {
+                id: `temp-${Date.now()}`,
+                title: '',
+                start: dayjs(arg.date).format('YYYY-MM-DDTHH:mm:ss'),
+                end: dayjs(arg.date).add(1, 'hour').format('YYYY-MM-DDTHH:mm:ss'),
+                allDay: arg.allDay,
+                ownerType: 'USER',
+                ownerId: currentUser.id,
+                isEditable: true,
+                createdBy: currentUser.id,
+                tasks: [],
+                participants: [{ userId: currentUser.id, userName: currentUser.name, status: 'ACCEPTED' }],
+            };
+            openEditorForEvent(newEvent);
+        } else {
+            clickTimeout.current = window.setTimeout(() => {
+                setAgendaDate(arg.date);
+                clickTimeout.current = null;
+            }, 250);
+        }
+    };
+    
+    // 이벤트 클릭: 기존 일정 수정 모드
+    const handleEventClick = useCallback((arg: EventClickArg) => {
+        openEditorForEvent(arg.event.extendedProps as ScheduleEvent);
+    }, [openEditorForEvent]);
+
+    const handleSaveEvent = async (eventData: ScheduleEvent) => {
+        const result = await saveEvent(eventData);
+        if (result.success) {
+            setIsModalOpen(false);
+            fetchEvents();
+        }
+        return result;
+    };
+
+    const handleDeleteEvent = async (eventId: string) => {
+        const originalEventId = eventId.split('-')[0];
+        const eventToDelete = events.find(e => e.id === originalEventId);
+        if (eventToDelete) {
+            await deleteEvent(eventToDelete);
+            setIsModalOpen(false);
+        }
     };
 
     const handleAddTask = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && selectedEventId && e.currentTarget.value.trim()) {
             const originalId = (selectedEvent?.extendedProps as ScheduleEvent)?.id || selectedEventId;
-            const eventIdToMatch = parseInt(originalId.split('-')[0], 10);
-            const newTaskData: Omit<EventTask, 'id' | 'eventId'> = { 
-                title: e.currentTarget.value.trim(), 
-                status: 'TODO', 
-                dueDate: null 
+            const eventId = parseInt(originalId.split('-')[0], 10);
+            
+            const request: EventTaskCreateRequest = {
+                title: e.currentTarget.value.trim(),
+                statusId: statusMap['TODO'],
+                assigneeId: currentUser?.id,
+                dueDatetime: null
             };
-            addTask(eventIdToMatch, newTaskData); 
+            addTask(eventId, request);
             e.currentTarget.value = '';
         }
     };
-    
-    useEffect(() => {
-        if (todaysEvents.length > 0 && !todaysEvents.some(e => e.id === selectedEventId)) {
-            setSelectedEventId(todaysEvents[0].id!);
-        } else if (todaysEvents.length === 0) {
-            setSelectedEventId(null);
-        }
-    }, [todaysEvents, selectedEventId]);
 
+    const handleToggleTask = (taskId: number) => {
+        const taskToUpdate = tasks.find(t => t.id === taskId);
+        if (!taskToUpdate) return;
+        const statusCycle: { [key in EventTask['status']]: EventTask['status'] } = { 'TODO': 'DOING', 'DOING': 'DONE', 'DONE': 'TODO' };
+        updateTask(taskId, { statusId: statusMap[statusCycle[taskToUpdate.status]] });
+    };
+    
     const handleNav = (action: 'prev' | 'next' | 'today') => {
         calendarRef.current?.getApi()[action]();
         if (action === 'today') {
@@ -257,6 +224,31 @@ const SchedulePage: React.FC = () => {
         }
     }, []);
 
+    useEffect(() => {
+        if (todaysEvents.length > 0 && !todaysEvents.some(e => e.id === selectedEventId)) {
+            setSelectedEventId(todaysEvents[0].id!);
+        } else if (todaysEvents.length === 0) {
+            setSelectedEventId(null);
+        }
+    }, [todaysEvents, selectedEventId]);
+
+    // --- 렌더링 함수 ---
+
+    const renderEventContent = (eventInfo: EventContentArg) => {
+        const props = eventInfo.event.extendedProps as ScheduleEvent;
+        const ownerIcon = props.ownerType === 'USER' ? faUser : faLayerGroup;
+
+        return (
+            <div
+                className={`${styles.eventContent} ${eventInfo.event.allDay ? styles.allDayStyle : styles.timedStyle}`}
+                style={{ '--event-theme-color': props.color } as React.CSSProperties}
+            >
+                <FontAwesomeIcon icon={ownerIcon} className={styles.eventIcon} />
+                <span className={styles.eventTitle}>{eventInfo.event.title}</span>
+            </div>
+        );
+    };
+    
     const TaskStatusIcon = ({ status }: { status: EventTask['status'] }) => {
         switch (status) {
             case 'TODO': return <FontAwesomeIcon icon={faCircle} title="할 일" />;
@@ -287,36 +279,26 @@ const SchedulePage: React.FC = () => {
                             <FullCalendar
                                 ref={calendarRef}
                                 plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                                initialView={viewType}
+                                initialView="dayGridMonth"
                                 headerToolbar={false}
                                 dayMaxEvents={2}
-                                moreLinkClick={handleMoreLinkClick}
                                 events={processedEvents}
                                 editable={false}
                                 selectable={true}
                                 eventClick={handleEventClick}
                                 dateClick={handleDateClick}
-                                dayCellClassNames={(arg) => {
-                                    if (dayjs(arg.date).format('YYYY-MM-DD') === expandedDate) {
-                                        return [styles.dayExpanded];
-                                    }
-                                    return [];
-                                }}
                                 datesSet={(arg) => {
                                     setCurrentTitle(arg.view.title);
                                     setViewRange({ start: arg.view.activeStart, end: arg.view.activeEnd });
-                                    setViewType(arg.view.type);
-                                    if (expandedDate && !dayjs(expandedDate).isBetween(arg.view.activeStart, arg.view.activeEnd, null, '[]')) {
-                                        setExpandedDate(null);
-                                    }
                                 }}
                                 locale={'ko'}
                                 eventContent={renderEventContent}
                             />
                         </div>
                     </div>
-                    <UniversityTimetable onTimetableUpdate={fetchEvents} />
+                    <UniversityTimetable />
                 </div>
+
                 <div className={styles.rightColumn} key={dayjs(agendaDate).format('YYYYMMDD')}>
                     <div className={`${styles.panel} ${styles.agendaContainer} ${styles.animatedCard}`}>
                         <div className={styles.panelHeader}>
@@ -327,17 +309,17 @@ const SchedulePage: React.FC = () => {
                             {todaysEvents.length > 0 ? (
                                 <ul className={styles.agendaList}>
                                     {todaysEvents.map(event => {
-                                        const eventColor = formatColorForCSS((event.extendedProps as ScheduleEvent).color);
+                                        const eventProps = event.extendedProps as ScheduleEvent;
                                         return (
                                             <li
                                                 key={event.id}
                                                 className={`${styles.agendaItem} ${selectedEventId === event.id ? styles.selected : ''}`}
                                                 onClick={() => setSelectedEventId(event.id!)}
-                                                style={{ '--event-color': eventColor } as React.CSSProperties}
+                                                style={{ '--event-color': eventProps.color } as React.CSSProperties}
                                             >
                                                 <div className={styles.agendaLeft}>
-                                                    <div className={styles.ownerIcon} style={{ backgroundColor: eventColor }}>
-                                                        <FontAwesomeIcon icon={(event.extendedProps as ScheduleEvent).ownerType === 'USER' ? faUser : faLayerGroup} />
+                                                    <div className={styles.ownerIcon} style={{ backgroundColor: eventProps.color }}>
+                                                        <FontAwesomeIcon icon={eventProps.ownerType === 'USER' ? faUser : faLayerGroup} />
                                                     </div>
                                                     <div className={styles.agendaInfo}>
                                                         <span className={styles.agendaTitle}>{event.title}</span>
@@ -391,7 +373,7 @@ const SchedulePage: React.FC = () => {
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleSaveEvent}
                 onDelete={handleDeleteEvent}
-                onEventUpdate={handleEventUpdate}
+                onEventUpdate={fetchEvents}
             />}
         </>
     );
