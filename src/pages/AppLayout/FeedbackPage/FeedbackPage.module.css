@@ -48,6 +48,7 @@
     pointer-events: none;
     opacity: 0;
     visibility: hidden; 
+    background-color: #111;
 }
 .plus:hover + .pdescription{
     visibility: visible;
@@ -174,9 +175,31 @@
 }
 .arrowIcon{
     position: absolute;
-    right: -3px;
-    top: 8px;
+    right: -3.5px;
+    top: 7.5px;
     transform: translateY(-80%);
     color: #333;
     font-size: 20px;
+}
+.dot{
+    position: absolute;
+    cursor: pointer;
+    top: -11px;
+    right: -12px;
+    transform: translateX(-15px);
+}
+.tooltip{
+    position: absolute;
+    color: #ccc;
+    font-size: 12px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.dot:hover .tooltip {
+    opacity: 1;
+}
+
+.dot:hover{
+    color: rgb(var(--group-color));
 }
