@@ -6,3 +6,4 @@ export * from './chat';
 export * from './notice';
 export * from './users';
 export * from './events';
+export * from './chatbot';

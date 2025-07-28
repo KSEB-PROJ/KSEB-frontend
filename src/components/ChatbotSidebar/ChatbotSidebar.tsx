@@ -1,82 +1,88 @@
-/**
- * ChatbotSidebar 컴포넌트
- *
- * AI 챗봇을 위한 사이드바.
- * - 열림/닫힘 상태(isOpen)에 따라 슬라이딩 애니메이션과 함께 표시.
- * - 닫기 버튼 클릭 시 onClose 콜백을 호출하여 부모 컴포넌트에 상태 변경 알림.
- *
- * 사용된 라이브러리 및 기술 스택: 
- * - React: 컴포넌트 작성 및 Props 전달
- * - TypeScript: Props에 대한 타입 안정성 제공
- * - CSS Modules: 로컬 스코프 스타일링(styles 객체)
- * - @fortawesome/react-fontawesome: 아이콘 렌더링 컴포넌트
- * - @fortawesome/free-solid-svg-icons: paperclip, paper-plane, times 아이콘
- */
-
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import styles from './ChatbotSidebar.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPaperclip, faPaperPlane, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faPaperPlane, faSync, faRobot } from '@fortawesome/free-solid-svg-icons';
+import { useChannelStore } from '../../stores/channelStore';
+import { useChatbotStore } from '../../stores/chatbotStore';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
-// 컴포넌트가 받을 Props 타입 정의.
-interface ChatbotSidebarProps {
-    /**
-     * 사이드바가 열려 있는지 여부를 나타내는 boolean 값.
-     * true: 열림, false: 닫힘
-     */
-    isOpen: boolean;
-    /**
-     * 닫기 버튼 클릭 시 호출되는 콜백 함수.
-     * 부모 컴포넌트에서 상태를 업데이트하는 로직.
-     */
-    onClose: () => void;
-}
+const ChatbotSidebar = () => {
+    const { messages, isLoading, sendMessage, resetConversation } = useChatbotStore();
+    // [수정] 스토어의 상태를 올바르게 구독하도록 수정
+    const selectedChannel = useChannelStore((state) => state.selectedChannel);
 
-// React.FC 타입을 사용해 함수형 컴포넌트를 정의하고, Props 타입을 제네릭으로 전달.
-const ChatbotSidebar: React.FC<ChatbotSidebarProps> = ({ isOpen, onClose }) => {
+    const [input, setInput] = useState('');
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!input.trim() || isLoading || !selectedChannel) return;
+        await sendMessage(input, selectedChannel.id);
+        setInput('');
+    };
+
     return (
-        // aside 태그를 사용해 시맨틱하게 사이드바 영역을 나타냄.
-        // isOpen 값에 따라 open 스타일을 추가해 CSS 애니메이션 트리거.
-        <aside className={`${styles.chatbotContainer} ${isOpen ? styles.open : ''}`}>  
-            {/* 헤더 영역: 챗봇 타이틀과 닫기 버튼 */}
+        <div className={styles.chatbotContainer}>
             <div className={styles.header}>
-                {/* 챗봇 이름 */}
-                <h3>AI 챗봇</h3>
-                {/* 닫기 버튼: 클릭 시 onClose 콜백 호출 */}
-                <button onClick={onClose} className={styles.closeButton}>
-                    <FontAwesomeIcon icon={faTimes} />
+                <h3>AI 어시스턴트</h3>
+                <button onClick={resetConversation} className={styles.resetButton} title="대화 초기화">
+                    <FontAwesomeIcon icon={faSync} />
                 </button>
             </div>
 
-            {/* 채팅 메시지 표시 영역 */}
-            <div className={styles.chatArea}>
-                {/**
-                 * 실제 구현 시에는 메시지 배열을 map으로 순회.(아마도?))
-                 * 예시 구현을 위해 단일 div로만 표시 디자인은 수정 (예정)
-                 */}
-                <div className={styles.chatMessage}>
-                    <p>안녕하세요! 무엇을 도와드릴까요?</p>
-                </div>
+            <div className={styles.messageArea}>
+                {messages.map((msg, index) => (
+                    <div key={index} className={`${styles.messageWrapper} ${styles[msg.author]}`}>
+                        {msg.author === 'ai' && (
+                            <div className={styles.avatar}>
+                                <FontAwesomeIcon icon={faRobot} />
+                            </div>
+                        )}
+                        <div className={styles.bubble}>
+                            {/* [수정] 사용하지 않는 'node' prop 제거 */}
+                            <Markdown remarkPlugins={[remarkGfm]} components={{
+                                table: ({ ...props }) => <table className={styles.markdownTable} {...props} />,
+                                thead: ({ ...props }) => <thead className={styles.markdownThead} {...props} />,
+                                tr: ({ ...props }) => <tr className={styles.markdownTr} {...props} />,
+                                th: ({ ...props }) => <th className={styles.markdownTh} {...props} />,
+                                td: ({ ...props }) => <td className={styles.markdownTd} {...props} />,
+                            }}>{msg.text}</Markdown>
+                        </div>
+                    </div>
+                ))}
+                {isLoading && (
+                    <div className={`${styles.messageWrapper} ${styles.ai}`}>
+                        <div className={styles.avatar}>
+                            <FontAwesomeIcon icon={faRobot} />
+                        </div>
+                        <div className={styles.bubble}>
+                            <span className={styles.loadingDots}></span>
+                        </div>
+                    </div>
+                )}
+                <div ref={messagesEndRef} />
             </div>
 
-            {/* 사용자의 입력을 받는 영역: 첨부, 입력창, 전송 */}
-            <div className={styles.inputArea}>
-                {/* 파일 첨부 버튼: 추후 파일 선택 핸들러 추가 가능 */}
-                <button className={styles.attachButton}>
-                    <FontAwesomeIcon icon={faPaperclip} />
-                </button>
-                {/* 텍스트 입력 필드: 입력값은 상태로 관리하여 전송 로직과 연결 */}
-                <input
-                    type="text"
-                    placeholder="메시지를 입력하세요..."
-                    className={styles.inputField}
-                />
-                {/* 전송 버튼: 클릭 시 입력된 메시지를 서버나 API로 전송 */}
-                <button className={styles.sendButton}>
-                    <FontAwesomeIcon icon={faPaperPlane} />
-                </button>
+            <div className={styles.inputFormWrapper}>
+                <form onSubmit={handleSubmit} className={styles.inputArea}>
+                    <input
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder={selectedChannel ? "AI에게 메시지 보내기..." : "채널을 먼저 선택해주세요."}
+                        disabled={isLoading || !selectedChannel}
+                    />
+                    <button type="submit" disabled={isLoading || !input.trim()}>
+                        <FontAwesomeIcon icon={faPaperPlane} />
+                    </button>
+                </form>
             </div>
-        </aside>
+        </div>
     );
 };
 

@@ -1,5 +1,5 @@
 /**
- * @description 현재 선택된 그룹의 채널 목록을 관리하는 Zustand 스토어.
+ * @description 현재 선택된 그룹의 채널 목록과 '선택된 채널'을 관리하는 Zustand 스토어.
  * - groupStore의 selectedGroup 상태 변화를 구독하여, 그룹이 변경되면 자동으로 채널 목록을 새로고침 함.
  * - 채널 생성/수정/삭제 API 호출 및 상태 업데이트 기능.
  */
@@ -14,9 +14,11 @@ import { useGroupStore } from './groupStore';
 // ChannelState: 스토어의 상태 및 액션 타입 정의
 interface ChannelState {
     channels: Channel[];
+    selectedChannel: Channel | null; // [추가] 현재 선택된 채널 상태
     isLoading: boolean;
     fetchChannels: (groupId: number) => Promise<void>;
     addChannel: (groupId: number, channelData: ChannelCreateRequest) => Promise<void>;
+    setSelectedChannel: (channel: Channel | null) => void; // [추가] 선택된 채널을 변경하는 액션
     reset: () => void; // 로그아웃 시 상태 초기화
 }
 
@@ -39,6 +41,7 @@ export const useChannelStore = create<ChannelState>()(
         (set, get) => ({
             // 초기 상태
             channels: [],
+            selectedChannel: null, // [추가] 초기값
             isLoading: false,
 
             /**
@@ -73,6 +76,14 @@ export const useChannelStore = create<ChannelState>()(
                 await createChannel(groupId, channelData);
                 await get().fetchChannels(groupId); // 생성 후 목록 새로고침
             },
+            
+            /**
+             * [추가] 현재 선택된 채널을 상태에 저장합니다.
+             * @param channel - 사용자가 선택한 채널 객체 또는 null
+             */
+            setSelectedChannel: (channel: Channel | null) => {
+                set({ selectedChannel: channel });
+            },
 
             /**
              * 로그아웃 시 스토어의 상태를 초기값으로 되돌림.
@@ -80,6 +91,7 @@ export const useChannelStore = create<ChannelState>()(
             reset: () => {
                 set({
                     channels: [],
+                    selectedChannel: null, // [추가] 선택된 채널도 초기화
                     isLoading: false,
                 });
             },
@@ -97,12 +109,14 @@ useGroupStore.subscribe(
     (state, prevState) => {
         const newGroupId = state.selectedGroup?.id;
         const oldGroupId = prevState.selectedGroup?.id;
+        const channelStore = useChannelStore.getState();
 
         if (newGroupId && newGroupId !== oldGroupId) {
-            useChannelStore.getState().fetchChannels(newGroupId);
+            channelStore.fetchChannels(newGroupId);
+            channelStore.setSelectedChannel(null); // 그룹이 변경되면 선택된 채널을 초기화합니다.
         } else if (!newGroupId && oldGroupId) {
             // 그룹 선택이 해제되면 채널 목록을 비움.
-            useChannelStore.getState().reset();
+            channelStore.reset();
         }
     }
 );
