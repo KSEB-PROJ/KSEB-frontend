@@ -1,15 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styles from './ChatbotSidebar.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPaperPlane, faSync, faRobot } from '@fortawesome/free-solid-svg-icons';
+import { faPaperPlane, faSync, faRobot, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { useChannelStore } from '../../stores/channelStore';
 import { useChatbotStore } from '../../stores/chatbotStore';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-const ChatbotSidebar = () => {
+interface ChatbotSidebarProps {
+    isOpen: boolean;
+    onClose: () => void;
+}
+
+const ChatbotSidebar: React.FC<ChatbotSidebarProps> = ({ isOpen, onClose }) => {
     const { messages, isLoading, sendMessage, resetConversation } = useChatbotStore();
-    // [수정] 스토어의 상태를 올바르게 구독하도록 수정
     const selectedChannel = useChannelStore((state) => state.selectedChannel);
 
     const [input, setInput] = useState('');
@@ -21,18 +25,46 @@ const ChatbotSidebar = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!input.trim() || isLoading || !selectedChannel) return;
-        await sendMessage(input, selectedChannel.id);
+        // 이제 채널 선택 여부와 관계없이 AI 챗봇 사용 가능 
+        // 단, 채널 관련 기능은 selectedChannel이 있을 때만 동작하도록 분기 처리 필요
+        const channelId = selectedChannel?.id || 0; // 채널 ID가 없으면 0 또는 다른 기본값 전달
+        if (!input.trim() || isLoading) return;
+
+        await sendMessage(input, channelId);
         setInput('');
     };
+    
+    // ESC 키로 닫기
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+        if (isOpen) {
+            window.addEventListener('keydown', handleKeyDown);
+        }
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isOpen, onClose]);
+
 
     return (
-        <div className={styles.chatbotContainer}>
+        <div className={`${styles.chatbotContainer} ${isOpen ? styles.open : ''}`}>
             <div className={styles.header}>
-                <h3>AI 어시스턴트</h3>
-                <button onClick={resetConversation} className={styles.resetButton} title="대화 초기화">
-                    <FontAwesomeIcon icon={faSync} />
-                </button>
+                <div className={styles.headerTitle}>
+                    <FontAwesomeIcon icon={faRobot} />
+                    <h3>AI 어시스턴트</h3>
+                </div>
+                <div className={styles.headerActions}>
+                    <button onClick={resetConversation} className={styles.headerButton} title="대화 초기화">
+                        <FontAwesomeIcon icon={faSync} />
+                    </button>
+                    <button onClick={onClose} className={styles.headerButton} title="닫기 (ESC)">
+                        <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                </div>
             </div>
 
             <div className={styles.messageArea}>
@@ -44,13 +76,12 @@ const ChatbotSidebar = () => {
                             </div>
                         )}
                         <div className={styles.bubble}>
-                            {/* [수정] 사용하지 않는 'node' prop 제거 */}
                             <Markdown remarkPlugins={[remarkGfm]} components={{
-                                table: ({ ...props }) => <table className={styles.markdownTable} {...props} />,
-                                thead: ({ ...props }) => <thead className={styles.markdownThead} {...props} />,
-                                tr: ({ ...props }) => <tr className={styles.markdownTr} {...props} />,
-                                th: ({ ...props }) => <th className={styles.markdownTh} {...props} />,
-                                td: ({ ...props }) => <td className={styles.markdownTd} {...props} />,
+                                table: ({...props}) => <table className={styles.markdownTable} {...props} />,
+                                thead: ({...props}) => <thead className={styles.markdownThead} {...props} />,
+                                tr: ({...props}) => <tr className={styles.markdownTr} {...props} />,
+                                th: ({...props}) => <th className={styles.markdownTh} {...props} />,
+                                td: ({...props}) => <td className={styles.markdownTd} {...props} />,
                             }}>{msg.text}</Markdown>
                         </div>
                     </div>
@@ -74,8 +105,8 @@ const ChatbotSidebar = () => {
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder={selectedChannel ? "AI에게 메시지 보내기..." : "채널을 먼저 선택해주세요."}
-                        disabled={isLoading || !selectedChannel}
+                        placeholder={"AI에게 무엇이든 물어보세요..."}
+                        disabled={isLoading}
                     />
                     <button type="submit" disabled={isLoading || !input.trim()}>
                         <FontAwesomeIcon icon={faPaperPlane} />
