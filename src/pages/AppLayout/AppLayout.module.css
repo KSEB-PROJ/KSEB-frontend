@@ -23,5 +23,5 @@
 
 /* 챗봇 사이드바가 열렸을 때 메인 콘텐츠를 축소 */
 .mainContent.contentShrink {
-    padding-right: 400px;
+    padding-right: 640px;
 }
