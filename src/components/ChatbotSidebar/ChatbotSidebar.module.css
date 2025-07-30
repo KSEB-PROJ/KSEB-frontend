@@ -18,7 +18,7 @@
 }
 
 .chatbotContainer {
-    width: 400px; /* <<< 너비 수정 */
+    width: 640px; /* <<< 너비 수정 */
     height: 100vh;
     position: fixed;
     top: 0;
