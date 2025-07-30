@@ -77,6 +77,7 @@ const ChatbotSidebar: React.FC<ChatbotSidebarProps> = ({ isOpen, onClose }) => {
                         )}
                         <div className={styles.bubble}>
                             <Markdown remarkPlugins={[remarkGfm]} components={{
+                                a: ({...props}) => <a className={styles.markdownLink} {...props} />,
                                 table: ({...props}) => <table className={styles.markdownTable} {...props} />,
                                 thead: ({...props}) => <thead className={styles.markdownThead} {...props} />,
                                 tr: ({...props}) => <tr className={styles.markdownTr} {...props} />,
