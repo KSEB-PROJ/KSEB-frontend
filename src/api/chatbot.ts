@@ -24,6 +24,7 @@ chatbotApi.interceptors.request.use(
 /**
  * AI 에이전트에게 사용자의 질문(query)을 보내고 답변을 받습니다.
  */
-export const postChatQuery = (channelId: number, request: ChatRequest) => {
-    return chatbotApi.post(`/channels/${channelId}/query`, request);
+export const postChatQuery = (groupId: number, channelId: number, data: ChatRequest) => {
+    // baseURL에 /api/v1/chatbot이 이미 포함되어 있으므로, 나머지 경로만 적어줍니다.
+    return chatbotApi.post(`/groups/${groupId}/channels/${channelId}/query`, data);
 };

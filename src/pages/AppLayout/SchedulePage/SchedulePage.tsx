@@ -21,29 +21,38 @@ import type { ScheduleEvent, EventTask, EventTaskCreateRequest } from '../../../
 import EventEditorModal from './EventEditorModal/EventEditorModal';
 import UniversityTimetable from './UniversityTimetable/UniversityTimetable';
 
+import { useParams } from 'react-router-dom';
+
+// ... (다른 import들) ...
+
 // Zustand 스토어 import
 import { useEventStore } from '../../../stores/eventStore';
 import { useAuthStore } from '../../../stores/authStore';
 
-dayjs.extend(isBetween);
-dayjs.locale('ko');
-
-// --- 상수 및 헬퍼 함수 ---
-const statusMap: { [key in EventTask['status']]: number } = { 'TODO': 1, 'DOING': 2, 'DONE': 3 };
-
-const getEventInstanceId = (event: ScheduleEvent, date: Date | string): string => {
-    if (!event.rrule) return event.id;
+// --- 헬퍼 함수 ---
+/**
+ * 반복 이벤트의 각 인스턴스에 대한 고유 ID를 생성합니다.
+ * @param event - 원본 이벤트 객체
+ * @param date - 반복되는 날짜
+ * @returns {string} 고유 ID (e.g., "123-20250802")
+ */
+const getEventInstanceId = (event: ScheduleEvent, date: Date): string => {
     return `${event.id}-${dayjs(date).format('YYYYMMDD')}`;
 };
 
+// ... (다른 코드들) ...
+
 // --- 메인 컴포넌트 ---
 const SchedulePage: React.FC = () => {
+    // --- 라우터 파라미터 ---
+    const { groupId } = useParams<{ groupId?: string }>();
+
     // --- Refs ---
     const calendarRef = useRef<FullCalendar>(null);
     const clickTimeout = useRef<number | null>(null);
 
     // --- 스토어 상태 및 액션 ---
-    const { events, tasks, isLoading, fetchEvents, saveEvent, deleteEvent, addTask, updateTask } = useEventStore();
+    const { events, tasks, isLoading, fetchEvents, openModal } = useEventStore();
     const { user: currentUser } = useAuthStore();
 
     // --- 컴포넌트 상태 ---
@@ -51,14 +60,12 @@ const SchedulePage: React.FC = () => {
     const [agendaDate, setAgendaDate] = useState(new Date());
     const [viewRange, setViewRange] = useState({ start: new Date(), end: new Date() });
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
 
     // --- 데이터 로딩 ---
     useEffect(() => {
-        // 개인 스케줄 페이지에서는 그룹 컨텍스트가 없으므로 인자 없이 호출
-        fetchEvents();
-    }, [fetchEvents]);
+        const contextGroupId = groupId ? parseInt(groupId, 10) : undefined;
+        fetchEvents(contextGroupId);
+    }, [fetchEvents, groupId]);
 
     // --- 메모이제이션된 데이터 ---
 
@@ -126,15 +133,6 @@ const SchedulePage: React.FC = () => {
     
     // --- 핸들러 함수 ---
 
-    // 일정 편집 모달을 여는 공통 함수
-    const openEditorForEvent = useCallback((event: EventApi | EventInput | Partial<ScheduleEvent>) => {
-        setEditingEvent(event as ScheduleEvent);
-        setIsModalOpen(true);
-        if (event.id) {
-            setSelectedEventId(event.id as string);
-        }
-    }, []);
-
     // 날짜 클릭: 새 일정 생성 모드
     const handleDateClick = (arg: DateClickArg) => {
         if (!currentUser) return;
@@ -156,7 +154,7 @@ const SchedulePage: React.FC = () => {
                 tasks: [],
                 participants: [{ userId: currentUser.id, userName: currentUser.name, status: 'ACCEPTED' }],
             };
-            openEditorForEvent(newEvent);
+            openModal(newEvent);
         } else {
             clickTimeout.current = window.setTimeout(() => {
                 setAgendaDate(arg.date);
@@ -167,26 +165,8 @@ const SchedulePage: React.FC = () => {
     
     // 이벤트 클릭: 기존 일정 수정 모드
     const handleEventClick = useCallback((arg: EventClickArg) => {
-        openEditorForEvent(arg.event.extendedProps as ScheduleEvent);
-    }, [openEditorForEvent]);
-
-    const handleSaveEvent = async (eventData: ScheduleEvent) => {
-        const result = await saveEvent(eventData);
-        if (result.success) {
-            setIsModalOpen(false);
-            fetchEvents();
-        }
-        return result;
-    };
-
-    const handleDeleteEvent = async (eventId: string) => {
-        const originalEventId = eventId.split('-')[0];
-        const eventToDelete = events.find(e => e.id === originalEventId);
-        if (eventToDelete) {
-            await deleteEvent(eventToDelete);
-            setIsModalOpen(false);
-        }
-    };
+        openModal(arg.event.extendedProps as ScheduleEvent);
+    }, [openModal]);
 
     const handleAddTask = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && selectedEventId && e.currentTarget.value.trim()) {
@@ -367,14 +347,6 @@ const SchedulePage: React.FC = () => {
                     </div>
                 </div>
             </div>
-
-            {isModalOpen && <EventEditorModal
-                event={editingEvent}
-                onClose={() => setIsModalOpen(false)}
-                onSave={handleSaveEvent}
-                onDelete={handleDeleteEvent}
-                onEventUpdate={fetchEvents}
-            />}
         </>
     );
 };

@@ -20,6 +20,7 @@ import {
     createGroupEvent, updateGroupEvent, deleteGroupEvent, transformToScheduleEvent,
     createTaskForEvent, updateParticipantStatus
 } from '../api/events';
+import type { GroupListDto } from '../types';
 import { getMyGroups } from '../api/groups';
 import { updateTask as updateTaskApi, deleteTask as deleteTaskApi } from '../api/tasks';
 
@@ -30,7 +31,10 @@ import { useAuthStore } from './authStore';
 interface EventState {
     events: ScheduleEvent[];
     tasks: EventTask[];
+    groups: GroupListDto[]; // 그룹 목록 상태 추가
     isLoading: boolean;
+    isModalOpen: boolean;
+    selectedEvent: ScheduleEvent | null;
     fetchEvents: (contextGroupId?: number) => Promise<void>;
     saveEvent: (eventData: ScheduleEvent) => Promise<{ success: boolean; updatedEvent?: ScheduleEvent }>;
     deleteEvent: (eventData: ScheduleEvent) => Promise<void>;
@@ -38,6 +42,8 @@ interface EventState {
     updateTask: (taskId: number, data: UpdateTaskRequest) => Promise<boolean>;
     deleteTask: (taskId: number) => Promise<boolean>;
     updateMyParticipation: (groupId: number, eventId: number, status: EventParticipant['status']) => Promise<boolean>;
+    openModal: (event?: Partial<ScheduleEvent>) => void;
+    closeModal: () => void;
     reset: () => void;
 }
 
@@ -47,7 +53,27 @@ export const useEventStore = create<EventState>()(
             // --- 초기 상태 ---
             events: [],
             tasks: [],
+            groups: [], // 초기 상태 추가
             isLoading: true,
+            isModalOpen: false,
+            selectedEvent: null,
+
+            // --- 액션 구현 ---
+            openModal: (event) => {
+                const scheduleEvent: ScheduleEvent | null = event ? {
+                    id: event.id || `temp-${Date.now()}`,
+                    title: event.title || '',
+                    start: event.start || new Date().toISOString(),
+                    end: event.end,
+                    allDay: event.allDay || false,
+                    ownerType: event.ownerType || 'USER',
+                    ownerId: event.ownerId || useAuthStore.getState().user?.id || 0,
+                    ...event,
+                } : null;
+                set({ isModalOpen: true, selectedEvent: scheduleEvent });
+            },
+            closeModal: () => set({ isModalOpen: false, selectedEvent: null }),
+
 
             /**
              * @description 서버에서 사용자의 모든 일정을 가져와 상태 업데이트.
@@ -57,11 +83,12 @@ export const useEventStore = create<EventState>()(
                 set({ isLoading: true });
                 try {
                     const [groupsRes, eventsRes] = await Promise.all([getMyGroups(), getMyEvents()]);
+                    const groups = groupsRes.data; // 그룹 데이터 저장
                     const currentUserId = useAuthStore.getState().user?.id;
 
                     const allTasks: EventTask[] = [];
                     const transformedEvents = eventsRes.map(event => {
-                        const scheduleEvent = transformToScheduleEvent(event, groupsRes.data);
+                        const scheduleEvent = transformToScheduleEvent(event, groups);
                         const isParticipant = event.participants.some(p => p.userId === currentUserId);
 
                         scheduleEvent.isEditable = event.ownerType === 'USER' || (event.ownerId === contextGroupId && isParticipant);
@@ -72,7 +99,7 @@ export const useEventStore = create<EventState>()(
                         }
                         return scheduleEvent;
                     });
-                    set({ events: transformedEvents, tasks: allTasks, isLoading: false });
+                    set({ events: transformedEvents, tasks: allTasks, groups: groups, isLoading: false });
                 } catch (err) {
                     const error = err as AxiosError;
                     toast.error("일정 정보를 불러오는 데 실패했습니다.");

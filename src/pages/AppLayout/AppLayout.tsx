@@ -14,36 +14,50 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar/Sidebar';
-import ChatbotSidebar from '../../components/ChatbotSidebar/ChatbotSidebar'; // 챗봇 사이드바
+import ChatbotSidebar from '../../components/ChatbotSidebar/ChatbotSidebar';
+import EventEditorModal from './SchedulePage/EventEditorModal/EventEditorModal'; // 모달 컴포넌트 import
+import { useEventStore } from '../../stores/eventStore'; // 전역 스토어 import
 import styles from './AppLayout.module.css';
 
 
 const AppLayout: React.FC = () => {
-    // 사이드바 열림/닫힘 상태 (기본: 열림)
+    // --- 로컬 UI 상태 ---
     const [isSidebarOpen, setSidebarOpen] = useState(true);
-    // 챗봇 사이드바 열림/닫힘 상태 (기본: 닫힘)
     const [isChatbotOpen, setChatbotOpen] = useState(false);
 
-    /**
-     * 햄버거 아이콘 클릭 시 호출
-     * 사이드바 열림/닫힘 상태를 반전.
-     */
-    const toggleSidebar = () => {
-        setSidebarOpen(prev => !prev);
+    // --- 전역 이벤트 모달 상태 ---
+    const { 
+        isModalOpen, 
+        selectedEvent, 
+        closeModal, 
+        saveEvent, 
+        deleteEvent, 
+        fetchEvents 
+    } = useEventStore();
+
+    const toggleSidebar = () => setSidebarOpen(prev => !prev);
+    const toggleChatbot = () => setChatbotOpen(prev => !prev);
+
+    // --- 모달 이벤트 핸들러 ---
+    const handleSaveEvent = async (eventData: any) => {
+        const result = await saveEvent(eventData);
+        if (result.success) {
+            closeModal();
+            fetchEvents(); // 데이터 최신화
+        }
+        return result;
     };
 
-    /**
-     * 챗봇 아이콘 클릭 시 호출
-     * 챗봇 사이드바 열림/닫힘 상태를 반전.
-     */
-    const toggleChatbot = () => {
-        setChatbotOpen(prev => !prev);
+    const handleDeleteEvent = async (eventId: string) => {
+        const eventToDelete = useEventStore.getState().events.find(e => e.id.startsWith(eventId));
+        if (eventToDelete) {
+            await deleteEvent(eventToDelete);
+            closeModal();
+        }
     };
 
     return (
-        // .appContainer: 전체 레이아웃 그리드/플렉스 설정
         <div className={styles.appContainer}>
-            {/* 메인 사이드바: 열림/닫힘, 챗봇 클릭 핸들러, 챗봇 활성 상태 전달 */}
             <Sidebar
                 isOpen={isSidebarOpen}
                 onToggle={toggleSidebar}
@@ -51,12 +65,6 @@ const AppLayout: React.FC = () => {
                 isChatbotOpen={isChatbotOpen}
             />
 
-            {/*
-              메인 컨텐츠 영역
-              - 사이드바 열린 상태면 contentShifted 클래스 적용
-              - 챗봇 열린 상태면 contentShrink 클래스 적용
-              - Outlet을 통해 라우트된 페이지 컴포넌트 렌더링
-            */}
             <main
                 className={
                     `${styles.mainContent}` +
@@ -67,8 +75,18 @@ const AppLayout: React.FC = () => {
                 <Outlet />
             </main>
 
-            {/* 챗봇 사이드바: isOpen 값에 따라 표시 여부, onClose로 닫기 처리 */}
             <ChatbotSidebar isOpen={isChatbotOpen} onClose={toggleChatbot} />
+
+            {/* 전역 이벤트 모달 렌더링 로직 */}
+            {isModalOpen && (
+                <EventEditorModal
+                    event={selectedEvent}
+                    onClose={closeModal}
+                    onSave={handleSaveEvent}
+                    onDelete={handleDeleteEvent}
+                    onEventUpdate={fetchEvents}
+                />
+            )}
         </div>
     );
 };

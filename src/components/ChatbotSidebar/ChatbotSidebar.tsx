@@ -4,8 +4,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPaperPlane, faSync, faRobot, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { useChannelStore } from '../../stores/channelStore';
 import { useChatbotStore } from '../../stores/chatbotStore';
-import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import type { ChatMessage as Message } from '../../stores/chatbotStore';
+import ChatMessage from '../ChatbotMessages/ChatMessage';
 
 interface ChatbotSidebarProps {
     isOpen: boolean;
@@ -68,23 +68,14 @@ const ChatbotSidebar: React.FC<ChatbotSidebarProps> = ({ isOpen, onClose }) => {
             </div>
 
             <div className={styles.messageArea}>
-                {messages.map((msg, index) => (
+                {messages.map((msg: Message, index) => (
                     <div key={index} className={`${styles.messageWrapper} ${styles[msg.author]}`}>
                         {msg.author === 'ai' && (
                             <div className={styles.avatar}>
                                 <FontAwesomeIcon icon={faRobot} />
                             </div>
                         )}
-                        <div className={styles.bubble}>
-                            <Markdown remarkPlugins={[remarkGfm]} components={{
-                                a: ({...props}) => <a className={styles.markdownLink} {...props} />,
-                                table: ({...props}) => <table className={styles.markdownTable} {...props} />,
-                                thead: ({...props}) => <thead className={styles.markdownThead} {...props} />,
-                                tr: ({...props}) => <tr className={styles.markdownTr} {...props} />,
-                                th: ({...props}) => <th className={styles.markdownTh} {...props} />,
-                                td: ({...props}) => <td className={styles.markdownTd} {...props} />,
-                            }}>{msg.text}</Markdown>
-                        </div>
+                        <ChatMessage message={msg} />
                     </div>
                 ))}
                 {isLoading && (

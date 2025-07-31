@@ -67,7 +67,7 @@ const ChannelLayout: React.FC = () => {
             case 'notice':
                 return <NoticePage />;
             case 'calendar':
-                return <CalendarPage />;
+                return <CalendarPage groupId={parseInt(groupId!)} />;
             case 'chat':
                 return <ChatPage />;
             default:
