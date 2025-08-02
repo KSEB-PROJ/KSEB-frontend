@@ -83,8 +83,8 @@ const FeedbackPage: React.FC = () => {
             const url = URL.createObjectURL(file); //브라우저 내 비디오 재생
             setVideoURL(url);
             setIsPlaying(false);
-            setLastFeedbacks((prev) => {
-                if (prev.length >= 10) return prev;
+            setLastFeedbacks ((prev) => {
+                if (prev.length >= 30) return prev;
                 return [
                     ...prev,
                     {
@@ -92,10 +92,7 @@ const FeedbackPage: React.FC = () => {
                         timestamp: now.toLocaleString(),
                         uploadTime: dayjs(now).format('YYYY-MM-DD HH:mm'),
                     },
-                ];
-            });
-        }
-    };
+                    ]}); } };
     //업로드 클릭시 input 열기
     const handleVideoClick = () => {
         if (!video) {
@@ -176,17 +173,20 @@ const FeedbackPage: React.FC = () => {
             </div>
             <div className={styles.bottom}>
                 <div className={styles.line}>
-                        {lastfeedbacks.map((f, idx) => (
-                        <div
-                            key={f.id}
-                            className={styles.dot}
-                            style={{ left: `${(idx / 9) * 100}%` }}
-                            onClick={() => navigate(`/feedback/${f.id}`)}
-                        >
-                            <FontAwesomeIcon icon={faO} />
-                            <div className={styles.tooltip}>{f.uploadTime}</div>
-                        </div>
-                        ))}
+                        {lastfeedbacks.map((f, idx) => {
+                            const count = lastfeedbacks.length;
+                            const leftPercent = count <= 10 ? (idx / 9) * 100 : (idx / (count - 1)) * 100;
+                             return (
+                                <div
+                                    key={f.id}
+                                    className={styles.dot}
+                                    style={{ left: `${leftPercent}%` }}
+                                    onClick={() => navigate(`/feedback/${f.id}`)} >
+                                    <FontAwesomeIcon icon={faO} />
+                                    <div className={styles.tooltip}>{f.uploadTime}</div>
+                                </div>
+                            );
+                        })}
                         <FontAwesomeIcon icon={faAngleRight} className={styles.arrowIcon} />
                     </div>
             </div>
