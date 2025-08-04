@@ -114,7 +114,10 @@ const FeedbackAnalysis: React.FC<FeedbackAnalysisProps> = ({ onOpenHistory, onBa
   return (
     <div className={styles.analysisContainer} style={{'--group-color-rgb': groupColorRgb} as React.CSSProperties}>
       <div className={styles.header}>
-        <h2 className={styles.pageTitle}>분석 결과</h2>
+        <div>
+          <h2 className={styles.pageTitle}>분석 결과</h2>
+          {videoFile && <p className={styles.pageSubtitle}>분석 파일: {videoFile.name}</p>}
+        </div>
         <div className={styles.buttonGroup}>
           <button className={styles.historyButton} onClick={onBack}>
             <FontAwesomeIcon icon={faPlus} />

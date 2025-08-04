@@ -24,6 +24,14 @@
   font-size: 1.8rem;
   font-weight: 600;
   color: #e0e0e0;
+  margin: 0;
+}
+
+.pageSubtitle {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #a0a0a0;
+  margin: 4px 0 0 0;
 }
 
 .historyButton {
