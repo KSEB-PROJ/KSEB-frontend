@@ -1,3 +1,9 @@
+/**
+ * @file FeedbackAnalysis.tsx
+ * @description AI 분석 결과를 시각적인 대시보드 형태로 보여주는 컴포넌트.
+ * 다양한 차트와 요약 정보를 통해 사용자에게 피드백을 제공.
+ * 현재는 mock 데이터를 사용하고 있으나, 추후 API 연동을 통해 동적 데이터 처리 예정.
+ */
 import React, { useState, useEffect } from 'react';
 import styles from './FeedbackAnalysis.module.css';
 import {
@@ -11,6 +17,7 @@ import { faHistory, faPlus } from '@fortawesome/free-solid-svg-icons';
 import ScoreCircularChart from '../ScoreCircularChart/ScoreCircularChart';
 import StatCard from '../StatCard/StatCard';
 
+// TODO: API 연동 시 제거될 mock 데이터
 const analysisData = {
   videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
   summary: `### AI 종합 평가 보고서
@@ -79,15 +86,18 @@ const analysisData = {
 interface FeedbackAnalysisProps {
   onOpenHistory: () => void;
   onBack: () => void;
-  videoFile?: File | null;
-  historyId?: number | null;
+  videoFile?: File | null; // 새로 업로드된 영상 파일
+  historyId?: number | null; // 이전 기록에서 선택된 ID
 }
 
 const FeedbackAnalysis: React.FC<FeedbackAnalysisProps> = ({ onOpenHistory, onBack, videoFile, historyId }) => {
+  // --- 상태 관리 ---
   const [groupColor, setGroupColor] = useState('rgb(132, 0, 255)');
   const [groupColorRgb, setGroupColorRgb] = useState('132, 0, 255');
+  // 비디오 플레이어에 표시될 영상 소스 URL. 기본값은 mock 데이터.
   const [videoSrc, setVideoSrc] = useState(analysisData.videoUrl);
 
+  // 그룹 테마 색상 적용 로직
   useEffect(() => {
     const rootStyles = getComputedStyle(document.documentElement);
     const color = rootStyles.getPropertyValue('--group-color').trim();
@@ -97,16 +107,22 @@ const FeedbackAnalysis: React.FC<FeedbackAnalysisProps> = ({ onOpenHistory, onBa
     }
   }, []);
 
+  // --- 동적 비디오 소스 설정 로직 ---
+  // videoFile prop이 변경될 때마다 실행됨.
   useEffect(() => {
     let objectUrl: string | undefined;
+    // 새로 업로드된 파일이 있으면, 해당 파일을 위한 임시 URL을 생성.
     if (videoFile) {
       objectUrl = URL.createObjectURL(videoFile);
       setVideoSrc(objectUrl);
     } else {
-      // historyId is present, use the default/mock video URL
+      // 이전 기록을 보는 경우(historyId가 존재), mock 비디오 URL을 사용.
+      // TODO: API 연동 시 historyId를 이용해 실제 영상 URL을 가져와야 함.
       setVideoSrc(analysisData.videoUrl);
     }
 
+    // 중요: 컴포넌트가 언마운트될 때 생성된 임시 URL을 메모리에서 해제.
+    // 메모리 누수 방지를 위해 반드시 필요.
     return () => {
       if (objectUrl) {
         URL.revokeObjectURL(objectUrl);
@@ -114,6 +130,7 @@ const FeedbackAnalysis: React.FC<FeedbackAnalysisProps> = ({ onOpenHistory, onBa
     };
   }, [videoFile, historyId]);
 
+  // recharts 툴팁 공통 스타일
   const tooltipStyle = {
     backgroundColor: '#2a2a2e',
     border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -134,6 +151,7 @@ const FeedbackAnalysis: React.FC<FeedbackAnalysisProps> = ({ onOpenHistory, onBa
       <div className={styles.header}>
         <div>
           <h2 className={styles.pageTitle}>분석 결과</h2>
+          {/* 새로 업로드한 영상 분석 시에만 파일 이름 표시 */}
           {videoFile && <p className={styles.pageSubtitle}>분석 파일: {videoFile.name}</p>}
         </div>
         <div className={styles.buttonGroup}>

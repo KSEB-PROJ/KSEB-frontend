@@ -1,3 +1,9 @@
+/**
+ * @file FeedbackHistory.tsx
+ * @description 과거 피드백 기록들을 브라우징하는 페이지 컴포넌트.
+ * 메인 카드와 서브 카드 UI를 통해 기록을 시각적으로 보여주고, 선택 시 분석 페이지로 이동.
+ * 현재는 mock 데이터를 사용하며, 추후 API 연동 필요.
+ */
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import styles from './FeedbackHistory.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -5,6 +11,7 @@ import { faArrowLeft, faChevronLeft, faChevronRight } from '@fortawesome/free-so
 import MainFeedbackCard from '../MainFeedbackCard/MainFeedbackCard';
 import SubFeedbackCard from '../SubFeedbackCard/SubFeedbackCard';
 
+// TODO: API 연동 시 제거될 mock 데이터. 날짜 내림차순으로 정렬.
 const mockHistory = [
     { id: 4, title: '최종 발표 리허설', date: '2025-08-04', thumbnailUrl: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&w=870&auto=format&fit=crop', overallScore: 76, summary: '전반적으로 안정적이었으나, 시선 처리가 불안정하고 말이 조금 빠른 경향이 있습니다.' },
     { id: 1, title: '1차 발표 피드백', date: '2025-08-03', thumbnailUrl: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=1032&auto=format&fit=crop', overallScore: 72, summary: '자신감 있는 목소리는 좋지만, 불필요한 손동작이 많아 내용 전달을 방해합니다.' },
@@ -14,19 +21,28 @@ const mockHistory = [
 ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
 interface FeedbackHistoryProps {
-  onSelect: (id: number) => void;
-  onBack: () => void;
+  onSelect: (id: number) => void; // 분석할 기록 ID를 부모로 전달하는 콜백
+  onBack: () => void; // 이전 화면(업로드)으로 돌아가는 콜백
 }
 
 const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({ onSelect, onBack }) => {
+  // --- 상태 관리 ---
+  // 현재 메인 카드에 보여줄 기록의 ID. 기본값은 가장 최신 기록.
   const [mainCardId, setMainCardId] = useState(mockHistory[0]?.id || null);
+  // 하단 서브 카드 스크롤 영역을 참조하기 위한 ref.
   const trackRef = useRef<HTMLDivElement>(null);
+  // 좌/우 스크롤 버튼의 표시 여부를 결정하는 상태.
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
+  // --- 데이터 메모이제이션 ---
+  // mainCardId가 변경될 때만 메인 카드 데이터를 다시 계산.
   const mainCardData = useMemo(() => mockHistory.find(item => item.id === mainCardId), [mainCardId]);
+  // mainCardId가 변경될 때만 서브 카드 데이터 리스트를 다시 계산.
   const subCardData = useMemo(() => mockHistory.filter(item => item.id !== mainCardId), [mainCardId]);
 
+  // --- 스크롤 로직 ---
+  // 현재 스크롤 위치를 기준으로 좌/우 스크롤 가능 여부를 판단하고 상태를 업데이트.
   const checkScrollability = () => {
     const el = trackRef.current;
     if (el) {
@@ -35,31 +51,37 @@ const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({ onSelect, onBack }) =
     }
   };
 
+  // 컴포넌트 마운트 시, 그리고 데이터 변경 시 스크롤 가능 여부를 체크하고 이벤트 리스너를 등록.
   useEffect(() => {
     const el = trackRef.current;
     if (el) {
       checkScrollability();
       el.addEventListener('scroll', checkScrollability);
       window.addEventListener('resize', checkScrollability);
+      // 클린업 함수: 컴포넌트 언마운트 시 이벤트 리스너 제거.
       return () => {
         el.removeEventListener('scroll', checkScrollability);
         window.removeEventListener('resize', checkScrollability);
       };
     }
-  }, [subCardData]);
+  }, [subCardData]); // subCardData가 바뀔 때마다 이펙트를 재실행하여 스크롤 상태를 정확히 계산.
 
+  // 좌/우 버튼 클릭 시 스크롤을 부드럽게 이동시키는 핸들러.
   const handleScroll = (direction: 'left' | 'right') => {
     const el = trackRef.current;
     if (el) {
-      const scrollAmount = el.clientWidth * 0.8;
+      const scrollAmount = el.clientWidth * 0.8; // 한 번에 화면 너비의 80%만큼 스크롤.
       el.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
     }
   };
 
+  // --- 이벤트 핸들러 ---
+  // 서브 카드를 클릭했을 때, 해당 카드를 메인 카드로 변경.
   const handleSubCardClick = (id: number) => {
     setMainCardId(id);
   };
 
+  // 메인 카드에서 '분석 보기' 버튼을 클릭했을 때, 부모 컴포넌트로 ID를 전달.
   const handleAnalyzeClick = (id: number) => {
     onSelect(id);
   };
@@ -90,6 +112,7 @@ const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({ onSelect, onBack }) =
       </div>
 
       <div className={styles.subCardContainer}>
+        {/* 스크롤 가능 여부에 따라 버튼을 조건부 렌더링 */}
         {canScrollLeft && (
           <button className={`${styles.scrollButton} ${styles.left}`} onClick={() => handleScroll('left')}>
             <FontAwesomeIcon icon={faChevronLeft} />
