@@ -57,9 +57,9 @@ const analysisData = {
     speech: 70,
   },
   confidence: [
-      { subject: '음성', value: 75, fullMark: 100 },
-      { subject: '시선', value: 60, fullMark: 100 },
-      { subject: '자세', value: 80, fullMark: 100 },
+    { subject: '음성', value: 75, fullMark: 100 },
+    { subject: '시선', value: 60, fullMark: 100 },
+    { subject: '자세', value: 80, fullMark: 100 },
   ],
   timelineData: [
     { time: '0s', expression: 40, gesture: 30 }, { time: '10s', expression: 65, gesture: 50 },
@@ -86,6 +86,7 @@ interface FeedbackAnalysisProps {
 const FeedbackAnalysis: React.FC<FeedbackAnalysisProps> = ({ onOpenHistory, onBack, videoFile, historyId }) => {
   const [groupColor, setGroupColor] = useState('rgb(132, 0, 255)');
   const [groupColorRgb, setGroupColorRgb] = useState('132, 0, 255');
+  const [videoSrc, setVideoSrc] = useState(analysisData.videoUrl);
 
   useEffect(() => {
     const rootStyles = getComputedStyle(document.documentElement);
@@ -95,7 +96,24 @@ const FeedbackAnalysis: React.FC<FeedbackAnalysisProps> = ({ onOpenHistory, onBa
       setGroupColorRgb(color);
     }
   }, []);
-  
+
+  useEffect(() => {
+    let objectUrl: string | undefined;
+    if (videoFile) {
+      objectUrl = URL.createObjectURL(videoFile);
+      setVideoSrc(objectUrl);
+    } else {
+      // historyId is present, use the default/mock video URL
+      setVideoSrc(analysisData.videoUrl);
+    }
+
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [videoFile, historyId]);
+
   const tooltipStyle = {
     backgroundColor: '#2a2a2e',
     border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -105,14 +123,14 @@ const FeedbackAnalysis: React.FC<FeedbackAnalysisProps> = ({ onOpenHistory, onBa
   const tooltipItemStyle = {
     color: '#e0e0e0'
   };
-  
+
   const tooltipLabelStyle = {
     color: '#ffffff',
     fontWeight: 'bold'
   }
 
   return (
-    <div className={styles.analysisContainer} style={{'--group-color-rgb': groupColorRgb} as React.CSSProperties}>
+    <div className={styles.analysisContainer} style={{ '--group-color-rgb': groupColorRgb } as React.CSSProperties}>
       <div className={styles.header}>
         <div>
           <h2 className={styles.pageTitle}>분석 결과</h2>
@@ -129,10 +147,10 @@ const FeedbackAnalysis: React.FC<FeedbackAnalysisProps> = ({ onOpenHistory, onBa
           </button>
         </div>
       </div>
-      
+
       <div className={styles.dashboardGrid}>
         <div className={`${styles.card} ${styles.videoPlayer}`}>
-          <video src={analysisData.videoUrl} controls className={styles.video} />
+          <video src={videoSrc} controls className={styles.video} />
         </div>
 
         <div className={`${styles.card} ${styles.summary}`}>
@@ -155,19 +173,19 @@ const FeedbackAnalysis: React.FC<FeedbackAnalysisProps> = ({ onOpenHistory, onBa
               <AreaChart data={analysisData.timelineData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                 <defs>
                   <linearGradient id="colorExpression" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={groupColor} stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor={groupColor} stopOpacity={0}/>
+                    <stop offset="5%" stopColor={groupColor} stopOpacity={0.8} />
+                    <stop offset="95%" stopColor={groupColor} stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorGesture" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#00C49F" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#00C49F" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#00C49F" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#00C49F" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
                 <XAxis dataKey="time" tick={{ fill: '#a0a0a0' }} />
                 <YAxis tick={{ fill: '#a0a0a0' }} />
-                <Tooltip 
-                  contentStyle={tooltipStyle} 
+                <Tooltip
+                  contentStyle={tooltipStyle}
                   itemStyle={tooltipItemStyle}
                   labelStyle={tooltipLabelStyle}
                 />
@@ -190,16 +208,16 @@ const FeedbackAnalysis: React.FC<FeedbackAnalysisProps> = ({ onOpenHistory, onBa
         <div className={`${styles.card} ${styles.speech}`}>
           <StatCard title="말투" score={analysisData.scores.speech} description="목소리 톤과 속도" />
         </div>
-        
+
         <div className={`${styles.card} ${styles.fillerWords}`}>
-           <h4 className={styles.cardTitle}>불필요한 단어</h4>
-           <div className={styles.chartContainer}>
+          <h4 className={styles.cardTitle}>불필요한 단어</h4>
+          <div className={styles.chartContainer}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={analysisData.fillerWords} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
                 <XAxis type="number" hide />
                 <YAxis type="category" dataKey="name" tick={{ fill: '#e0e0e0' }} tickLine={false} axisLine={false} width={60} />
-                <Tooltip 
+                <Tooltip
                   contentStyle={tooltipStyle}
                   itemStyle={tooltipItemStyle}
                   labelStyle={tooltipLabelStyle}
@@ -219,7 +237,7 @@ const FeedbackAnalysis: React.FC<FeedbackAnalysisProps> = ({ onOpenHistory, onBa
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
                 <XAxis type="number" hide tick={{ fill: '#a0a0a0' }} />
                 <YAxis type="category" dataKey="name" tick={{ fill: '#e0e0e0' }} tickLine={false} axisLine={false} width={80} />
-                <Tooltip 
+                <Tooltip
                   contentStyle={tooltipStyle}
                   itemStyle={tooltipItemStyle}
                   labelStyle={tooltipLabelStyle}

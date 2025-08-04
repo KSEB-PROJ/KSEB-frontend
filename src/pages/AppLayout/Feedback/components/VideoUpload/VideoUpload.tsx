@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import styles from './VideoUpload.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -11,6 +11,12 @@ interface VideoUploadProps {
 
 const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload, onShowHistory }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsMounted(true), 100); // Delay to ensure transition is applied
+    return () => clearTimeout(timer);
+  }, []);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -25,14 +31,14 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload, onShowHistory 
   });
 
   const handleAnalyzeClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // 이벤트 버블링 방지
+    e.stopPropagation(); // Prevent event bubbling to dropzone
     if (selectedFile) {
       onVideoUpload(selectedFile);
     }
   };
 
   const handleRemoveFile = (e: React.MouseEvent) => {
-    e.stopPropagation(); // 이벤트 버블링 방지
+    e.stopPropagation(); // Prevent event bubbling to dropzone
     setSelectedFile(null);
   };
 
@@ -41,7 +47,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload, onShowHistory 
       <div className={styles.gridBg}></div>
       <div className={styles.contentContainer}>
         {/* Left Column */}
-        <div className={styles.leftColumn}>
+        <div className={`${styles.leftColumn} ${isMounted ? styles.enter : ''}`}>
           <div {...getRootProps()} className={`${styles.dropzone} ${isDragActive ? styles.active : ''}`}>
             <input {...getInputProps()} />
             {!selectedFile ? (
@@ -71,7 +77,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload, onShowHistory 
         </div>
 
         {/* Right Column */}
-        <div className={styles.rightColumn}>
+        <div className={`${styles.rightColumn} ${isMounted ? styles.enter : ''}`}>
           <h1 className={styles.mainTitle}>AI 발표 코칭 솔루션</h1>
           <p className={styles.mainDescription}>
             단순한 피드백을 넘어, 당신의 발표 실력을 과학적으로 분석하고 개선 방향을 제시합니다. AI와 함께 최고의 발표를 준비하세요.
