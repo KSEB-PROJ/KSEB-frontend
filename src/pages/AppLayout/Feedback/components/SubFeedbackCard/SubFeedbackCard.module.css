@@ -1,0 +1,83 @@
+/* SubFeedbackCard.module.css */
+.card {
+  width: 200px;
+  height: 120px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+}
+
+.thumbnail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.card:hover .thumbnail {
+  transform: scale(1.1);
+}
+
+.info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 10px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+}
+
+.title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e0e0e0;
+  margin: 0 0 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.date {
+  font-size: 0.75rem;
+  color: #a0a0a0;
+}
+
+.score {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: rgb(var(--group-color-rgb));
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.glowLine {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: rgb(var(--group-color-rgb));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s ease;
+  box-shadow: 0 0 10px rgb(var(--group-color-rgb));
+}
+
+.card:hover .glowLine {
+  transform: scaleX(1);
+}

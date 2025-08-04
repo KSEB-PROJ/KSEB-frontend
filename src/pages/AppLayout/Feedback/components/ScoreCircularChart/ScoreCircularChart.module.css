@@ -1,0 +1,46 @@
+.chartContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: 200px; /* 크기 살짝 줄여서 여백 확보 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: auto; /* 중앙 정렬 */
+}
+
+.chartSvg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg); /* Start the circle from the top */
+}
+
+.backgroundCircle {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.05);
+  stroke-width: 14;
+}
+
+.progressCircle {
+  fill: none;
+  stroke: rgb(var(--group-color-rgb));
+  stroke-width: 14;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scoreText {
+  font-size: 3.5rem; /* SVG 텍스트에 맞게 크기 조정 */
+  font-weight: 700;
+  fill: #ffffff;
+  text-shadow: 0 0 10px rgba(var(--group-color-rgb), 0.5);
+  transform: rotate(90deg); /* SVG 전체 회전을 상쇄 */
+  transform-origin: center; /* 회전 중심 설정 */
+}
+
+.unit {
+  font-size: 1.5rem;
+  font-weight: 500;
+  fill: #a0a0a0;
+  margin-left: 4px;
+}
