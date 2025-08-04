@@ -37,15 +37,18 @@ const getEventInstanceId = (event: ScheduleEvent, date: Date | string): string =
     return `${event.id}-${dayjs(date).format('YYYYMMDD')}`;
 };
 
+interface CalendarPageProps {
+    groupId: number;
+}
+
 // --- 메인 컴포넌트 ---
-const CalendarPage: React.FC = () => {
+const CalendarPage: React.FC<CalendarPageProps> = ({ groupId }) => {
     // --- Hooks ---
-    const { groupId } = useParams<{ groupId: string }>();
     const calendarRef = useRef<FullCalendar>(null);
     const clickTimeout = useRef<number | null>(null);
 
     // --- 스토어 상태 및 액션 ---
-    const { events, tasks, isLoading, fetchEvents, saveEvent, deleteEvent, updateTask, addTask } = useEventStore();
+    const { events, tasks, isLoading, fetchEvents, openModal, addTask, updateTask } = useEventStore();
     const { selectedGroup } = useGroupStore();
     const { user: currentUser } = useAuthStore();
 
@@ -54,13 +57,13 @@ const CalendarPage: React.FC = () => {
     const [agendaDate, setAgendaDate] = useState(new Date());
     const [viewRange, setViewRange] = useState({ start: new Date(), end: new Date() });
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
 
     // --- 데이터 로딩 ---
     useEffect(() => {
-        fetchEvents();
-    }, [fetchEvents]);
+        if (groupId) {
+            fetchEvents(groupId);
+        }
+    }, [fetchEvents, groupId]);
 
     // --- 메모이제이션된 데이터 ---
 
@@ -128,15 +131,6 @@ const CalendarPage: React.FC = () => {
     
     // --- 핸들러 함수 ---
 
-    // 일정 편집 모달을 여는 공통 함수
-    const openEditorForEvent = useCallback((event: EventApi | EventInput | Partial<ScheduleEvent>) => {
-        setEditingEvent(event as ScheduleEvent);
-        setIsModalOpen(true);
-        if (event.id) {
-            setSelectedEventId(event.id as string);
-        }
-    }, []);
-    
     // 날짜 더블클릭 시 새 그룹 일정 생성
     const handleDateClick = (arg: DateClickArg) => {
         if (!selectedGroup || !currentUser) return;
@@ -158,7 +152,7 @@ const CalendarPage: React.FC = () => {
                 isEditable: true,
                 createdBy: currentUser.id
             };
-            openEditorForEvent(newEvent);
+            openModal(newEvent);
         } else {
             clickTimeout.current = window.setTimeout(() => {
                 setAgendaDate(arg.date);
@@ -169,25 +163,8 @@ const CalendarPage: React.FC = () => {
     
     // 기존 이벤트 클릭 시 수정 모달 열기
     const handleEventClick = useCallback((arg: EventClickArg) => {
-        openEditorForEvent(arg.event.extendedProps as ScheduleEvent);
-    }, [openEditorForEvent]);
-    
-    // 모달에서 '저장' 버튼 클릭 시
-    const handleSaveEvent = async (eventData: ScheduleEvent) => {
-        const result = await saveEvent(eventData);
-        if (result.success) setIsModalOpen(false);
-        return result;
-    };
-
-    // 모달에서 '삭제' 버튼 클릭 시
-    const handleDeleteEvent = async (eventId: string) => {
-        const originalEventId = eventId.split('-')[0];
-        const eventToDelete = events.find((e) => e.id === originalEventId);
-        if(eventToDelete){
-            await deleteEvent(eventToDelete);
-            setIsModalOpen(false);
-        }
-    };
+        openModal(arg.event.extendedProps as ScheduleEvent);
+    }, [openModal]);
     
     // 할 일 추가
     const handleAddTask = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -331,15 +308,6 @@ const CalendarPage: React.FC = () => {
                     </div>
                 </div>
             </div>
-            {isModalOpen && 
-                <EventEditorModal 
-                    event={editingEvent} 
-                    onClose={() => setIsModalOpen(false)} 
-                    onSave={handleSaveEvent} 
-                    onDelete={handleDeleteEvent} 
-                    onEventUpdate={fetchEvents}
-                />
-            }
         </>
     );
 };

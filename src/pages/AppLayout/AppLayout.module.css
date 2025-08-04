@@ -1,18 +1,20 @@
 .appContainer {
     display: flex;
+    height: 100vh; /* 전체 화면 높이를 차지하도록 설정 */
     background-color: #121212;
     color: #E0E0E0;
-    position: relative; /* 자식 요소의 position: fixed 기준점 */
-    overflow-x: hidden; /* 가로 스크롤 방지 */
+    position: relative;
+    overflow-x: hidden;
 }
 
 .mainContent {
     flex-grow: 1;
-    /* 사이드바가 닫혔을 때의 왼쪽 여백 (기본값) */
     padding-left: 80px; 
-    transition: padding-left 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2), padding-right 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2); /* 오른쪽 패딩 전환 효과 추가 */
-    height: 100vh;
+    transition: padding-left 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2), padding-right 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2);
     overflow-y: auto;
+    display: flex; /* 자식 요소가 높이를 100% 채울 수 있도록 flex 컨테이너로 설정 */
+    flex-direction: column;
+    min-height: 0; /* flex 아이템의 크기 오류 방지 */
 }
 
 /* 사이드바가 열렸을 때 적용될 클래스 */

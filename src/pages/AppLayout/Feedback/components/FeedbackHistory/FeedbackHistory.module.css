@@ -1,0 +1,108 @@
+/* FeedbackHistory.module.css */
+.boardContainer {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: #0f0f14;
+  overflow: hidden;
+  padding: 20px;
+}
+
+.header {
+  flex-shrink: 0;
+  z-index: 10;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.backButton {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #e0e0e0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 10px 15px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.backButton:hover {
+  background-color: rgba(var(--group-color-rgb), 0.8);
+  color: white;
+  border-color: transparent;
+}
+
+.mainCardArea {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 0;
+}
+
+.subCardContainer {
+  flex-shrink: 0;
+  position: relative;
+  padding: 20px 0;
+}
+
+.subCardTrack {
+  width: 100%;
+  overflow-x: auto;
+  /* Hide scrollbar */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+}
+.subCardTrack::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, and Opera */
+}
+
+.subCardWrapper {
+    display: inline-flex;
+    gap: 20px;
+    padding: 0 20px;
+}
+
+.scrollButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(20, 20, 25, 0.7);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e0e0e0;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.scrollButton:hover {
+  background-color: rgba(var(--group-color-rgb), 0.8);
+  color: #fff;
+}
+
+.scrollButton.left {
+  left: -10px;
+}
+
+.scrollButton.right {
+  right: -10px;
+}

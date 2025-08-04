@@ -96,6 +96,8 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: #202023;
   flex-shrink: 0;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
 }
 
 .header h2 {
@@ -623,6 +625,8 @@
   align-items: center;
   background: #202023;
   flex-shrink: 0;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
 }
 
 .deleteButton {

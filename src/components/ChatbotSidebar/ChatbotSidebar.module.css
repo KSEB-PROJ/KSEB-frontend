@@ -261,3 +261,15 @@
     width: 1.2em;
     text-align: left;
 }
+
+/* --- Markdown Link Style --- */
+.markdownLink {
+    color: #66b2ff; /* 밝은 파란색으로 눈에 띄게 */
+    text-decoration: underline;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.markdownLink:hover {
+    color: #99ccff; /* 마우스를 올리면 더 밝은 색으로 */
+}

@@ -6,14 +6,14 @@ import ChatPage from './ChatPage/ChatPage';
 import styles from './ChannelPage.module.css';
 import { getChannelDetail } from '../../api/channels';
 import type { Channel } from '../../types';
-import { useChannelStore } from '../../stores/channelStore'; // 스토어 import 추가
+import { useChannelStore } from '../../stores/channelStore';
 
 const ChannelLayout: React.FC = () => {
     const { groupId, channelId } = useParams<{ groupId: string; channelId: string }>();
     const [channel, setChannel] = useState<Channel | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const { setSelectedChannel } = useChannelStore(); // 스토어 액션 가져오기
+    const { setSelectedChannel } = useChannelStore();
 
     useEffect(() => {
         if (groupId && channelId) {
@@ -30,11 +30,11 @@ const ChannelLayout: React.FC = () => {
                     };
 
                     setChannel(formattedChannel);
-                    setSelectedChannel(formattedChannel); // [수정] 스토어 상태 업데이트
+                    setSelectedChannel(formattedChannel);
                 } catch (err) {
                     console.error("Failed to fetch channel details:", err);
                     setError("채널 정보를 불러오는 데 실패했습니다.");
-                    setSelectedChannel(null); // [수정] 실패 시 스토어 상태 초기화
+                    setSelectedChannel(null);
                 } finally {
                     setLoading(false);
                 }
@@ -43,7 +43,6 @@ const ChannelLayout: React.FC = () => {
             fetchChannelDetails();
         }
         
-        // 컴포넌트가 언마운트될 때 선택된 채널을 null로 설정하여 정리합니다.
         return () => {
             setSelectedChannel(null);
         }
@@ -67,7 +66,7 @@ const ChannelLayout: React.FC = () => {
             case 'notice':
                 return <NoticePage />;
             case 'calendar':
-                return <CalendarPage />;
+                return <CalendarPage groupId={parseInt(groupId!)} />;
             case 'chat':
                 return <ChatPage />;
             default:

@@ -6,11 +6,11 @@ export interface ChatMessageResponse {
     userName: string;
     profileImgUrl?: string; // 프로필 이미지 URL 필드 추가
     content?: string;
-    messageType: string;
+    messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT';
     fileUrl?: string;
     fileName?: string;
-    isMine: boolean;
     createdAt: string;
+    deleted?: boolean;
 }
 
 // 백엔드의 ChatRequest DTO 형식

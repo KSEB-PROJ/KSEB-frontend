@@ -1,54 +1,24 @@
 /* --- 키프레임 애니메이션 정의 --- */
-
-/* 메시지가 아래에서 위로 나타나는 애니메이션 */
 @keyframes message-in {
-    from {
-        opacity: 0;
-        transform: translateY(15px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
 }
-
-/* 액션 툴바가 아래에서 위로 나타나는 애니메이션 */
 @keyframes action-toolbar-in {
-    from {
-        opacity: 0;
-        transform: translateY(5px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
 }
-
-/* 수정 UI가 팝업처럼 나타나는 애니메이션 */
 @keyframes pop-in-edit {
-    from {
-        opacity: 0;
-        transform: scale(0.95);
-    }
-
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
 }
-
-/* 삭제 확인 UI가 페이드인 되는 애니메이션 */
 @keyframes fade-in-confirm {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes zoomIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+@keyframes zoomOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.9); } }
 
 /* --- 전체 채팅 컨테이너 --- */
 .chatContainer {
@@ -61,35 +31,16 @@
 /* --- 채팅 메시지가 표시되는 영역 --- */
 .chatArea {
     flex-grow: 1;
-    /* 남은 공간을 모두 차지 */
     overflow-y: auto;
-    /* 내용이 많아지면 스크롤 */
     padding: 2rem 1rem;
-    position: relative;
-}
-
-/* 채팅 영역 중앙의 타임라인 선 */
-.chatArea::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 2px;
-    background: linear-gradient(to bottom, transparent, #333, transparent);
-    z-index: 0;
 }
 
 /* --- 날짜 구분선 --- */
 .dateSeparator {
     text-align: center;
     margin: 2rem 0;
-    position: relative;
-    z-index: 1;
     animation: message-in 0.5s ease-out forwards;
 }
-
 .dateSeparator span {
     background-color: #121212;
     color: #777;
@@ -103,51 +54,38 @@
 /* --- 개별 메시지 한 줄 --- */
 .messageRow {
     display: flex;
+    align-items: flex-start;
     margin-bottom: 0.5rem;
     position: relative;
-    animation: message-in 0.4s ease-out forwards;
     padding: 4px;
     border-radius: 8px;
     transition: background-color 0.2s ease;
 }
 
-.messageRow:hover {
-    background-color: rgba(255, 255, 255, 0.03);
-}
-
-/* --- 메시지 내용 전체 (아바타 제외) --- */
-.messageContent {
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    max-width: calc(100% - 36px - 1.5rem);
-}
-
 /* --- 작성자 정보 (아바타) --- */
 .authorInfo {
     flex-shrink: 0;
-    text-align: center;
-    align-self: flex-start;
+    margin-right: 1rem;
 }
-
 .authorName {
     font-size: 0.9rem;
     font-weight: 600;
     color: #ccc;
     margin-bottom: 0.25rem;
 }
-
 .avatar {
     width: 36px;
     height: 36px;
     border-radius: 50%;
     object-fit: cover;
-    background: #333;
-    transition: transform 0.2s ease;
 }
 
-.messageRow:hover .avatar {
-    transform: scale(1.1);
+/* --- 메시지 내용 전체 --- */
+.messageContent {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    max-width: calc(100% - 52px);
 }
 
 /* --- 실제 메시지 말풍선 --- */
@@ -160,16 +98,9 @@
     word-break: break-word;
     line-height: 1.6;
 }
-
-/* 말풍선 꼬리 선 */
-.messageFragment::before {
-    content: '';
-    position: absolute;
-    top: 18px;
-    transform: translateY(-50%);
-    width: 20px;
-    height: 2px;
-    background-color: #333;
+.messageFragment em {
+    color: #888;
+    font-style: italic;
 }
 
 /* --- 타임스탬프 (시간 표시) --- */
@@ -180,59 +111,25 @@
 }
 
 /* --- 다른 사람 메시지 스타일 --- */
-.otherMessage {
-    justify-content: flex-start;
-}
-
-.otherMessage .authorInfo {
-    margin-right: 1.5rem;
-}
-
-.otherMessage .messageContent {
-    align-items: flex-start;
-}
-
-.otherMessage .messageFragment {
-    background-color: #2a2a2e;
-    border: 1px solid #3a3a3e;
-}
-
-.otherMessage .messageFragment::before {
-    left: -20px;
-}
-
-.otherMessage .timestamp {
-    text-align: left;
-}
+.otherMessage .messageContent { align-items: flex-start; }
+.otherMessage .messageFragment { background-color: #2a2a2e; border: 1px solid #3a3a3e; }
+.otherMessage .timestamp { text-align: left; }
 
 /* --- 내 메시지 스타일 --- */
-.myMessage {
-    justify-content: flex-end;
-}
-
-.myMessage .messageContent {
-    align-items: flex-end;
-}
-
+.myMessage { justify-content: flex-end; }
+.myMessage .messageContent { align-items: flex-end; }
 .myMessage .messageFragment {
     background: linear-gradient(135deg, rgba(var(--group-color), 0.3), rgba(var(--group-color), 0.15));
     border: 1px solid rgba(var(--group-color), 0.4);
     color: #fff;
 }
-
-.myMessage .messageFragment::before {
-    right: -20px;
-}
-
-.myMessage .timestamp {
-    text-align: right;
-}
+.myMessage .timestamp { text-align: right; }
 
 /* --- 메시지 액션 버튼 (수정, 삭제 등) 툴바 --- */
 .messageActions {
     position: absolute;
     bottom: 100%;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     z-index: 10;
     display: flex;
     gap: 4px;
@@ -244,26 +141,17 @@
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.2s ease-out;
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+    transform: translateY(5px);
     animation: action-toolbar-in 0.2s ease-out;
 }
-
-/* 메시지에 마우스 올렸을 때 툴바 표시 */
-.messageRow:hover .messageActions,
-.messageActions:hover {
+.myMessage:hover .messageActions {
     opacity: 1;
     pointer-events: all;
-}
-
-.myMessage .messageActions {
+    transform: translateY(0);
     right: 0;
 }
-
-.otherMessage .messageActions {
-    left: 0;
-}
-
-.messageActions button {
+.messageActionButton {
     background: none;
     border: none;
     color: #999;
@@ -275,8 +163,7 @@
     place-items: center;
     transition: all 0.2s;
 }
-
-.messageActions button:hover {
+.messageActionButton:hover {
     background: rgba(255, 255, 255, 0.1);
     color: #fff;
 }
@@ -288,8 +175,8 @@
     overflow: hidden;
     margin-top: 0.5rem;
     cursor: pointer;
+    max-width: 320px;
 }
-
 .mediaOverlay {
     position: absolute;
     inset: 0;
@@ -300,11 +187,7 @@
     opacity: 0;
     transition: opacity 0.2s ease;
 }
-
-.mediaContainer:hover .mediaOverlay {
-    opacity: 1;
-}
-
+.mediaContainer:hover .mediaOverlay { opacity: 1; }
 .viewAction {
     color: #fff;
     font-weight: 600;
@@ -314,22 +197,14 @@
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(4px);
 }
-
-.imagePreview,
-.videoPreview {
+.imagePreview, .videoPreview {
     display: block;
-    max-width: 320px;
+    max-width: 100%;
     max-height: 320px;
-    width: auto;
-    height: auto;
     border-radius: 8px;
     transition: transform 0.2s ease;
 }
-
-.mediaContainer:hover .imagePreview,
-.mediaContainer:hover .videoPreview {
-    transform: scale(1.05);
-}
+.mediaContainer:hover .imagePreview, .mediaContainer:hover .videoPreview { transform: scale(1.05); }
 
 .fileAttachmentWrapper {
     display: flex;
@@ -339,27 +214,20 @@
     background-color: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
     margin-top: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.fileAttachmentLink {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     text-decoration: none;
     color: inherit;
-    transition: background-color 0.2s ease;
-}
-
-.fileAttachmentWrapper:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-.fileAttachmentIcon {
-    font-size: 1.5rem;
-    color: #999;
-}
-
-.fileAttachmentInfo {
-    flex-grow: 1;
     min-width: 0;
-    display: flex;
-    flex-direction: column;
 }
-
+.fileAttachmentWrapper:hover { background-color: rgba(255, 255, 255, 0.1); }
+.fileAttachmentIcon { font-size: 1.5rem; color: #999; }
+.fileAttachmentInfo { flex-grow: 1; min-width: 0; }
 .fileAttachmentName {
     font-size: 0.9rem;
     font-weight: 500;
@@ -368,13 +236,7 @@
     text-overflow: ellipsis;
     color: #ddd;
 }
-
-.fileAttachmentMeta {
-    font-size: 0.75rem;
-    color: #777;
-    text-transform: uppercase;
-}
-
+.fileAttachmentMeta { font-size: 0.75rem; color: #777; }
 .fileAttachmentDownloadBtn {
     width: 32px;
     height: 32px;
@@ -388,29 +250,15 @@
     place-items: center;
     transition: all 0.2s ease;
 }
-
 .fileAttachmentDownloadBtn:hover {
     background-color: rgb(var(--group-color));
     color: #fff;
     transform: scale(1.1);
 }
 
-
 /* --- 하단 메시지 입력창 영역 --- */
-.chatInputArea {
-    padding: 1rem 0;
-    border-top: 1px solid #333;
-    display: flex;
-    flex-direction: column;
-}
-
-.inputRow {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    width: 100%;
-}
-
+.chatInputArea { padding: 1rem 0; border-top: 1px solid #333; display: flex; flex-direction: column; }
+.inputRow { display: flex; align-items: center; gap: 1rem; width: 100%; }
 .chatInput {
     flex-grow: 1;
     background-color: #2c2c2c;
@@ -422,16 +270,14 @@
     resize: none;
     font-family: inherit;
     font-size: 1rem;
-    transition: border-color 0.2s, box-shadow 0.2s, height 0.2s ease;
+    transition: all 0.2s ease;
     max-height: 150px;
     overflow-y: auto;
 }
-
 .chatInput:focus {
     border-color: rgb(var(--group-color));
     box-shadow: 0 0 10px rgba(var(--group-color), 0.3);
 }
-
 .sendButton {
     width: 44px;
     height: 44px;
@@ -446,56 +292,15 @@
     display: grid;
     place-items: center;
 }
-
-.sendButton:hover {
-    filter: brightness(1.2);
-    transform: scale(1.05);
-}
-
-.sendButton:disabled {
-    background-color: #555;
-    cursor: not-allowed;
-    opacity: 0.6;
-}
+.sendButton:hover { filter: brightness(1.2); transform: scale(1.05); }
+.sendButton:disabled { background-color: #555; cursor: not-allowed; opacity: 0.6; }
 
 /* --- 첨부 파일 미리보기 --- */
-.filePreviewList {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    padding-bottom: 1rem;
-    width: 100%;
-}
+.filePreviewList { display: flex; flex-wrap: wrap; gap: 0.5rem; padding-bottom: 1rem; }
+.filePreviewItem { position: relative; padding: 0.5rem 1rem; background: #333; border-radius: 16px; font-size: 0.8rem; color: #ddd; display: flex; align-items: center; gap: 0.5rem; }
+.removeFileButton { position: absolute; top: -5px; right: -5px; width: 18px; height: 18px; background: #fff; color: #333; border: none; border-radius: 50%; cursor: pointer; font-size: 0.7rem; display: grid; place-items: center; }
 
-.filePreviewItem {
-    position: relative;
-    padding: 0.5rem 1rem;
-    background: #333;
-    border-radius: 16px;
-    font-size: 0.8rem;
-    color: #ddd;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.removeFileButton {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    width: 18px;
-    height: 18px;
-    background: #fff;
-    color: #333;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 0.7rem;
-    display: grid;
-    place-items: center;
-}
-
-/* --- 메시지 수정 UI (디자인 개편) --- */
+/* --- 메시지 수정 UI --- */
 .editContainer {
     width: 100%;
     min-width: 300px;
@@ -507,10 +312,8 @@
     border: 1px solid rgba(var(--group-color), 0.3);
     border-radius: 12px;
     padding: 0.75rem;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     animation: pop-in-edit 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
 }
-
 .editInput {
     width: 100%;
     background: transparent;
@@ -527,77 +330,22 @@
     overflow-y: auto;
     border-bottom: 2px solid transparent;
 }
-
-.editInput:focus {
-    border-bottom-color: rgb(var(--group-color));
-}
-
-.editActions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
-}
-
-.editButton {
-    background: none;
-    border: none;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: grid;
-    place-items: center;
-}
-
-.cancelButton {
-    background-color: #3a3a3e;
-    color: #a0a0a0;
-}
-
-.cancelButton:hover {
-    background-color: #ef4444;
-    color: #fff;
-}
-
-.saveButton {
-    background-color: #22c55e;
-    color: #fff;
-}
-
-.saveButton:hover {
-    filter: brightness(1.15);
-    transform: scale(1.05);
-}
+.editInput:focus { border-bottom-color: rgb(var(--group-color)); }
+.editActions { display: flex; justify-content: flex-end; gap: 0.5rem; }
+.editButton { background: none; border: none; width: 36px; height: 36px; border-radius: 50%; font-size: 1rem; cursor: pointer; transition: all 0.2s; display: grid; place-items: center; }
+.cancelButton { background-color: #3a3a3e; color: #a0a0a0; }
+.cancelButton:hover { background-color: #ef4444; color: #fff; }
+.saveButton { background-color: #22c55e; color: #fff; }
+.saveButton:hover { filter: brightness(1.15); transform: scale(1.05); }
 
 /* --- 삭제 확인 UI --- */
-.deleteConfirmContainer {
-    display: flex;
-    gap: 4px;
-    animation: fade-in-confirm 0.3s;
-}
+.deleteConfirmContainer { display: flex; gap: 4px; animation: fade-in-confirm 0.3s; }
+.confirmButton { background-color: #ef4444 !important; color: #fff !important; }
+.confirmButton:hover { filter: brightness(1.15); }
+.cancelConfirmButton { background-color: #4a4a4e !important; color: #ccc !important; }
+.cancelConfirmButton:hover { background-color: #5a5a5e !important; }
 
-.confirmButton {
-    background-color: #ef4444 !important;
-    color: #fff !important;
-}
-
-.confirmButton:hover {
-    filter: brightness(1.15);
-}
-
-.cancelConfirmButton {
-    background-color: #4a4a4e !important;
-    color: #ccc !important;
-}
-
-.cancelConfirmButton:hover {
-    background-color: #5a5a5e !important;
-}
-
-
-/* --- 미디어 뷰어 (이미지/비디오 크게보기) --- */
+/* --- 미디어 뷰어 --- */
 .mediaViewerOverlay {
     position: fixed;
     inset: 0;
@@ -611,31 +359,7 @@
     padding: 1rem;
     animation: fadeIn 0.3s ease;
 }
-
-.mediaViewerOverlay.closing {
-    animation: fadeOut 0.3s ease forwards;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
-}
-
-@keyframes fadeOut {
-    from {
-        opacity: 1;
-    }
-
-    to {
-        opacity: 0;
-    }
-}
-
+.mediaViewerOverlay.closing { animation: fadeOut 0.3s ease forwards; }
 .viewerHeader {
     position: absolute;
     top: 0;
@@ -649,66 +373,10 @@
     background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), transparent);
     z-index: 2001;
 }
-
-.viewerActions {
-    display: flex;
-    gap: 1rem;
-}
-
-.viewerButton {
-    background: none;
-    border: none;
-    color: #ccc;
-    font-size: 1.2rem;
-    cursor: pointer;
-    padding: 0.5rem;
-    transition: all 0.2s;
-    text-decoration: none;
-}
-
-.viewerButton:hover {
-    color: #fff;
-    transform: scale(1.1);
-}
-
-.mediaViewerContent {
-    max-width: 90vw;
-    max-height: 85vh;
-    animation: zoomIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2);
-}
-
-.mediaViewerOverlay.closing .mediaViewerContent {
-    animation: zoomOut 0.3s ease forwards;
-}
-
-@keyframes zoomIn {
-    from {
-        opacity: 0;
-        transform: scale(0.9);
-    }
-
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-@keyframes zoomOut {
-    from {
-        opacity: 1;
-        transform: scale(1);
-    }
-
-    to {
-        opacity: 0;
-        transform: scale(0.9);
-    }
-}
-
-.viewerImage,
-.viewerVideo {
-    max-width: 100%;
-    max-height: 85vh;
-    border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
+.viewerFileName { font-weight: 500; }
+.viewerActions { display: flex; gap: 1rem; }
+.viewerButton { background: none; border: none; color: #ccc; font-size: 1.2rem; cursor: pointer; padding: 0.5rem; transition: all 0.2s; text-decoration: none; }
+.viewerButton:hover { color: #fff; transform: scale(1.1); }
+.mediaViewerContent { max-width: 90vw; max-height: 85vh; animation: zoomIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+.mediaViewerOverlay.closing .mediaViewerContent { animation: zoomOut 0.3s ease forwards; }
+.viewerImage, .viewerVideo { max-width: 100%; max-height: 85vh; border-radius: 8px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
