@@ -1,0 +1,128 @@
+/* FeedbackAnalysis.module.css */
+.analysisContainer {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+  background-color: #121212;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.pageTitle {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.historyButton {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #e0e0e0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 10px 15px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.historyButton:hover {
+  background-color: rgba(var(--group-color, 132, 0, 255), 0.8);
+  color: white;
+  border-color: transparent;
+}
+
+.mainContent {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.videoPlayer, .summary {
+  background-color: #1e1e1e;
+  border-radius: 12px;
+  padding: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.summaryContent {
+  color: #d4d4d8;
+  line-height: 1.7;
+}
+.summaryContent h3 {
+  color: rgb(var(--group-color, 132, 0, 255));
+  margin-bottom: 1rem;
+}
+.summaryContent strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+.summaryContent ul {
+  padding-left: 20px;
+}
+
+.video {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.chartsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 25px;
+}
+
+.chartCard {
+  background-color: #1e1e1e;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.chartCard:hover {
+  transform: translateY(-5px);
+  border-color: rgba(var(--group-color, 132, 0, 255), 0.5);
+  box-shadow: 0 8px 20px rgba(var(--group-color, 132, 0, 255), 0.1);
+}
+
+.chartTitle {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.gaugeContainer, .wpmContainer {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  font-weight: bold;
+  color: rgb(var(--group-color, 132, 0, 255));
+}
+
+.gaugeValue, .wpmValue {
+  font-size: 4rem;
+  text-shadow: 0 0 10px rgba(var(--group-color, 132, 0, 255), 0.5);
+}
+
+.gaugeUnit, .wpmUnit {
+  font-size: 1.5rem;
+  margin-left: 8px;
+}
+
+.chartDescription {
+    text-align: center;
+    color: #a0a0a0;
+    margin-top: 10px;
+}
