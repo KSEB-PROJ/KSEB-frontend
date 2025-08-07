@@ -18,7 +18,6 @@ import remarkBreaks from 'remark-breaks';
  * 공지의 "진행/만료 상태"를 시각적으로 보여주는 타임라인 마커 컴포넌트
  * - 남은 기간, 고정 여부(영구 공지) 등을 나타냄
  */
-console.log("NoticePage mounted");
 const Marker: React.FC<{ notice: Notice; isHovered: boolean }> = ({
     notice,
     isHovered,

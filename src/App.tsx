@@ -10,6 +10,14 @@ import FeedbackPage from './pages/AppLayout/Feedback/FeedbackPage';
 import ProfilePage from './pages/AppLayout/ProfilePage/ProfilePage';
 import ChannelLayout from './pages/ChannelLayout/ChannelLayout';
 
+// Admin components
+import AdminRoute from './components/AdminRoute';
+import AdminLayout from './pages/admin/AdminLayout';
+import DashboardPage from './pages/admin/DashboardPage';
+import UserManagementPage from './pages/admin/UserManagementPage';
+import GroupManagementPage from './pages/admin/GroupManagementPage';
+import LogPage from './pages/admin/LogPage';
+
 const App: React.FC = () => {
   return (
     <BrowserRouter>
@@ -55,6 +63,17 @@ const App: React.FC = () => {
           <Route path="profile" element={<ProfilePage />} />
           {/* 👇 채널 페이지 라우팅 추가 */}
           <Route path="groups/:groupId/channels/:channelId" element={<ChannelLayout />} />
+        </Route>
+
+        {/* 관리자 페이지 라우팅 */}
+        <Route path="/admin" element={<AdminRoute />}>
+          <Route element={<AdminLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="users" element={<UserManagementPage />} />
+            <Route path="groups" element={<GroupManagementPage />} />
+            <Route path="logs" element={<LogPage />} />
+          </Route>
         </Route>
 
         {/* 잘못된 접근 리디렉션 */}

@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom'; // ← 추가
 import styles from './MainPage.module.css';
 
 gsap.registerPlugin(ScrollTrigger);
-const MotionLink = motion(Link);
+
 // MainPage 전체 컴포넌트
 const MainPage: React.FC = () => {
   // 전체 페이지 DOM 참조 (GSAP 애니메이션 타겟팅용)
@@ -239,13 +239,13 @@ const MainPage: React.FC = () => {
         {/* 6. CTA(콜 투 액션): 바로 시작/회원가입 유도 */}
         <section className={styles.ctaSection}>
           <h2>이제, 당신의 캔버스에<br />첫 획을 그을 시간입니다.</h2>
-          <MotionLink
-            to="/login"
-            className={styles.ctaButton}
+          <motion.div
             whileHover={{ scale: 1.05, filter: 'brightness(1.2)' }}
           >
-            팀플메이트 시작하기 <FiArrowRight />
-          </MotionLink>
+            <Link to="/login" className={styles.ctaButton}>
+              팀플메이트 시작하기 <FiArrowRight />
+            </Link>
+          </motion.div>
 
         </section>
 
