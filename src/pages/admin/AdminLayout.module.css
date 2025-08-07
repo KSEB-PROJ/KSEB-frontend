@@ -11,6 +11,7 @@
     padding: 20px;
     display: flex;
     flex-direction: column;
+    justify-content: space-between; /* 메뉴와 로그아웃 버튼을 분리 */
     flex-shrink: 0; /* 사이드바 크기 고정 */
 }
 
@@ -27,6 +28,9 @@
     border-radius: 4px;
     margin-bottom: 10px;
     transition: background-color 0.2s;
+    display: flex; /* 아이콘과 텍스트 정렬을 위해 추가 */
+    align-items: center; /* 아이콘과 텍스트 정렬을 위해 추가 */
+    gap: 10px; /* 아이콘과 텍스트 사이 간격 */
 }
 
 .link:hover {
@@ -36,6 +40,25 @@
 .activeLink {
     background-color: #1abc9c;
     font-weight: bold;
+}
+
+.logoutSection {
+    padding-top: 15px;
+    border-top: 1px solid #4a627a; /* 구분선 색상 조정 */
+}
+
+.logoutButton {
+    width: 100%;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit; /* 폰트 상속 */
+    font-size: inherit; /* 폰트 크기 상속 */
+}
+
+.logoutIcon {
+    width: 16px;
+    text-align: center;
 }
 
 .content {
