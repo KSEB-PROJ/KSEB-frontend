@@ -1,10 +1,9 @@
 import apiClient from './index';
-import type { DashboardData, PagedAdminUserResponse, UserAdmin, PagedAdminGroupResponse, PagedAdminLogResponse } from '../types/admin';
+import type { DashboardData, PagedAdminUserResponse, UserAdmin, GroupAdmin, PagedAdminGroupResponse, PagedAdminLogResponse } from '../types/admin';
 import { format } from 'date-fns';
 
 /**
  * 관리자 대시보드 데이터를 가져옵니다.
- * @returns DashboardData
  */
 export const getDashboardData = async (): Promise<DashboardData> => {
     const response = await apiClient.get('/admin/dashboard');
@@ -13,31 +12,21 @@ export const getDashboardData = async (): Promise<DashboardData> => {
 
 /**
  * 사용자 목록을 페이지별로 가져옵니다.
- * @param page - 페이지 번호 (0부터 시작)
- * @param size - 페이지당 항목 수
- * @returns PagedAdminUserResponse
  */
 export const getUsers = async (page: number, size: number): Promise<PagedAdminUserResponse> => {
-    const response = await apiClient.get('/admin/users', {
-        params: { page, size },
-    });
+    const response = await apiClient.get('/admin/users', { params: { page, size } });
     return response.data;
 };
 
 /**
  * 사용자의 역할을 변경합니다.
- * @param userId - 대상 사용자 ID
- * @param role - 새로운 역할
  */
 export const updateUserRole = async (userId: number, role: UserAdmin['role']): Promise<void> => {
-    await apiClient.put(`/admin/users/${userId}/role`, null, {
-        params: { role },
-    });
+    await apiClient.put(`/admin/users/${userId}/role`, null, { params: { role } });
 };
 
 /**
  * 사용자를 삭제합니다.
- * @param userId - 대상 사용자 ID
  */
 export const deleteUser = async (userId: number): Promise<void> => {
     await apiClient.delete(`/admin/users/${userId}`);
@@ -45,20 +34,14 @@ export const deleteUser = async (userId: number): Promise<void> => {
 
 /**
  * 그룹 목록을 페이지별로 가져옵니다.
- * @param page - 페이지 번호 (0부터 시작)
- * @param size - 페이지당 항목 수
- * @returns PagedAdminGroupResponse
  */
 export const getGroups = async (page: number, size: number): Promise<PagedAdminGroupResponse> => {
-    const response = await apiClient.get('/admin/groups', {
-        params: { page, size },
-    });
+    const response = await apiClient.get('/admin/groups', { params: { page, size } });
     return response.data;
 }
 
 /**
  * 그룹을 삭제합니다.
- * @param groupId - 대상 그룹 ID
  */
 export const deleteGroup = async (groupId: number): Promise<void> => {
     await apiClient.delete(`/admin/groups/${groupId}`);
@@ -74,9 +57,7 @@ export interface LogFilterParams {
 }
 
 /**
- * 로그 목록을 페이지별로, 필터 조건에 따라 가져옵니다.
- * @param params - 필터 조건 객체
- * @returns PagedAdminLogResponse
+ * 로그 목록을 필터 조건에 따라 가져옵니다.
  */
 export const getLogs = async (params: LogFilterParams): Promise<PagedAdminLogResponse> => {
     const queryParams: Record<string, any> = {
@@ -90,5 +71,29 @@ export const getLogs = async (params: LogFilterParams): Promise<PagedAdminLogRes
     if (params.endDate) queryParams.endDate = format(params.endDate, 'yyyy-MM-dd');
 
     const response = await apiClient.get('/admin/logs', { params: queryParams });
+    return response.data;
+};
+
+/**
+ * 일자별 가입자 수 통계를 가져옵니다.
+ */
+export const getDailyRegistrations = async (days: number = 7) => {
+    const response = await apiClient.get('/admin/stats/daily-registrations', { params: { days } });
+    return response.data;
+};
+
+/**
+ * 시간대별 활동량 통계를 가져옵니다.
+ */
+export const getHourlyActivity = async (hours: number = 24) => {
+    const response = await apiClient.get('/admin/stats/hourly-activity', { params: { hours } });
+    return response.data;
+};
+
+/**
+ * 콘텐츠 생성 비율 통계를 가져옵니다.
+ */
+export const getContentTypeDistribution = async () => {
+    const response = await apiClient.get('/admin/stats/content-distribution');
     return response.data;
 };

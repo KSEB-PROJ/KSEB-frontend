@@ -1,39 +1,40 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import toast from 'react-hot-toast';
-import { getDashboardData, getUsers, updateUserRole, deleteUser, getGroups, deleteGroup, getLogs } from '../api/admin';
+import { 
+    getDashboardData, getUsers, updateUserRole, deleteUser, getGroups, deleteGroup, getLogs, 
+    getDailyRegistrations, getHourlyActivity, getContentTypeDistribution 
+} from '../api/admin';
 import type { LogFilterParams } from '../api/admin';
-import type { DashboardData, PagedAdminUserResponse, UserAdmin, GroupAdmin, PagedAdminGroupResponse, LogAdmin, PagedAdminLogResponse } from '../types/admin';
+import type { 
+    DashboardData, PagedAdminUserResponse, UserAdmin, GroupAdmin, PagedAdminGroupResponse, 
+    LogAdmin, PagedAdminLogResponse 
+} from '../types/admin';
 
 interface AdminState {
     // --- 상태(State) ---
-    // 대시보드
     dashboardData: DashboardData | null;
-    // 사용자 관리
     users: UserAdmin[];
     userPagination: Omit<PagedAdminUserResponse, 'content'> | null;
-    // 그룹 관리
     groups: GroupAdmin[];
     groupPagination: Omit<PagedAdminGroupResponse, 'content'> | null;
-    // 활동 로그
     logs: LogAdmin[];
     logPagination: Omit<PagedAdminLogResponse, 'content'> | null;
-    // 공통
+    dailyRegistrations: { date: string; count: number }[];
+    hourlyActivity: { hour: number; count: number }[];
+    contentTypeDistribution: any;
     isLoading: boolean;
     error: string | null;
 
     // --- 액션(Actions) ---
-    // 대시보드
     fetchDashboardData: () => Promise<void>;
-    // 사용자 관리
     fetchUsers: (page: number, size: number) => Promise<void>;
     updateUserRoleAction: (userId: number, role: UserAdmin['role']) => Promise<void>;
     deleteUserAction: (userId: number) => Promise<void>;
-    // 그룹 관리
     fetchGroups: (page: number, size: number) => Promise<void>;
     deleteGroupAction: (groupId: number) => Promise<void>;
-    // 활동 로그
     fetchLogs: (params: LogFilterParams) => Promise<void>;
+    fetchStats: () => Promise<void>;
 }
 
 export const useAdminStore = create<AdminState>()(
@@ -47,6 +48,9 @@ export const useAdminStore = create<AdminState>()(
             groupPagination: null,
             logs: [],
             logPagination: null,
+            dailyRegistrations: [],
+            hourlyActivity: [],
+            contentTypeDistribution: null,
             isLoading: false,
             error: null,
 
@@ -152,6 +156,27 @@ export const useAdminStore = create<AdminState>()(
                 } catch (error) {
                     console.error('Failed to fetch logs:', error);
                     set({ isLoading: false, error: '활동 로그를 불러오는 데 실패했습니다.' });
+                }
+            },
+
+            // --- 통계 액션 구현 ---
+            fetchStats: async () => {
+                set({ isLoading: true });
+                try {
+                    const [daily, hourly, distribution] = await Promise.all([
+                        getDailyRegistrations(),
+                        getHourlyActivity(),
+                        getContentTypeDistribution(),
+                    ]);
+                    set({
+                        dailyRegistrations: daily,
+                        hourlyActivity: hourly,
+                        contentTypeDistribution: distribution,
+                        isLoading: false,
+                    });
+                } catch (error) {
+                    console.error('Failed to fetch stats:', error);
+                    set({ isLoading: false, error: '통계 데이터를 불러오는 데 실패했습니다.' });
                 }
             },
         }),

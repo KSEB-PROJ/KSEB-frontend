@@ -18,8 +18,10 @@ const UserManagementPage: React.FC = () => {
         }
     };
 
-    const handleRoleChange = (userId: number, role: UserAdmin['role']) => {
-        updateUserRoleAction(userId, role);
+    const handleRoleChange = (userId: number, roleName: string) => {
+        // 백엔드는 "ROLE_" 접두사가 붙은 전체 키를 기대하므로, 다시 붙여서 전송
+        const roleToSend = `ROLE_${roleName}` as UserAdmin['role'];
+        updateUserRoleAction(userId, roleToSend);
     };
 
     const handleDeleteUser = (userId: number) => {
@@ -52,12 +54,13 @@ const UserManagementPage: React.FC = () => {
                             <td>{user.name}</td>
                             <td>
                                 <select
-                                    value={user.role}
-                                    onChange={(e) => handleRoleChange(user.id, e.target.value as UserAdmin['role'])}
+                                    // 백엔드에서 오는 값은 "USER", "ADMIN"이므로 접두사 제거
+                                    value={user.role.replace('ROLE_', '')}
+                                    onChange={(e) => handleRoleChange(user.id, e.target.value)}
                                     className={styles.roleSelect}
                                 >
-                                    <option value="ROLE_USER">USER</option>
-                                    <option value="ROLE_ADMIN">ADMIN</option>
+                                    <option value="USER">USER</option>
+                                    <option value="ADMIN">ADMIN</option>
                                 </select>
                             </td>
                             <td>{new Date(user.createdAt).toLocaleDateString()}</td>
