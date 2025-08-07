@@ -38,6 +38,7 @@
     "dompurify": "^3.2.6",
     "framer-motion": "^12.23.0",
     "gsap": "^3.13.0",
+    "jwt-decode": "^4.0.0",
     "marked": "^16.1.0",
     "react": "^19.1.0",
     "react-chartjs-2": "^5.3.0",

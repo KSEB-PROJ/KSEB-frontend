@@ -7,6 +7,7 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import toast from 'react-hot-toast';
 import { AxiosError } from 'axios';
+import { jwtDecode } from 'jwt-decode';
 
 import type { UserResponse, UserLoginRequest, PasswordChangeRequest } from '../types';
 import { getCurrentUser, updateUserProfile, changePassword as changePasswordApi, deleteProfileImage as deleteProfileImageApi } from '../api/users';
@@ -18,9 +19,17 @@ import { useChannelStore } from './channelStore';
 import { useEventStore } from './eventStore';
 import { useTimetableStore } from './timetableStore';
 
+interface DecodedToken {
+    userId: number;
+    role: string;
+    sub: string;
+    iat: number;
+    exp: number;
+}
+
 interface AuthState {
     token: string | null;
-    user: UserResponse | null;
+    user: (UserResponse & { role?: string }) | null;
     isLoggedIn: boolean;
     login: (loginData: UserLoginRequest) => Promise<boolean>;
     setUser: (user: UserResponse) => void;
@@ -53,9 +62,13 @@ export const useAuthStore = create<AuthState>()(
                             }
                         );
                         const { token } = response.data.data;
+                        const decodedToken = jwtDecode<DecodedToken>(token);
+                        
                         set({ token, isLoggedIn: true });
+                        
                         const userResponse = await getCurrentUser();
-                        set({ user: userResponse.data });
+                        set({ user: { ...userResponse.data, role: decodedToken.role } });
+                        
                         return true;
                     } catch (error) {
                         console.error("로그인 프로세스 실패:", error);
@@ -87,7 +100,7 @@ export const useAuthStore = create<AuthState>()(
                         {
                             loading: '프로필 정보 수정 중...',
                             success: (res) => {
-                                set({ user: res.data }); // 성공 시 스토어의 user 상태 업데이트
+                                set((state) => ({ user: { ...state.user, ...res.data } }));
                                 success = true;
                                 return '프로필이 성공적으로 업데이트되었습니다.';
                             },
@@ -131,7 +144,7 @@ export const useAuthStore = create<AuthState>()(
                         {
                             loading: '프로필 이미지 삭제 중...',
                             success: (res) => {
-                                set({ user: res.data });
+                                set((state) => ({ user: { ...state.user, ...res.data } }));
                                 success = true;
                                 return '프로필 이미지가 삭제되었습니다.';
                             },
