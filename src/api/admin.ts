@@ -1,2 +1,94 @@
-// Admin API calls will be defined here.
-export {};
+import apiClient from './index';
+import type { DashboardData, PagedAdminUserResponse, UserAdmin, PagedAdminGroupResponse, PagedAdminLogResponse } from '../types/admin';
+import { format } from 'date-fns';
+
+/**
+ * 관리자 대시보드 데이터를 가져옵니다.
+ * @returns DashboardData
+ */
+export const getDashboardData = async (): Promise<DashboardData> => {
+    const response = await apiClient.get('/admin/dashboard');
+    return response.data;
+};
+
+/**
+ * 사용자 목록을 페이지별로 가져옵니다.
+ * @param page - 페이지 번호 (0부터 시작)
+ * @param size - 페이지당 항목 수
+ * @returns PagedAdminUserResponse
+ */
+export const getUsers = async (page: number, size: number): Promise<PagedAdminUserResponse> => {
+    const response = await apiClient.get('/admin/users', {
+        params: { page, size },
+    });
+    return response.data;
+};
+
+/**
+ * 사용자의 역할을 변경합니다.
+ * @param userId - 대상 사용자 ID
+ * @param role - 새로운 역할
+ */
+export const updateUserRole = async (userId: number, role: UserAdmin['role']): Promise<void> => {
+    await apiClient.put(`/admin/users/${userId}/role`, null, {
+        params: { role },
+    });
+};
+
+/**
+ * 사용자를 삭제합니다.
+ * @param userId - 대상 사용자 ID
+ */
+export const deleteUser = async (userId: number): Promise<void> => {
+    await apiClient.delete(`/admin/users/${userId}`);
+};
+
+/**
+ * 그룹 목록을 페이지별로 가져옵니다.
+ * @param page - 페이지 번호 (0부터 시작)
+ * @param size - 페이지당 항목 수
+ * @returns PagedAdminGroupResponse
+ */
+export const getGroups = async (page: number, size: number): Promise<PagedAdminGroupResponse> => {
+    const response = await apiClient.get('/admin/groups', {
+        params: { page, size },
+    });
+    return response.data;
+}
+
+/**
+ * 그룹을 삭제합니다.
+ * @param groupId - 대상 그룹 ID
+ */
+export const deleteGroup = async (groupId: number): Promise<void> => {
+    await apiClient.delete(`/admin/groups/${groupId}`);
+}
+
+export interface LogFilterParams {
+    page: number;
+    size: number;
+    actorName?: string;
+    actionTypes?: string[];
+    startDate?: Date | null;
+    endDate?: Date | null;
+}
+
+/**
+ * 로그 목록을 페이지별로, 필터 조건에 따라 가져옵니다.
+ * @param params - 필터 조건 객체
+ * @returns PagedAdminLogResponse
+ */
+export const getLogs = async (params: LogFilterParams): Promise<PagedAdminLogResponse> => {
+    const queryParams: Record<string, any> = {
+        page: params.page,
+        size: params.size,
+    };
+
+    if (params.actorName) queryParams.actorName = params.actorName;
+    if (params.actionTypes && params.actionTypes.length > 0) queryParams.actionTypes = params.actionTypes.join(',');
+    if (params.startDate) queryParams.startDate = format(params.startDate, 'yyyy-MM-dd');
+    if (params.endDate) queryParams.endDate = format(params.endDate, 'yyyy-MM-dd');
+
+    const response = await apiClient.get('/admin/logs', { params: queryParams });
+    return response.data;
+};

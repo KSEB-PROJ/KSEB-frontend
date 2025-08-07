@@ -41,4 +41,5 @@
     padding: 30px;
     background-color: #ecf0f1;
     overflow-y: auto;
+    color: #333; /* 기본 텍스트 색상 추가 */
 }
