@@ -1,3 +1,14 @@
+// kdae/src - front/types/admin.ts
+// 파일에 있는 모든 타입을 여기서 내보냄.
+export * from './auth';
+export * from './group';
+export * from './channel';
+export * from './chat';
+export * from './notice';
+export * from './users';
+export * from './events';
+export * from './chatbot';
+
 // 대시보드 API 응답 데이터 타입
 export interface DashboardData {
     totalUsers: number;
@@ -32,6 +43,10 @@ export interface LogAdmin {
     targetId: number;
     details: string;
     createdAt: string;
+    // [수정] 상세 정보 필드 추가
+    groupName?: string;
+    channelName?: string;
+    targetContent?: string;
 }
 
 // 페이지네이션 응답 타입 (사용자)
@@ -91,3 +106,35 @@ export const ActionType = {
 
 // ActionType 객체의 키들을 타입으로 추출
 export type ActionTypeKey = keyof typeof ActionType;
+
+// 관리자용 그룹 상세 정보 타입
+export interface GroupDetailAdminResponse {
+    id: number;
+    name: string;
+    ownerName: string;
+    createdAt: string;
+    memberCount: number;
+    channels: ChannelInfo[];
+    notices: NoticeInfo[];
+    members: MemberInfo[];
+}
+
+export interface ChannelInfo {
+    id: number;
+    name: string;
+    type: string;
+}
+
+export interface NoticeInfo {
+    id: number;
+    content: string;
+    authorName: string;
+    createdAt: string;
+}
+
+export interface MemberInfo {
+    userId: number;
+    userName: string;
+    role: string;
+    joinedAt: string;
+}

@@ -2,13 +2,13 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import toast from 'react-hot-toast';
 import { 
-    getDashboardData, getUsers, updateUserRole, deleteUser, getGroups, deleteGroup, getLogs, 
+    getDashboardData, getUsers, updateUserRole, deleteUser, getGroups, deleteGroup, getGroupDetails, getLogs, 
     getDailyRegistrations, getHourlyActivity, getContentTypeDistribution 
 } from '../api/admin';
 import type { LogFilterParams } from '../api/admin';
 import type { 
     DashboardData, PagedAdminUserResponse, UserAdmin, GroupAdmin, PagedAdminGroupResponse, 
-    LogAdmin, PagedAdminLogResponse 
+    GroupDetailAdminResponse, LogAdmin, PagedAdminLogResponse 
 } from '../types/admin';
 
 interface AdminState {
@@ -18,6 +18,8 @@ interface AdminState {
     userPagination: Omit<PagedAdminUserResponse, 'content'> | null;
     groups: GroupAdmin[];
     groupPagination: Omit<PagedAdminGroupResponse, 'content'> | null;
+    selectedGroupDetails: GroupDetailAdminResponse | null; // 그룹 상세 정보
+    isLoadingDetails: boolean; // 상세 정보 로딩 상태
     logs: LogAdmin[];
     logPagination: Omit<PagedAdminLogResponse, 'content'> | null;
     dailyRegistrations: { date: string; count: number }[];
@@ -33,6 +35,8 @@ interface AdminState {
     deleteUserAction: (userId: number) => Promise<void>;
     fetchGroups: (page: number, size: number) => Promise<void>;
     deleteGroupAction: (groupId: number) => Promise<void>;
+    fetchGroupDetails: (groupId: number) => Promise<void>; // 그룹 상세 정보 가져오기
+    clearGroupDetails: () => void; // 그룹 상세 정보 초기화
     fetchLogs: (params: LogFilterParams) => Promise<void>;
     fetchStats: () => Promise<void>;
 }
@@ -46,6 +50,8 @@ export const useAdminStore = create<AdminState>()(
             userPagination: null,
             groups: [],
             groupPagination: null,
+            selectedGroupDetails: null,
+            isLoadingDetails: false,
             logs: [],
             logPagination: null,
             dailyRegistrations: [],
@@ -144,6 +150,20 @@ export const useAdminStore = create<AdminState>()(
                 } catch (error) {
                     console.error('Failed to delete group:', error);
                 }
+            },
+            fetchGroupDetails: async (groupId) => {
+                set({ isLoadingDetails: true, error: null });
+                try {
+                    const details = await getGroupDetails(groupId);
+                    set({ selectedGroupDetails: details, isLoadingDetails: false });
+                } catch (error) {
+                    console.error('Failed to fetch group details:', error);
+                    set({ isLoadingDetails: false, error: '그룹 상세 정보를 불러오는 데 실패했습니다.' });
+                    toast.error('그룹 상세 정보를 불러오는 데 실패했습니다.');
+                }
+            },
+            clearGroupDetails: () => {
+                set({ selectedGroupDetails: null });
             },
 
             // --- 활동 로그 액션 구현 ---

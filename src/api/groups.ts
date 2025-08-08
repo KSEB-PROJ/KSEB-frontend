@@ -24,7 +24,7 @@ export const getGroupDetail = (groupId: number) => {
  * @returns Promise
  */
 export const createGroup = (groupData: { name: string; themeColor: string; }) => {
-    return apiClient.post('/groups', groupData);
+    return apiClient.post<Group>('/groups', groupData);
 };
 
 /**

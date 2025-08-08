@@ -1,5 +1,5 @@
 import apiClient from './index';
-import type { DashboardData, PagedAdminUserResponse, UserAdmin, GroupAdmin, PagedAdminGroupResponse, PagedAdminLogResponse } from '../types/admin';
+import type { DashboardData, PagedAdminUserResponse, UserAdmin, PagedAdminGroupResponse, PagedAdminLogResponse } from '../types/admin';
 import { format } from 'date-fns';
 
 /**
@@ -45,6 +45,14 @@ export const getGroups = async (page: number, size: number): Promise<PagedAdminG
  */
 export const deleteGroup = async (groupId: number): Promise<void> => {
     await apiClient.delete(`/admin/groups/${groupId}`);
+}
+
+/**
+ * 관리자용 그룹 상세 정보를 가져옵니다.
+ */
+export const getGroupDetails = async (groupId: number): Promise<GroupDetailAdminResponse> => {
+    const response = await apiClient.get(`/admin/groups/${groupId}`);
+    return response.data;
 }
 
 export interface LogFilterParams {

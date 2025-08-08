@@ -1,3 +1,4 @@
+// kdae/src - front/pages/admin/LogPage.tsx
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAdminStore } from '../../stores/adminStore';
 import { ActionType } from '../../types/admin';
@@ -5,14 +6,19 @@ import type { LogAdmin } from '../../types/admin';
 import {
     Box, Typography, Paper, TableContainer, Table, TableHead, TableRow, TableCell, TableBody,
     TablePagination, CircularProgress, Alert, TextField, Button, Select, MenuItem,
-    Checkbox, ListItemText, OutlinedInput, Chip
+    Checkbox, ListItemText, OutlinedInput, Chip, Dialog, DialogTitle, DialogContent, 
+    DialogActions, IconButton, List, ListItem, ListItemText as MuiListItemText
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ko } from 'date-fns/locale';
 
 const LogPage: React.FC = () => {
     const { logs, logPagination, isLoading, error, fetchLogs } = useAdminStore();
+
+    // [추가] 상세 보기 모달 상태
+    const [selectedLog, setSelectedLog] = useState<LogAdmin | null>(null);
 
     const [filters, setFilters] = useState({
         actorName: '',
@@ -47,6 +53,29 @@ const LogPage: React.FC = () => {
         if (actionType.includes('LOGIN')) return 'success';
         return 'default';
     };
+    
+    // [추가] 상세 정보 렌더링 함수
+    const renderDetail = (log: LogAdmin) => (
+        <List dense>
+            <ListItem>
+                <MuiListItemText primary="로그 ID" secondary={log.id} />
+            </ListItem>
+            <ListItem>
+                <MuiListItemText primary="발생 시간" secondary={new Date(log.createdAt).toLocaleString()} />
+            </ListItem>
+            <ListItem>
+                <MuiListItemText primary="수행자" secondary={log.actorName} />
+            </ListItem>
+            <ListItem>
+                <MuiListItemText primary="활동 유형" secondary={<Chip label={log.actionDescription} color={getChipColor(log.actionType)} size="small" />} />
+            </ListItem>
+            {log.targetId && <ListItem><MuiListItemText primary="대상 ID" secondary={log.targetId} /></ListItem>}
+            {log.groupName && <ListItem><MuiListItemText primary="그룹명" secondary={log.groupName} /></ListItem>}
+            {log.channelName && <ListItem><MuiListItemText primary="채널명" secondary={log.channelName} /></ListItem>}
+            {log.targetContent && <ListItem><MuiListItemText primary="관련 내용" secondary={<Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{log.targetContent}</Typography>} /></ListItem>}
+            {log.details && <ListItem><MuiListItemText primary="추가 정보" secondary={log.details} /></ListItem>}
+        </List>
+    );
 
     return (
         <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
@@ -111,21 +140,19 @@ const LogPage: React.FC = () => {
                             <TableCell>ID</TableCell>
                             <TableCell>수행자</TableCell>
                             <TableCell>활동 내용</TableCell>
-                            <TableCell>대상 ID</TableCell>
-                            <TableCell sx={{ minWidth: 300 }}>상세 정보</TableCell>
+                            <TableCell>관련 정보</TableCell>
                             <TableCell>발생 시간</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {logs.map((log: LogAdmin) => (
-                            <TableRow key={log.id} hover>
+                            <TableRow key={log.id} hover sx={{ cursor: 'pointer' }} onClick={() => setSelectedLog(log)}>
                                 <TableCell>{log.id}</TableCell>
                                 <TableCell>{log.actorName}</TableCell>
                                 <TableCell>
                                     <Chip label={log.actionDescription} color={getChipColor(log.actionType)} size="small" />
                                 </TableCell>
-                                <TableCell>{log.targetId || '-'}</TableCell>
-                                <TableCell>{log.details || '-'}</TableCell>
+                                <TableCell>{log.groupName || '-'} / {log.channelName || '-'}</TableCell>
                                 <TableCell>{new Date(log.createdAt).toLocaleString()}</TableCell>
                             </TableRow>
                         ))}
@@ -144,6 +171,22 @@ const LogPage: React.FC = () => {
                     }}
                 />
             </TableContainer>
+
+            {/* [추가] 상세 정보 모달 */}
+            <Dialog open={!!selectedLog} onClose={() => setSelectedLog(null)} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    로그 상세 정보
+                    <IconButton onClick={() => setSelectedLog(null)} sx={{ position: 'absolute', right: 8, top: 8 }}>
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent dividers>
+                    {selectedLog && renderDetail(selectedLog)}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setSelectedLog(null)}>닫기</Button>
+                </DialogActions>
+            </Dialog>
         </LocalizationProvider>
     );
 };
