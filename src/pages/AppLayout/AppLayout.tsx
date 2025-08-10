@@ -17,6 +17,7 @@ import Sidebar from '../../components/Sidebar/Sidebar';
 import ChatbotSidebar from '../../components/ChatbotSidebar/ChatbotSidebar';
 import EventEditorModal from './SchedulePage/EventEditorModal/EventEditorModal'; // 모달 컴포넌트 import
 import { useEventStore } from '../../stores/eventStore'; // 전역 스토어 import
+import type { ScheduleEvent } from '../../types';
 import styles from './AppLayout.module.css';
 
 
@@ -39,7 +40,7 @@ const AppLayout: React.FC = () => {
     const toggleChatbot = () => setChatbotOpen(prev => !prev);
 
     // --- 모달 이벤트 핸들러 ---
-    const handleSaveEvent = async (eventData: any) => {
+    const handleSaveEvent = async (eventData: ScheduleEvent) => {
         const result = await saveEvent(eventData);
         if (result.success) {
             closeModal();

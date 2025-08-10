@@ -23,11 +23,9 @@ const timeToMin = (t: string): number => {
 
 const UniversityTimetable: React.FC = () => {
     // --- 스토어 상태 및 액션 ---
-    // 스토어에서 직접 상태와 함수를 가져와 사용.
     const { courses, isLoading, semesterKey, setSemesterKey, fetchCourses, saveCourse, deleteCourse } = useTimetableStore();
     
     // --- 컴포넌트 내부 UI 상태 ---
-    // semesterKey("YYYY-S1")를 UI 표시용(year, term)으로 변환하여 관리
     const [semester, setSemester] = useState(() => {
         const [year, termCode] = semesterKey.split('-');
         const termMap: { [key: string]: number } = { S1: 1, SU: 2, S2: 3, WI: 4 };
@@ -36,6 +34,26 @@ const UniversityTimetable: React.FC = () => {
     const [modal, setModal] = useState(false);
     const [editing, setEditing] = useState<Partial<Course> | null>(null);
     const [anim, setAnim] = useState<'forward' | 'backward' | null>(null);
+
+    // 현재 날짜에 맞는 학기를 계산하고 스토어 상태를 업데이트하는 로직
+    useEffect(() => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth() + 1; // 0-indexed -> 1-indexed
+
+        let termCode = 'S1';
+        if (month >= 3 && month <= 6) termCode = 'S1';
+        else if (month >= 7 && month <= 8) termCode = 'SU';
+        else if (month >= 9 && month <= 12) termCode = 'S2';
+        else if (month >= 1 && month <= 2) termCode = 'WI';
+        
+        const newSemesterKey = `${year}-${termCode}`;
+        if (semesterKey !== newSemesterKey) {
+            setSemesterKey(newSemesterKey);
+            const termMap: { [key: string]: number } = { S1: 1, SU: 2, S2: 3, WI: 4 };
+            setSemester({ year, term: termMap[termCode] });
+        }
+    }, [semesterKey, setSemesterKey]); // 컴포넌트 마운트 시 한 번만 실행
 
     const termDisplayMap: Record<number, string> = { 1: '1학기', 2: '여름학기', 3: '2학기', 4: '겨울학기' };
     const dayIdx: Record<string, number> = { MO: 0, TU: 1, WE: 2, TH: 3, FR: 4, SA: 5, SU: 6 };

@@ -1,5 +1,5 @@
 import apiClient from './index';
-import type { DashboardData, PagedAdminUserResponse, UserAdmin, PagedAdminGroupResponse, PagedAdminLogResponse } from '../types/admin';
+import type { DashboardData, PagedAdminUserResponse, UserAdmin, PagedAdminGroupResponse, PagedAdminLogResponse, GroupDetailAdminResponse } from '../types/admin';
 import { format } from 'date-fns';
 
 /**
@@ -68,7 +68,7 @@ export interface LogFilterParams {
  * 로그 목록을 필터 조건에 따라 가져옵니다.
  */
 export const getLogs = async (params: LogFilterParams): Promise<PagedAdminLogResponse> => {
-    const queryParams: Record<string, any> = {
+    const queryParams: Record<string, string | number> = {
         page: params.page,
         size: params.size,
     };

@@ -23,12 +23,18 @@ interface TimetableState {
 
 // 현재 날짜를 기준으로 기본 학기 키(e.g., "2025-S1")를 생성하는 헬퍼 함수
 const getDefaultSemesterKey = (): string => {
-    const month = new Date().getMonth() + 1;
-    const year = new Date().getFullYear();
-    // 2월~7월: 1학기, 8월~12월: 2학기, 그 외: 1학기로 기본값 설정
-    if (month >= 2 && month <= 7) return `${year}-S1`;
-    if (month >= 8 && month <= 12) return `${year}-S2`;
-    return `${year}-S1`;
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1; // 1-12
+
+    if (month >= 3 && month <= 6) return `${year}-S1`;      // 1학기: 3월-6월
+    if (month >= 7 && month <= 8) return `${year}-SU`;      // 여름학기: 7월-8월
+    if (month >= 9 && month <= 12) return `${year}-S2`;     // 2학기: 9월-12월
+    
+    // 1월, 2월은 이전 년도 겨울학기
+    if (month >= 1 && month <= 2) return `${year - 1}-WI`; // 겨울학기: 1월-2월
+    
+    return `${year}-S1`; // 기본값
 };
 
 export const useTimetableStore = create<TimetableState>()(

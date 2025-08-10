@@ -3,9 +3,8 @@
  */
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
 import FullCalendar from '@fullcalendar/react';
-import type { EventClickArg, EventInput, EventContentArg, EventApi } from '@fullcalendar/core';
+import type { EventClickArg, EventInput, EventContentArg } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin, { type DateClickArg } from '@fullcalendar/interaction';
@@ -19,7 +18,6 @@ import 'dayjs/locale/ko';
 
 import schedulePageStyles from '../AppLayout/SchedulePage/SchedulePage.module.css';
 import type { ScheduleEvent, EventTask, EventTaskCreateRequest } from '../../types';
-import EventEditorModal from '../AppLayout/SchedulePage/EventEditorModal/EventEditorModal';
 
 // Zustand 스토어 import
 import { useEventStore } from '../../stores/eventStore';
@@ -70,8 +68,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ groupId }) => {
     // 현재 그룹에 해당하는 이벤트만 필터링
     const groupEvents = useMemo(() => {
         if (!groupId) return [];
-        const numericGroupId = parseInt(groupId, 10);
-        return events.filter((event) => event.ownerType === 'GROUP' && event.ownerId === numericGroupId);
+        return events.filter((event) => event.ownerType === 'GROUP' && event.ownerId === groupId);
     }, [events, groupId]);
 
     // 캘린더에 표시할 이벤트 목록 가공 (반복 일정 처리 포함)

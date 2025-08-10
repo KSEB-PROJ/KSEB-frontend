@@ -11,6 +11,14 @@ import type {
     GroupDetailAdminResponse, LogAdmin, PagedAdminLogResponse 
 } from '../types/admin';
 
+// 스토어에서 사용할 추가 타입 정의
+export type ContentTypeDistribution = {
+    groupCount: number;
+    channelCount: number;
+    noticeCount: number;
+    eventCount: number;
+};
+
 interface AdminState {
     // --- 상태(State) ---
     dashboardData: DashboardData | null;
@@ -24,7 +32,7 @@ interface AdminState {
     logPagination: Omit<PagedAdminLogResponse, 'content'> | null;
     dailyRegistrations: { date: string; count: number }[];
     hourlyActivity: { hour: number; count: number }[];
-    contentTypeDistribution: any;
+    contentTypeDistribution: ContentTypeDistribution | null;
     isLoading: boolean;
     error: string | null;
 

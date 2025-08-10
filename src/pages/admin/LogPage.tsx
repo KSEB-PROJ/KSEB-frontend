@@ -43,7 +43,7 @@ const LogPage: React.FC = () => {
 
     useEffect(() => {
         fetchLogs({ page, size: rowsPerPage, ...filters });
-    }, [page, rowsPerPage, fetchLogs]);
+    }, [page, rowsPerPage, fetchLogs, filters]);
 
     const getChipColor = (actionType: string) => {
         if (actionType.startsWith('ADMIN')) return 'secondary';
@@ -163,7 +163,7 @@ const LogPage: React.FC = () => {
                     component="div"
                     count={logPagination?.totalElements ?? 0}
                     page={page}
-                    onPageChange={(event, newPage) => setPage(newPage)}
+                    onPageChange={(_, newPage) => setPage(newPage)}
                     rowsPerPage={rowsPerPage}
                     onRowsPerPageChange={(e) => {
                         setRowsPerPage(parseInt(e.target.value, 10));

@@ -61,7 +61,7 @@ const App: React.FC = () => {
           <Route path="schedule" element={<SchedulePage />} />
           <Route path="feedback" element={<FeedbackPage />} />
           <Route path="profile" element={<ProfilePage />} />
-          {/* 👇 채널 페이지 라우팅 추가 */}
+          {/* 채널 페이지 라우팅 추가 */}
           <Route path="groups/:groupId/channels/:channelId" element={<ChannelLayout />} />
         </Route>
 

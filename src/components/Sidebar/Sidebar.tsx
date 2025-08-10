@@ -93,7 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
     const location = useLocation();
     const navigate = useNavigate();
     const { user, logout } = useAuthStore();
-    const { groups, selectedGroup, isLoading: isGroupLoading, fetchGroups, setSelectedGroup } = useGroupStore();
+    const { groups, selectedGroup, isLoading: isGroupLoading, fetchGroups, setSelectedGroup, fetchGroupDetailAndUpdate } = useGroupStore();
     const { channels, isLoading: isChannelLoading, addChannel } = useChannelStore();
 
     // UI 상태
@@ -103,7 +103,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
     const [isProfileMenuOpen, setProfileMenuOpen] = useState(false);
     const [mainIndicatorStyle, setMainIndicatorStyle] = useState({});
     const [channelIndicatorStyle, setChannelIndicatorStyle] = useState({});
-    const [hoveredId, setHoveredId] = useState<number | null>(null);
+    const [hoveredId, setHoveredId] = useState<number | null>(null); // 호버 상태 추가
     const [dndChannels, setDndChannels] = useState<Channel[]>([]);
 
     // DOM 참조
@@ -114,6 +114,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
     useEffect(() => { fetchGroups(); }, [fetchGroups]);
     useEffect(() => { setDndChannels(channels as Channel[]); }, [channels]);
     const handleGroupUpdate = useCallback(() => { fetchGroups(); }, [fetchGroups]);
+
+    const handleMouseEnterGroup = (group: Group) => {
+        setHoveredId(group.id); // 호버된 그룹 ID 설정
+        // 아직 초대 코드가 없다면 상세 정보를 가져옴
+        if (!group.code) {
+            fetchGroupDetailAndUpdate(group.id);
+        }
+    };
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
@@ -188,9 +196,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
                 <div className={`${styles.groupOverlay} ${isGroupOverlayOpen ? styles.open : ''}`} onClick={() => setGroupOverlayOpen(false)}>
                     <div className={styles.timelineContainer} onClick={(e) => e.stopPropagation()}>
                         <div className={styles.timelineConnector} />
-                        <div className={styles.timeline} onMouseLeave={() => setHoveredId(selectedGroup?.id ?? null)}>
+                        <div className={styles.timeline} onMouseLeave={() => setHoveredId(null)}>
                             {groups.map(group => (
-                                <div key={group.id} className={`${styles.groupItem} ${selectedGroup?.id === group.id ? styles.groupItemSelected : ''} ${hoveredId === group.id ? styles.groupItemHovered : ''}`} onMouseEnter={() => setHoveredId(group.id)} onClick={() => handleSelectGroup(group)}>
+                                <div key={group.id} className={`${styles.groupItem} ${selectedGroup?.id === group.id ? styles.groupItemSelected : ''} ${hoveredId === group.id ? styles.groupItemHovered : ''}`} onMouseEnter={() => handleMouseEnterGroup(group)} onClick={() => handleSelectGroup(group)}>
                                     <div className={styles.itemDot} style={{ '--item-color': group.colorValue } as React.CSSProperties} />
                                     <div className={styles.itemContent}>
                                         <div className={styles.itemHeader}>
@@ -199,10 +207,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onChatbotToggle, is
                                         </div>
                                         <div className={styles.itemDetails}>
                                             <div className={styles.inviteCode}>
-                                                <span>{group.code}</span>
-                                                <button onClick={e => { e.stopPropagation(); copyCodeToClipboard(group.code) }}>
-                                                    <FontAwesomeIcon icon={faCopy} />
-                                                </button>
+                                                <span>{group.code || '...'}</span>
+                                                {group.code && (
+                                                    <button onClick={e => { e.stopPropagation(); copyCodeToClipboard(group.code) }}>
+                                                        <FontAwesomeIcon icon={faCopy} />
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

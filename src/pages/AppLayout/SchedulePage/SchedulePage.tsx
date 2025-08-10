@@ -5,25 +5,21 @@
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import FullCalendar from '@fullcalendar/react';
-import type { EventClickArg, EventInput, EventContentArg, EventApi } from '@fullcalendar/core';
+import type { EventClickArg, EventInput, EventContentArg } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin, { type DateClickArg } from '@fullcalendar/interaction';
 import { RRule } from 'rrule';
 import dayjs from 'dayjs';
-import isBetween from 'dayjs/plugin/isBetween';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faLayerGroup, faUser, faCalendarDays, faChevronLeft, faChevronRight, faCircle, faCircleHalfStroke, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 import 'dayjs/locale/ko';
 
 import styles from './SchedulePage.module.css';
 import type { ScheduleEvent, EventTask, EventTaskCreateRequest } from '../../../types';
-import EventEditorModal from './EventEditorModal/EventEditorModal';
 import UniversityTimetable from './UniversityTimetable/UniversityTimetable';
 
 import { useParams } from 'react-router-dom';
-
-// ... (다른 import들) ...
 
 // Zustand 스토어 import
 import { useEventStore } from '../../../stores/eventStore';
@@ -40,8 +36,6 @@ const getEventInstanceId = (event: ScheduleEvent, date: Date): string => {
     return `${event.id}-${dayjs(date).format('YYYYMMDD')}`;
 };
 
-// ... (다른 코드들) ...
-
 // --- 메인 컴포넌트 ---
 const SchedulePage: React.FC = () => {
     // --- 라우터 파라미터 ---
@@ -52,7 +46,7 @@ const SchedulePage: React.FC = () => {
     const clickTimeout = useRef<number | null>(null);
 
     // --- 스토어 상태 및 액션 ---
-    const { events, tasks, isLoading, fetchEvents, openModal } = useEventStore();
+    const { events, tasks, isLoading, fetchEvents, openModal, addTask, updateTask } = useEventStore();
     const { user: currentUser } = useAuthStore();
 
     // --- 컴포넌트 상태 ---
@@ -60,6 +54,13 @@ const SchedulePage: React.FC = () => {
     const [agendaDate, setAgendaDate] = useState(new Date());
     const [viewRange, setViewRange] = useState({ start: new Date(), end: new Date() });
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+
+    // 할 일 상태 ID 맵
+    const statusMap: { [key in EventTask['status']]: number } = {
+        'TODO': 1,
+        'DOING': 2,
+        'DONE': 3,
+    };
 
     // --- 데이터 로딩 ---
     useEffect(() => {

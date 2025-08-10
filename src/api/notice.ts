@@ -1,5 +1,5 @@
 import apiClient from './index';
-import type { Notice, NoticeCreateRequest, NoticeUpdateRequest, NoticePinRequest, NoticePromoteRequest } from '../types/notice';
+import type { Notice, NoticeCreateRequest, NoticeUpdateRequest } from '../types/notice';
 
 /**
  * 특정 그룹의 모든 공지 목록을 가져오는 API
