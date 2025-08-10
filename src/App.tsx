@@ -9,6 +9,7 @@ import SchedulePage from './pages/AppLayout/SchedulePage/SchedulePage';
 import FeedbackPage from './pages/AppLayout/Feedback/FeedbackPage';
 import ProfilePage from './pages/AppLayout/ProfilePage/ProfilePage';
 import ChannelLayout from './pages/ChannelLayout/ChannelLayout';
+import HomePage from './pages/HomePage/HomePage'; // HomePage 임포트
 
 // Admin components
 import AdminRoute from './components/AdminRoute';
@@ -55,9 +56,7 @@ const App: React.FC = () => {
         {/* 사이드바가 포함된 메인 앱 페이지 */}
         <Route path="/app" element={<AppLayout />}>
           <Route index element={<Navigate to="home" replace />} />
-          <Route path="home" element={
-            <div style={{ padding: '2rem' }}><h1>Bloom Us 대시보드</h1><p>모든 기능을 한눈에 보세요.</p></div>
-          } />
+          <Route path="home" element={<HomePage />} />
           <Route path="schedule" element={<SchedulePage />} />
           <Route path="feedback" element={<FeedbackPage />} />
           <Route path="profile" element={<ProfilePage />} />
