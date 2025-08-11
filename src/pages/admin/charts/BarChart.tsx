@@ -28,7 +28,13 @@ interface BarChartProps {
 const BarChart: React.FC<BarChartProps> = ({ data, title }) => {
   // 데이터가 없거나 배열이 아닐 경우 로딩 또는 데이터 없음 메시지 표시
   if (!data || data.length === 0) {
-    return <div className={styles.chartContainer}>데이터를 불러오는 중...</div>;
+    return (
+      <div className={styles.chartContainer}>
+        <div className={styles.emptyDataMessage}>
+          최근 24시간 활동 기록이 없습니다.
+        </div>
+      </div>
+    );
   }
 
   const chartData = {

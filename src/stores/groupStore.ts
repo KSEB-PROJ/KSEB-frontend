@@ -76,23 +76,31 @@ export const useGroupStore = create<GroupState>()(
                     set({ selectedGroup: null });
                     return;
                 }
-                
-                // 상태를 업데이트하기 전에 현재 그룹과 같은지 확인하여 불필요한 API 호출 방지
+
                 const currentGroup = get().selectedGroup;
-                if (currentGroup?.id === group.id && currentGroup.code) {
+                // 이미 선택된 그룹이고 멤버 정보가 있다면 다시 호출하지 않음
+                if (currentGroup?.id === group.id && currentGroup.members && currentGroup.members.length > 0) {
                     return;
                 }
 
                 set({ selectedGroup: group });
                 document.documentElement.style.setProperty('--group-color', group.colorValue || '132, 0, 255');
-                
-                // 상세 정보(초대 코드)는 별도로 가져옴
+
+                // 상세 정보(멤버 리스트 등)는 별도로 가져옴
                 get().fetchGroupDetailAndUpdate(group.id);
             },
 
             fetchGroupDetailAndUpdate: async (groupId: number) => {
-                const originalGroup = get().groups.find(g => g.id === groupId);
-                if (originalGroup && originalGroup.code) {
+                // 스토어에서 최신 그룹 정보를 다시 조회
+                const originalGroupInStore = get().groups.find(g => g.id === groupId);
+
+                // API 호출 방지 로직: 그룹이 존재하고, 멤버 정보가 이미 로드되었다면 실행하지 않음
+                if (originalGroupInStore && originalGroupInStore.members && originalGroupInStore.members.length > 0) {
+                    // 만약 현재 선택된 그룹의 멤버가 없는 상태라면, 스토어에 이미 있는 정보로 업데이트
+                    const selectedGroup = get().selectedGroup;
+                    if(selectedGroup && selectedGroup.id === groupId && selectedGroup.members.length === 0) {
+                        set({ selectedGroup: originalGroupInStore });
+                    }
                     return;
                 }
 
@@ -100,16 +108,25 @@ export const useGroupStore = create<GroupState>()(
                     const detailResponse = await getGroupDetail(groupId);
                     const detailedGroupData = detailResponse.data;
 
-                    set(state => ({
-                        groups: state.groups.map(g => 
+                    set(state => {
+                        // groups 배열 업데이트
+                        const newGroups = state.groups.map(g =>
                             g.id === groupId ? { ...g, ...detailedGroupData } : g
-                        ),
-                        selectedGroup: state.selectedGroup?.id === groupId 
-                            ? { ...state.selectedGroup, ...detailedGroupData } 
-                            : state.selectedGroup,
-                    }));
+                        );
+
+                        // selectedGroup 업데이트
+                        const newSelectedGroup = state.selectedGroup?.id === groupId
+                            ? { ...state.selectedGroup, ...detailedGroupData }
+                            : state.selectedGroup;
+
+                        return {
+                            groups: newGroups,
+                            selectedGroup: newSelectedGroup
+                        };
+                    });
                 } catch (error) {
                     console.error("그룹 상세 정보 조회 실패:", error);
+                    toast.error("그룹 멤버 정보를 가져오는 데 실패했습니다.");
                 }
             },
 
