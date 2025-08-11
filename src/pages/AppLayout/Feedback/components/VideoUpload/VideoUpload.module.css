@@ -31,7 +31,7 @@
 
 .contentContainer {
   display: grid;
-  grid-template-columns: 1fr 1.2fr; /* 좌우 컬럼 비율 */
+  grid-template-columns: 1fr 1.2fr;
   gap: 50px;
   width: 100%;
   max-width: 1200px;
@@ -40,9 +40,12 @@
   z-index: 1;
 }
 
-/* === Left Column: Dropzone === */
+/* === Left Column: Upload Area === */
 .leftColumn {
   display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
   width: 100%;
   height: 100%;
   opacity: 0;
@@ -55,8 +58,17 @@
   transform: translateY(0);
 }
 
+.uploadArea {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  flex-grow: 1;
+  overflow: hidden;
+  padding-top: 5px; /* 호버 효과를 위한 공간 확보 */
+}
+
 .dropzone {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -64,16 +76,17 @@
   text-align: center;
   cursor: pointer;
   border-radius: 20px;
-  
+  padding: 20px;
   background-color: rgba(30, 30, 30, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
 
-.dropzone:hover {
+.dropzone:hover:not(.hasFile) {
   background-color: rgba(40, 40, 40, 0.7);
   border-color: rgba(var(--group-color-rgb), 0.6);
   transform: translateY(-5px);
@@ -83,104 +96,148 @@
 .dropzone.active {
   background-color: rgba(var(--group-color-rgb), 0.15);
   border-color: rgba(var(--group-color-rgb), 1);
-  transform: translateY(-5px) scale(1.02);
+}
+
+.dropzone.hasFile {
+  border-color: rgba(var(--group-color-rgb), 0.8);
+}
+
+.videoDropzone {
+  flex-grow: 1; /* 비디오 선택 전에는 전체 공간 차지 */
+  flex-shrink: 0;
+}
+
+.videoDropzone.hasFile {
+  flex-grow: 0.5; /* 비디오 선택 후에는 공간을 덜 차지 */
+  min-height: 200px; /* 최소 높이 보장 */
+}
+
+.scriptDropzone {
+  flex-grow: 1;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(20px);
+  max-height: 0;
+}
+
+.scriptDropzone.visible {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+  max-height: 500px; /* 나타날 때 최대 높이 */
+}
+
+.dropzoneContentWrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .uploadContent {
-  padding: 30px;
+  padding: 20px;
+  transition: opacity 0.3s ease;
 }
 
 .uploadIcon {
-  font-size: 4rem;
+  font-size: 3rem;
   color: rgb(var(--group-color-rgb));
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   filter: drop-shadow(0 0 10px rgba(var(--group-color-rgb), 0.5));
 }
 
 .dropzoneTitle {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: 600;
   color: #ffffff;
   margin: 0 0 0.5rem 0;
 }
 
 .dropzoneText {
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: #b0b0b0;
-  line-height: 1.6;
-  margin-bottom: 1.5rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
 }
 
 .fileTypes {
   font-size: 0.8rem;
   color: #777;
-  margin-top: 1rem;
 }
 
-/* === File Selected State === */
 .fileSelectedContent {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 30px;
+  padding: 15px;
+  width: 100%;
 }
 
 .fileIcon {
-  font-size: 4rem;
+  font-size: 3rem;
   color: #e0e0e0;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .fileName {
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-size: 1.1rem;
+  font-weight: 500;
   color: #ffffff;
   margin: 0 0 0.5rem 0;
-  max-width: 100%;
+  max-width: 90%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .fileSize {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #a0a0a0;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 
 .analyzeButton {
   background-color: rgb(var(--group-color-rgb));
   color: white;
   border: none;
-  border-radius: 10px;
-  padding: 14px 28px;
+  border-radius: 12px;
+  padding: 16px 28px;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   width: 100%;
-  margin-bottom: 1rem;
+  flex-shrink: 0; /* 버튼 크기 고정 */
 }
 
-.analyzeButton:hover {
-  transform: scale(1.05);
+.analyzeButton:hover:not(:disabled) {
+  transform: scale(1.03);
   box-shadow: 0 5px 20px rgba(var(--group-color-rgb), 0.4);
+}
+
+.analyzeButton:disabled {
+  background-color: #444;
+  color: #888;
+  cursor: not-allowed;
 }
 
 .cancelButton {
   background: none;
-  border: none;
+  border: 1px solid #666;
+  border-radius: 8px;
   color: #a0a0a0;
-  text-decoration: underline;
   cursor: pointer;
   font-size: 0.9rem;
+  padding: 6px 12px;
+  transition: all 0.2s ease;
 }
 
 .cancelButton:hover {
   color: white;
+  border-color: white;
 }
-
 
 /* === Right Column: Information === */
 .rightColumn {
@@ -191,7 +248,7 @@
   opacity: 0;
   transform: translateY(20px);
   transition: opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-  transition-delay: 0.2s; /* Stagger effect */
+  transition-delay: 0.2s;
 }
 
 .rightColumn.enter {
