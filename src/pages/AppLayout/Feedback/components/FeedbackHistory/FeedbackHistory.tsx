@@ -1,90 +1,161 @@
 /**
  * @file FeedbackHistory.tsx
- * @description 과거 피드백 기록들을 브라우징하는 페이지 컴포넌트.
- * 메인 카드와 서브 카드 UI를 통해 기록을 시각적으로 보여주고, 선택 시 분석 페이지로 이동.
- * 현재는 mock 데이터를 사용하며, 추후 API 연동 필요.
+ * @description 과거 피드백 기록들을 API 연동을 통해 브라우징하는 페이지 컴포넌트.
  */
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import styles from './FeedbackHistory.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faChevronLeft, faChevronRight, faSpinner, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 import MainFeedbackCard from '../MainFeedbackCard/MainFeedbackCard';
 import SubFeedbackCard from '../SubFeedbackCard/SubFeedbackCard';
+import { getMyAnalysisIds, getAnalysisResultById } from '../../../../../api/feedbackApi';
+import { transformAnalysisData } from '../../../../../utils/feedbackDataTransformer';
 
-// TODO: API 연동 시 제거될 mock 데이터. 날짜 내림차순으로 정렬.
-const mockHistory = [
-    { id: 4, title: '최종 발표 리허설', date: '2025-08-04', thumbnailUrl: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&w=870&auto=format&fit=crop', overallScore: 76, summary: '전반적으로 안정적이었으나, 시선 처리가 불안정하고 말이 조금 빠른 경향이 있습니다.' },
-    { id: 1, title: '1차 발표 피드백', date: '2025-08-03', thumbnailUrl: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=1032&auto=format&fit=crop', overallScore: 72, summary: '자신감 있는 목소리는 좋지만, 불필요한 손동작이 많아 내용 전달을 방해합니다.' },
-    { id: 2, title: '프로젝트 중간 발표', date: '2025-07-28', thumbnailUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=871&auto=format&fit=crop', overallScore: 85, summary: '내용 구성과 전달력 모두 훌륭합니다. 청중과의 상호작용을 조금 더 늘리면 완벽합니다.' },
-    { id: 3, title: '팀 소개 발표', date: '2025-07-15', thumbnailUrl: 'https://images.unsplash.com/photo-1600880292210-85938a039492?q=80&w=870&auto=format&fit=crop', overallScore: 68, summary: '목소리가 작고 발표 자료에 너무 의존하는 경향이 보입니다. 자신감을 가지세요.' },
-    { id: 5, title: '아이디어 피칭', date: '2025-06-20', thumbnailUrl: 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=870&auto=format&fit=crop', overallScore: 81, summary: '아이디어는 좋았지만, 제스처 사용이 거의 없어 설득력이 다소 부족했습니다.' },
-].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+// API로부터 받은 분석 요약 정보의 타입
+interface HistoryItem {
+  id: number;
+  title: string;
+  date: string;
+  thumbnailUrl: string;
+  overallScore: number;
+  summary: string;
+}
 
 interface FeedbackHistoryProps {
-  onSelect: (id: number) => void; // 분석할 기록 ID를 부모로 전달하는 콜백
-  onBack: () => void; // 이전 화면(업로드)으로 돌아가는 콜백
+  onSelect: (id: number) => void;
+  onBack: () => void;
 }
 
 const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({ onSelect, onBack }) => {
   // --- 상태 관리 ---
-  // 현재 메인 카드에 보여줄 기록의 ID. 기본값은 가장 최신 기록.
-  const [mainCardId, setMainCardId] = useState(mockHistory[0]?.id || null);
-  // 하단 서브 카드 스크롤 영역을 참조하기 위한 ref.
+  const [histories, setHistories] = useState<HistoryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [mainCardId, setMainCardId] = useState<number | null>(null);
+  
   const trackRef = useRef<HTMLDivElement>(null);
-  // 좌/우 스크롤 버튼의 표시 여부를 결정하는 상태.
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
+  // --- 데이터 로딩 ---
+  useEffect(() => {
+    const fetchHistories = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const { video_ids } = await getMyAnalysisIds();
+        if (video_ids.length === 0) {
+          setHistories([]);
+          setIsLoading(false);
+          return;
+        }
+
+        const historyPromises = video_ids.map(id => 
+          getAnalysisResultById(id).catch(err => {
+            console.warn(`ID ${id} 분석 결과 로딩 실패:`, err);
+            return null; // 실패한 요청은 null로 처리
+          })
+        );
+        const results = await Promise.all(historyPromises);
+        const validResults = results.filter(res => res !== null); // null이 아닌 결과만 필터링
+
+        const formattedHistories = validResults.map(data => {
+          if (!data) return null; // 데이터가 null인 경우를 대비
+          const transformed = transformAnalysisData(data);
+          // 첫 번째 프레임의 이미지 URL을 썸네일로 사용, 없으면 로컬 기본 이미지
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const thumbnailUrl = (data.poses as any)?.[0]?.image_url || '/placeholder.svg';
+          
+          return {
+            id: data.video.id,
+            title: data.video.title,
+            date: new Date(data.video.upload_time).toLocaleDateString('ko-KR'),
+            thumbnailUrl: thumbnailUrl,
+            overallScore: transformed.overallScore,
+            summary: data.feedback.short_feedback,
+          };
+        }).filter((item): item is HistoryItem => item !== null);
+        
+        formattedHistories.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        setHistories(formattedHistories);
+        if (formattedHistories.length > 0) {
+          setMainCardId(formattedHistories[0].id);
+        }
+
+      } catch (err) {
+        setError("분석 기록을 불러오는 중 오류가 발생했습니다.");
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHistories();
+  }, []);
+
   // --- 데이터 메모이제이션 ---
-  // mainCardId가 변경될 때만 메인 카드 데이터를 다시 계산.
-  const mainCardData = useMemo(() => mockHistory.find(item => item.id === mainCardId), [mainCardId]);
-  // mainCardId가 변경될 때만 서브 카드 데이터 리스트를 다시 계산.
-  const subCardData = useMemo(() => mockHistory.filter(item => item.id !== mainCardId), [mainCardId]);
+  const mainCardData = useMemo(() => histories.find(item => item.id === mainCardId), [mainCardId, histories]);
+  const subCardData = useMemo(() => histories.filter(item => item.id !== mainCardId), [mainCardId, histories]);
 
   // --- 스크롤 로직 ---
-  // 현재 스크롤 위치를 기준으로 좌/우 스크롤 가능 여부를 판단하고 상태를 업데이트.
-  const checkScrollability = () => {
+  const checkScrollability = useCallback(() => {
     const el = trackRef.current;
     if (el) {
-      setCanScrollLeft(el.scrollLeft > 0);
-      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth);
+      const isScrollable = el.scrollWidth > el.clientWidth;
+      setCanScrollLeft(isScrollable && el.scrollLeft > 0);
+      setCanScrollRight(isScrollable && el.scrollLeft < el.scrollWidth - el.clientWidth -1);
     }
-  };
+  }, []);
 
-  // 컴포넌트 마운트 시, 그리고 데이터 변경 시 스크롤 가능 여부를 체크하고 이벤트 리스너를 등록.
   useEffect(() => {
     const el = trackRef.current;
     if (el) {
       checkScrollability();
+      const debouncedCheck = setTimeout(checkScrollability, 100); // 데이터 렌더링 후 잠시 뒤 체크
+      
       el.addEventListener('scroll', checkScrollability);
       window.addEventListener('resize', checkScrollability);
-      // 클린업 함수: 컴포넌트 언마운트 시 이벤트 리스너 제거.
+      
       return () => {
+        clearTimeout(debouncedCheck);
         el.removeEventListener('scroll', checkScrollability);
         window.removeEventListener('resize', checkScrollability);
       };
     }
-  }, [subCardData]); // subCardData가 바뀔 때마다 이펙트를 재실행하여 스크롤 상태를 정확히 계산.
+  }, [subCardData, checkScrollability]);
 
-  // 좌/우 버튼 클릭 시 스크롤을 부드럽게 이동시키는 핸들러.
   const handleScroll = (direction: 'left' | 'right') => {
     const el = trackRef.current;
     if (el) {
-      const scrollAmount = el.clientWidth * 0.8; // 한 번에 화면 너비의 80%만큼 스크롤.
+      const scrollAmount = el.clientWidth * 0.8;
       el.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
     }
   };
 
-  // --- 이벤트 핸들러 ---
-  // 서브 카드를 클릭했을 때, 해당 카드를 메인 카드로 변경.
-  const handleSubCardClick = (id: number) => {
-    setMainCardId(id);
-  };
+  // --- 렌더링 로직 ---
+  if (isLoading) {
+    return <div className={styles.statusContainer}><FontAwesomeIcon icon={faSpinner} spin /> 로딩 중...</div>;
+  }
 
-  // 메인 카드에서 '분석 보기' 버튼을 클릭했을 때, 부모 컴포넌트로 ID를 전달.
-  const handleAnalyzeClick = (id: number) => {
-    onSelect(id);
-  };
+  if (error) {
+    return <div className={styles.statusContainer}><FontAwesomeIcon icon={faExclamationTriangle} /> {error}</div>;
+  }
+
+  if (histories.length === 0) {
+    return (
+        <div className={styles.boardContainer}>
+            <div className={styles.header}>
+                <h2 className={styles.title}>피드백 브리핑</h2>
+                <button className={styles.backButton} onClick={onBack}>
+                <FontAwesomeIcon icon={faArrowLeft} />
+                새 분석 시작하기
+                </button>
+            </div>
+            <div className={styles.statusContainer}>분석 기록이 없습니다.</div>
+        </div>
+    );
+  }
 
   return (
     <div className={styles.boardContainer}>
@@ -106,13 +177,12 @@ const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({ onSelect, onBack }) =
             thumbnailUrl={mainCardData.thumbnailUrl}
             overallScore={mainCardData.overallScore}
             summary={mainCardData.summary}
-            onAnalyze={handleAnalyzeClick}
+            onAnalyze={() => onSelect(mainCardData.id)}
           />
         )}
       </div>
 
       <div className={styles.subCardContainer}>
-        {/* 스크롤 가능 여부에 따라 버튼을 조건부 렌더링 */}
         {canScrollLeft && (
           <button className={`${styles.scrollButton} ${styles.left}`} onClick={() => handleScroll('left')}>
             <FontAwesomeIcon icon={faChevronLeft} />
@@ -128,7 +198,7 @@ const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({ onSelect, onBack }) =
                   date={item.date}
                   thumbnailUrl={item.thumbnailUrl}
                   overallScore={item.overallScore}
-                  onClick={handleSubCardClick}
+                  onClick={() => setMainCardId(item.id)}
               />
               ))}
           </div>

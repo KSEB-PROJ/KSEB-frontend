@@ -1,106 +1,146 @@
 /**
  * @file VideoUpload.tsx
  * @description 피드백 기능의 시작 화면.
- * 사용자가 영상을 업로드하고, 서비스의 핵심 기능을 인지하는 역할을 함.
- * 파일 선택 시, 바로 분석을 시작하지 않고 사용자에게 확인 및 분석 시작 단계를 제공.
+ * 사용자가 영상과 대본 파일을 업로드하고, 서비스의 핵심 기능을 인지하는 역할을 함.
  */
 import React, { useCallback, useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import styles from './VideoUpload.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUpload, faHistory, faSmile, faHandSparkles, faVolumeUp, faFileVideo } from '@fortawesome/free-solid-svg-icons';
+import { faUpload, faHistory, faSmile, faHandSparkles, faVolumeUp, faFileVideo, faFileLines, faSpinner, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 
 interface VideoUploadProps {
-  // 부모 컴포넌트(FeedbackPage)로부터 받는 콜백 함수들
-  onVideoUpload: (file: File) => void; // '분석 시작' 시 호출될 함수
-  onShowHistory: () => void; // '기록 보기' 시 호출될 함수
+  onVideoUpload: (videoFile: File, scriptFile: File) => void;
+  onShowHistory: () => void;
+  isLoading: boolean;
+  error: string | null;
 }
 
-const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload, onShowHistory }) => {
-  // --- 상태 관리 ---
-  // 사용자가 선택했지만 아직 분석은 시작하지 않은 파일을 임시 저장하는 상태.
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  // 컴포넌트 첫 로드 시 진입 애니메이션을 제어하기 위한 상태.
+const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload, onShowHistory, isLoading, error }) => {
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [scriptFile, setScriptFile] = useState<File | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
-  // 컴포넌트가 마운트된 후 짧은 지연을 주어 CSS transition이 적용되도록 함.
   useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 100);
-    return () => clearTimeout(timer); // 컴포넌트 언마운트 시 타이머 정리
+    return () => clearTimeout(timer);
   }, []);
 
-  // --- 드롭존 로직 ---
-  // 파일이 드롭되거나 선택되었을 때 호출되는 콜백.
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length > 0) {
-      setSelectedFile(acceptedFiles[0]); // 선택된 파일을 내부 상태에 저장.
-    }
+  const onVideoDrop = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) setVideoFile(acceptedFiles[0]);
   }, []);
 
-  // react-dropzone 훅 초기화.
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
+  const onScriptDrop = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) setScriptFile(acceptedFiles[0]);
+  }, []);
+
+  const { getRootProps: getVideoRootProps, getInputProps: getVideoInputProps, isDragActive: isVideoDragActive } = useDropzone({
+    onDrop: onVideoDrop,
     accept: { 'video/mp4': ['.mp4'], 'video/webm': ['.webm'], 'video/quicktime': ['.mov'] },
-    multiple: false, // 한 번에 하나의 파일만 허용.
+    multiple: false,
+    disabled: !!videoFile || isLoading,
   });
 
-  // --- 이벤트 핸들러 ---
-  // '분석 시작하기' 버튼 클릭 핸들러.
+  const { getRootProps: getScriptRootProps, getInputProps: getScriptInputProps, isDragActive: isScriptDragActive } = useDropzone({
+    onDrop: onScriptDrop,
+    accept: { 'text/plain': ['.txt'] },
+    multiple: false,
+    disabled: !videoFile || isLoading,
+  });
+
   const handleAnalyzeClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // 중요: 클릭 이벤트가 부모(드롭존)로 전파되어 파일 선택창이 다시 뜨는 것을 방지.
-    if (selectedFile) {
-      onVideoUpload(selectedFile); // 부모 컴포넌트로 선택된 파일을 전달하여 분석 프로세스 시작.
+    e.stopPropagation();
+    if (videoFile && scriptFile) {
+      onVideoUpload(videoFile, scriptFile);
     }
   };
 
-  // '다른 영상 선택' 버튼 클릭 핸들러.
-  const handleRemoveFile = (e: React.MouseEvent) => {
-    e.stopPropagation(); // 이벤트 전파 방지.
-    setSelectedFile(null); // 선택된 파일 상태를 초기화하여 다시 업로드 UI를 보여줌.
+  const handleRemoveVideo = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setVideoFile(null);
+    setScriptFile(null);
+  };
+
+  const handleRemoveScript = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setScriptFile(null);
   };
 
   return (
     <div className={styles.pageWrapper}>
       <div className={styles.gridBg}></div>
       <div className={styles.contentContainer}>
-        {/* 왼쪽 컬럼: 파일 업로드 영역 */}
         <div className={`${styles.leftColumn} ${isMounted ? styles.enter : ''}`}>
-          <div {...getRootProps()} className={`${styles.dropzone} ${isDragActive ? styles.active : ''}`}>
-            <input {...getInputProps()} />
-            {/* 조건부 렌더링: 선택된 파일이 없으면 업로드 UI, 있으면 파일 정보 및 분석 시작 UI를 보여줌 */}
-            {!selectedFile ? (
-              <div className={styles.uploadContent}>
-                <FontAwesomeIcon icon={faUpload} className={styles.uploadIcon} />
-                <p className={styles.dropzoneTitle}>분석할 영상 업로드</p>
-                <p className={styles.dropzoneText}>
-                  파일을 드래그 앤 드롭하거나, <br />
-                  이곳을 클릭하여 직접 선택하세요.
-                </p>
-                <p className={styles.fileTypes}>지원 포맷: MP4, WebM, MOV</p>
+          <div className={styles.uploadArea}>
+            {/* --- Video Dropzone --- */}
+            <div {...getVideoRootProps()} className={`${styles.dropzone} ${styles.videoDropzone} ${isVideoDragActive ? styles.active : ''} ${videoFile ? styles.hasFile : ''}`}>
+              <input {...getVideoInputProps()} />
+              <div className={styles.dropzoneContentWrapper}>
+                {videoFile ? (
+                  <div className={styles.fileSelectedContent}>
+                    <FontAwesomeIcon icon={faFileVideo} className={styles.fileIcon} />
+                    <p className={styles.fileName}>{videoFile.name}</p>
+                    <p className={styles.fileSize}>{(videoFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <button className={styles.cancelButton} onClick={handleRemoveVideo} disabled={isLoading}>
+                      영상 변경
+                    </button>
+                  </div>
+                ) : (
+                  <div className={styles.uploadContent}>
+                    <FontAwesomeIcon icon={faUpload} className={styles.uploadIcon} />
+                    <p className={styles.dropzoneTitle}>1. 발표 영상 업로드</p>
+                    <p className={styles.dropzoneText}>파일을 드래그하거나 클릭하여 선택하세요</p>
+                    <p className={styles.fileTypes}>지원: MP4, WebM, MOV</p>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className={styles.fileSelectedContent}>
-                <FontAwesomeIcon icon={faFileVideo} className={styles.fileIcon} />
-                <p className={styles.fileName}>{selectedFile.name}</p>
-                <p className={styles.fileSize}>{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                <button className={styles.analyzeButton} onClick={handleAnalyzeClick}>
-                  분석 시작하기
-                </button>
-                <button className={styles.cancelButton} onClick={handleRemoveFile}>
-                  다른 영상 선택
-                </button>
+            </div>
+
+            {/* --- Script Dropzone --- */}
+            <div {...getScriptRootProps()} className={`${styles.dropzone} ${styles.scriptDropzone} ${isScriptDragActive ? styles.active : ''} ${scriptFile ? styles.hasFile : ''} ${videoFile ? styles.visible : ''}`}>
+              <input {...getScriptInputProps()} />
+              <div className={styles.dropzoneContentWrapper}>
+                {scriptFile ? (
+                  <div className={styles.fileSelectedContent}>
+                    <FontAwesomeIcon icon={faFileLines} className={styles.fileIcon} />
+                    <p className={styles.fileName}>{scriptFile.name}</p>
+                    <p className={styles.fileSize}>{(scriptFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <button className={styles.cancelButton} onClick={handleRemoveScript} disabled={isLoading}>
+                      대본 변경
+                    </button>
+                  </div>
+                ) : (
+                  <div className={styles.uploadContent}>
+                    <FontAwesomeIcon icon={faFileLines} className={styles.uploadIcon} />
+                    <p className={styles.dropzoneTitle}>2. 발표 대본 업로드</p>
+                    <p className={styles.dropzoneText}>이곳에 대본 파일을 올려주세요</p>
+                    <p className={styles.fileTypes}>지원: TXT</p>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
+          
+          {error && (
+            <div className={styles.errorMessage}>
+              <FontAwesomeIcon icon={faExclamationTriangle} /> {error}
+            </div>
+          )}
+
+          <button className={styles.analyzeButton} onClick={handleAnalyzeClick} disabled={!videoFile || !scriptFile || isLoading}>
+            {isLoading ? (
+              <><FontAwesomeIcon icon={faSpinner} spin /> 분석 요청 중...</>
+            ) : (
+              videoFile && !scriptFile ? '대본 파일을 업로드해주세요' : '분석 시작하기'
+            )}
+          </button>
         </div>
 
-        {/* 오른쪽 컬럼: 서비스 소개 영역 */}
         <div className={`${styles.rightColumn} ${isMounted ? styles.enter : ''}`}>
           <h1 className={styles.mainTitle}>AI 발표 코칭 솔루션</h1>
           <p className={styles.mainDescription}>
             단순한 피드백을 넘어, 당신의 발표 실력을 과학적으로 분석하고 개선 방향을 제시합니다. AI와 함께 최고의 발표를 준비하세요.
           </p>
-
           <div className={styles.features}>
             <div className={styles.featureItem}>
               <FontAwesomeIcon icon={faSmile} className={styles.featureIcon} />
@@ -124,8 +164,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload, onShowHistory 
               </div>
             </div>
           </div>
-
-          <button className={styles.historyButton} onClick={onShowHistory}>
+          <button className={styles.historyButton} onClick={onShowHistory} disabled={isLoading}>
             <FontAwesomeIcon icon={faHistory} />
             이전 분석 기록 보기
           </button>

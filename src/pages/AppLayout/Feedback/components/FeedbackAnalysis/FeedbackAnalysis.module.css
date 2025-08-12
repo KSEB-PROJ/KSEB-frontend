@@ -54,11 +54,11 @@
   border-color: transparent;
 }
 
-/* === Final Intelligent Widget Grid === */
+/* === New 12-Column Dashboard Grid === */
 .dashboardGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: minmax(140px, auto);
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-rows: minmax(100px, auto);
   gap: 25px;
 }
 
@@ -69,6 +69,7 @@
   transition: transform 0.3s, box-shadow 0.3s;
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* Prevent content from spilling */
 }
 
 .card:hover {
@@ -76,56 +77,44 @@
   box-shadow: 0 10px 20px rgba(0,0,0,0.2);
 }
 
-/* === WIDGET SIZES & PLACEMENT (HIERARCHY-BASED) === */
-.videoPlayer { grid-column: span 2; grid-row: span 3; }
+/* === Widget Sizes & Placement (12-col system) === */
+.videoPlayer { 
+  grid-column: span 7; 
+  grid-row: span 4; 
+  height: calc(100px * 4 + 25px * 3); /* Fixed height */
+}
 .summary { 
-  grid-column: span 2; 
-  grid-row: span 3; 
-  /* 
-    Grid 행 높이(140px)와 간격(25px)을 기준으로 높이를 강제 고정하여
-    내용이 길어져도 카드가 늘어나지 않고 내부에서 스크롤되도록 함.
-    (140px * 3 rows) + (25px * 2 gaps) = 470px
-  */
-  height: calc(140px * 3 + 25px * 2);
+  grid-column: span 5; 
+  grid-row: span 4;
+  height: calc(100px * 4 + 25px * 3); /* Fixed height */
 }
-.overallScore { grid-column: span 1; grid-row: span 2; }
-.timeline { grid-column: span 3; grid-row: span 2; }
-.expression { grid-column: span 1; grid-row: span 1; }
-.gesture { grid-column: span 1; grid-row: span 1; }
-.speech { grid-column: span 1; grid-row: span 1; }
-.fillerWords { grid-column: span 1; grid-row: span 1; }
-.gestureFrequency { grid-column: span 3; grid-row: span 2; }
-.confidence { grid-column: span 1; grid-row: span 2; }
 
+.confidenceRadar { grid-column: span 6; grid-row: span 3; }
+.emotionChart { grid-column: span 3; grid-row: span 3; }
+.overallScore { grid-column: span 3; grid-row: span 3; }
+
+.poseChart { grid-column: span 5; grid-row: span 3; }
+.speedTimeline { grid-column: span 7; grid-row: span 3; }
+
+.pitchTimeline { grid-column: span 12; grid-row: span 3; }
+
+
+/* === Card Content Styling === */
 .video {
   width: 100%;
   height: 100%;
   border-radius: 8px;
-  object-fit: cover;
+  object-fit: contain; /* cover에서 contain으로 변경하여 영상이 잘리지 않도록 함 */
+  background-color: #000; /* 레터박스 배경색 */
 }
 
 .summaryContent {
   padding: 25px;
   color: #d4d4d8;
   line-height: 1.7;
-  flex-grow: 1; /* 부모(.summary)의 남은 공간을 모두 차지 */
-  overflow-y: auto; /* 내용이 넘칠 때만 스크롤 표시 */
-  min-height: 0; /* flex 아이템의 크기 오류 방지 */
-}
-
-.video {
-  width: 100%;
-  height: 100%;
-  border-radius: 8px;
-  object-fit: cover;
-}
-
-.summaryContent {
-  padding: 25px;
-  color: #d4d4d8;
-  line-height: 1.7;
-  flex-grow: 1; /* 남은 공간 채우기 */
-  overflow-y: auto; /* 스크롤 생성 */
+  flex-grow: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 .summaryContent h3 {
   color: rgb(var(--group-color-rgb));
@@ -133,8 +122,14 @@
   margin-bottom: 1rem;
 }
 
+.finalReport {
+  margin-top: 30px;
+  padding-top: 25px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .cardTitle {
-  margin: 25px 25px 0;
+  margin: 20px 25px 0;
   font-size: 1.1rem;
   font-weight: 600;
   color: #e0e0e0;
@@ -145,4 +140,38 @@
   flex-grow: 1;
   padding: 20px;
   min-height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Status container for loading/error states */
+.statusContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #e0e0e0;
+  gap: 20px;
+}
+
+/* --- Custom Tooltip --- */
+.customTooltip {
+  background-color: rgba(30, 30, 30, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 10px 15px;
+  border-radius: 8px;
+  backdrop-filter: blur(5px);
+}
+
+.tooltipLabel {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #fff;
+}
+
+.tooltipDesc {
+  margin: 0;
+  font-size: 0.9rem;
 }

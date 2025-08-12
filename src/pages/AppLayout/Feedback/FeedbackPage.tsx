@@ -8,22 +8,18 @@ import styles from './FeedbackPage.module.css';
 import FeedbackHistory from './components/FeedbackHistory/FeedbackHistory';
 import FeedbackAnalysis from './components/FeedbackAnalysis/FeedbackAnalysis';
 import VideoUpload from './components/VideoUpload/VideoUpload';
+import { startVideoAnalysis } from '../../../api/feedbackApi'; // API 호출 함수 임포트
 
-// 페이지가 가질 수 있는 세 가지 상태 정의
 type ViewMode = 'upload' | 'history' | 'analysis';
 
 const FeedbackPage: React.FC = () => {
-  // --- 상태 관리 ---
-  // 현재 보여줄 뷰를 관리하는 상태. 기본값은 'upload'.
   const [viewMode, setViewMode] = useState<ViewMode>('upload');
-  // 사용자가 업로드한 영상 파일을 저장하는 상태.
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  // 사용자가 기록 페이지에서 선택한 분석 기록의 ID를 저장하는 상태.
+  const [analysisVideoId, setAnalysisVideoId] = useState<number | null>(null); // 새로 분석할 video_id
   const [selectedHistoryId, setSelectedHistoryId] = useState<number | null>(null);
-  // CSS 변수에서 그룹 색상을 가져와 저장하는 상태.
   const [groupColorRgb, setGroupColorRgb] = useState('132, 0, 255');
+  const [isLoading, setIsLoading] = useState(false); // 로딩 상태 추가
+  const [error, setError] = useState<string | null>(null); // 에러 상태 추가
 
-  // 컴포넌트 마운트 시, CSS 전역 변수로 선언된 그룹 테마 색상을 읽어와 상태에 적용.
   useEffect(() => {
     const rootStyles = getComputedStyle(document.documentElement);
     const color = rootStyles.getPropertyValue('--group-color').trim();
@@ -32,29 +28,38 @@ const FeedbackPage: React.FC = () => {
     }
   }, []);
 
-  // --- 이벤트 핸들러 ---
-  // 기록(History) 페이지에서 특정 항목을 선택했을 때 호출됨.
   const handleSelectHistory = (id: number) => {
     setSelectedHistoryId(id);
-    setViewMode('analysis'); // 분석 뷰로 전환.
+    setAnalysisVideoId(null); // 새 분석 ID는 초기화
+    setViewMode('analysis');
   };
 
-  // 영상 업로드(Upload) 페이지에서 파일이 업로드되고 '분석 시작' 버튼을 눌렀을 때 호출됨.
-  const handleVideoUpload = (file: File) => {
-    setVideoFile(file);
-    setViewMode('analysis'); // 분석 뷰로 전환.
+  // VideoUpload에서 받은 파일로 직접 API 호출
+  const handleVideoUpload = async (video: File, script: File) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // '분석 시작' API를 여기서 직접 호출
+      const { video_id } = await startVideoAnalysis(video, video.name, script);
+      setAnalysisVideoId(video_id);
+      setSelectedHistoryId(null); // 이전 기록 ID는 초기화
+      setViewMode('analysis');
+    } catch (err) {
+      console.error("분석 시작 요청 실패:", err);
+      setError("분석 시작 요청에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      // 실패 시 업로드 화면에 머무르도록 viewMode를 변경하지 않거나, 'upload'로 명시적 설정
+      setViewMode('upload'); 
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // 분석 또는 기록 페이지에서 '새 분석 시작' 버튼을 눌렀을 때 호출됨.
   const handleBackToUpload = () => {
-    // 모든 상태를 초기화하고 업로드 뷰로 전환.
-    setVideoFile(null);
+    setAnalysisVideoId(null);
     setSelectedHistoryId(null);
     setViewMode('upload');
   };
 
-  // --- 렌더링 로직 ---
-  // 현재 viewMode 상태에 따라 적절한 컴포넌트를 렌더링하는 함수.
   const renderContent = () => {
     switch (viewMode) {
       case 'analysis':
@@ -62,8 +67,8 @@ const FeedbackPage: React.FC = () => {
           <FeedbackAnalysis 
             onOpenHistory={() => setViewMode('history')}
             onBack={handleBackToUpload}
-            videoFile={videoFile} // 분석할 파일 전달
-            historyId={selectedHistoryId} // 또는 분석할 기록 ID 전달
+            videoId={analysisVideoId} // 새로 분석할 ID
+            historyId={selectedHistoryId} // 이전 기록 ID
           />
         );
       case 'history':
@@ -79,6 +84,8 @@ const FeedbackPage: React.FC = () => {
           <VideoUpload 
             onVideoUpload={handleVideoUpload}
             onShowHistory={() => setViewMode('history')}
+            isLoading={isLoading} // 로딩 상태 전달
+            error={error} // 에러 상태 전달
           />
         );
     }
