@@ -65,38 +65,55 @@
 .card {
   background-color: #1e1e1e;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: transform 0.3s, box-shadow 0.3s;
+  border: 2px solid rgba(var(--group-color-rgb), 0.4);
+  transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
   display: flex;
   flex-direction: column;
   overflow: hidden; /* Prevent content from spilling */
+  box-shadow: 0 5px 20px rgba(0,0,0,0.2);
 }
 
 .card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  border-color: rgba(var(--group-color-rgb), 0.7); 
 }
 
 /* === Widget Sizes & Placement (12-col system) === */
 .videoPlayer { 
   grid-column: span 7; 
   grid-row: span 4; 
-  height: calc(100px * 4 + 25px * 3); /* Fixed height */
+  height: calc(100px * 4 + 25px * 3); 
 }
 .summary { 
   grid-column: span 5; 
   grid-row: span 4;
-  height: calc(100px * 4 + 25px * 3); /* Fixed height */
+  height: calc(100px * 4 + 25px * 3);
 }
-
-.confidenceRadar { grid-column: span 6; grid-row: span 3; }
-.emotionChart { grid-column: span 3; grid-row: span 3; }
-.overallScore { grid-column: span 3; grid-row: span 3; }
-
-.poseChart { grid-column: span 5; grid-row: span 3; }
-.speedTimeline { grid-column: span 7; grid-row: span 3; }
-
-.pitchTimeline { grid-column: span 12; grid-row: span 3; }
+.confidenceRadar { 
+  grid-column: span 4;
+  grid-row: span 3; 
+}
+.emotionChart { 
+  grid-column: span 4; 
+  grid-row: span 3; 
+}
+.overallScore { 
+  grid-column: span 4; 
+  grid-row: span 3; 
+}
+.poseChart { 
+  grid-column: span 5;
+  grid-row: span 3; 
+}
+.speedTimeline { 
+  grid-column: span 7;
+  grid-row: span 3; 
+}
+.pitchTimeline { 
+  grid-column: span 12; 
+  grid-row: span 3; 
+}
 
 
 /* === Card Content Styling === */
@@ -104,8 +121,8 @@
   width: 100%;
   height: 100%;
   border-radius: 8px;
-  object-fit: contain; /* cover에서 contain으로 변경하여 영상이 잘리지 않도록 함 */
-  background-color: #000; /* 레터박스 배경색 */
+  object-fit: contain;
+  background-color: #000;
 }
 
 .summaryContent {

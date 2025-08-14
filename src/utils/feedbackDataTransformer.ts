@@ -34,6 +34,7 @@ export interface ServerData {
 
 // 프론트엔드 UI에서 사용하는 새로운 데이터 타입
 export interface FrontendData {
+  title: string; // [추가] 영상 제목 속성
   videoUrl: string;
   detailFeedback: string;
   finalReport: string;
@@ -120,6 +121,7 @@ export const transformAnalysisData = (serverData: ServerData): FrontendData => {
     .replace(/\n---\n/g, '\n\n'); // 불필요한 가로선 제거
 
   return {
+    title: video.title, // [추가] video.title을 매핑
     videoUrl: video.video_url,
     detailFeedback: cleanedFeedback,
     finalReport: feedback.final_report || "", // 서버에서 오는 리포트 사용
